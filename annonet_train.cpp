@@ -240,7 +240,7 @@ int main(int argc, char** argv) try
     dnn_trainer<net_type> trainer(net,sgd(weight_decay, momentum));
     trainer.be_verbose();
     trainer.set_learning_rate(initial_learning_rate);
-    trainer.set_synchronization_file("anno_trainer_state_file.dat", std::chrono::minutes(10));
+    trainer.set_synchronization_file("annonet_trainer_state_file.dat", std::chrono::minutes(10));
     // This threshold is probably excessively large.
     trainer.set_iterations_without_progress_threshold(20000);
     trainer.set_previous_loss_values_dump_amount(4000);
