@@ -1,0 +1,7 @@
+/x64
+/annonet.VC.db
+/vc140.pdb
+/.vs
+/annonet.VC.VC.opendb
+/annonet_infer_cuda.vcxproj.user
+/annonet_train_cuda.vcxproj.user
