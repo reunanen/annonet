@@ -342,4 +342,7 @@
       <Filter>dlib</Filter>
     </CudaCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="annonet.h" />
+  </ItemGroup>
 </Project>

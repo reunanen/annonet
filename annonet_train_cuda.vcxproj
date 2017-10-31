@@ -363,6 +363,9 @@
     <None Include="..\dlib\dlib\dnn\cuda_dlib.cu" />
     <None Include="..\dlib\dlib\dnn\cusolver_dlibapi.cu" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="annonet.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.targets" />
