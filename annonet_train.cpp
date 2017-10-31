@@ -28,11 +28,19 @@
 using namespace std;
 using namespace dlib;
 
+struct image_info
+{
+    string image_filename;
+    string label_filename;
+};
+
 struct training_sample
 {
+    image_info image_info;
     matrix<rgb_pixel> input_image;
     matrix<uint16_t> label_image;
     std::unordered_map<uint16_t, std::deque<point>> labeled_points_by_class;
+    std::string error;
 };
 
 // ----------------------------------------------------------------------------------------
@@ -53,7 +61,7 @@ void randomly_crop_image (
     dlib::rand& rnd
 )
 {
-    const int dim = 115;
+    const int dim = 227;
 
     DLIB_CASSERT(!full_sample.labeled_points_by_class.empty());
 
@@ -92,12 +100,6 @@ void randomly_crop_image (
 }
 
 // ----------------------------------------------------------------------------------------
-
-struct image_info
-{
-    string image_filename;
-    string label_filename;
-};
 
 std::vector<image_info> get_anno_data_listing(
     const std::string& anno_data_folder
@@ -195,48 +197,6 @@ void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_lab
 
 // ----------------------------------------------------------------------------------------
 
-#if 0
-double calculate_accuracy(anet_type& anet, const std::vector<image_info>& dataset)
-{
-    int num_right = 0;
-    int num_wrong = 0;
-
-    training_sample training_sample;
-    matrix<rgb_pixel> rgb_label_image;
-
-    for (const auto& image_info : dataset) {
-        load_image(training_sample.input_image, image_info.image_filename);
-        load_image(rgb_label_image, image_info.label_filename);
-
-        matrix<uint16_t> net_output = anet(training_sample.input_image);
-
-        decode_rgba_label_image(rgb_label_image, training_sample);
-
-        const long nr = training_sample.label_image.nr();
-        const long nc = training_sample.label_image.nc();
-
-        for (long r = 0; r < nr; ++r) {
-            for (long c = 0; c < nc; ++c) {
-                const uint16_t truth = training_sample.label_image(r, c);
-                if (truth != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-                    const uint16_t prediction = net_output(r, c);
-                    if (prediction == truth) {
-                        ++num_right;
-                    }
-                    else {
-                        ++num_wrong;
-                    }
-                }
-            }
-        }
-    }
-
-    return num_right / static_cast<double>(num_right + num_wrong);
-}
-#endif
-
-// ----------------------------------------------------------------------------------------
-
 int main(int argc, char** argv) try
 {
     if (argc != 2)
@@ -260,6 +220,45 @@ int main(int argc, char** argv) try
         return 1;
     }
 
+    dlib::pipe<image_info> full_image_read_requests(listing.size());
+
+    for (const image_info& original : listing) {
+        image_info copy = original;
+        full_image_read_requests.enqueue(copy);
+    }
+
+    const auto read_training_sample = [&anno_classes](const image_info& image_info)
+    {
+        training_sample training_sample;
+        training_sample.image_info = image_info;
+
+        try {
+            matrix<rgb_alpha_pixel> rgba_label_image;
+
+            load_image(training_sample.input_image, image_info.image_filename);
+            load_image(rgba_label_image, image_info.label_filename);
+            decode_rgba_label_image(rgba_label_image, training_sample, anno_classes);
+        }
+        catch (std::exception& e) {
+            training_sample.error = e.what();
+        }
+
+        return training_sample;
+    };
+
+    dlib::pipe<training_sample> full_image_read_results(std::thread::hardware_concurrency());
+
+    std::vector<std::thread> full_image_readers;
+    
+    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+        full_image_readers.push_back(std::thread([&]() {
+            image_info image_info;
+            while (full_image_read_requests.dequeue(image_info)) {
+                full_image_read_results.enqueue(read_training_sample(image_info));
+            }
+        }));
+    }
+
     const double initial_learning_rate = 0.1;
     const double weight_decay = 0.0001;
     const double momentum = 0.9;
@@ -279,32 +278,20 @@ int main(int argc, char** argv) try
     std::vector<matrix<rgb_pixel>> samples;
     std::vector<matrix<uint16_t>> labels;
 
-    std::vector<std::future<training_sample>> full_image_futures;
-    full_image_futures.reserve(listing.size());
-
-    const auto read_training_sample = [&anno_classes](const image_info& image_info)
-    {
-        training_sample training_sample;
-        matrix<rgb_alpha_pixel> rgba_label_image;
-
-        load_image(training_sample.input_image, image_info.image_filename);
-        load_image(rgba_label_image, image_info.label_filename);
-        decode_rgba_label_image(rgba_label_image, training_sample, anno_classes);
-        
-        return training_sample;
-    };
-
-    for (const image_info& image_info : listing) {
-        full_image_futures.push_back(std::async(read_training_sample, image_info));
-    }
-
     std::deque<training_sample> full_images;
 
-    for (size_t i = 0, end = full_image_futures.size(); i < end; ++i) {
+    for (size_t i = 0, end = listing.size(); i < end; ++i) {
         std::cout << "\rReading image " << (i + 1) << " of " << end << "...";
-        const training_sample training_sample = full_image_futures[i].get();
+        training_sample training_sample;
+        full_image_read_results.dequeue(training_sample);
+        if (!training_sample.error.empty()) {
+            throw std::runtime_error(training_sample.error);
+        }
         if (!training_sample.labeled_points_by_class.empty()) {
             full_images.push_back(std::move(training_sample));
+        }
+        else {
+            std::cout << std::endl << "Warning: no labeled points in " << training_sample.image_info.label_filename << std::endl;
         }
     }
 
@@ -315,14 +302,14 @@ int main(int argc, char** argv) try
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
     dlib::pipe<training_sample> data(100);
-    auto f = [&data, &full_images](time_t seed)
+    auto pull_crops = [&data, &full_images](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         matrix<rgb_pixel> input_image;
         matrix<rgb_pixel> rgb_label_image;
         matrix<uint16_t> index_label_image;
         training_sample temp;
-        while(data.is_enabled())
+        while (data.is_enabled())
         {
             const size_t index = rnd.get_random_32bit_number() % full_images.size();
             const training_sample& training_sample = full_images[index];
@@ -330,12 +317,24 @@ int main(int argc, char** argv) try
             data.enqueue(temp);
         }
     };
-    std::thread data_loader1([f](){ f(1); });
-    std::thread data_loader2([f](){ f(2); });
-    std::thread data_loader3([f](){ f(3); });
-    std::thread data_loader4([f](){ f(4); });
+    std::vector<std::thread> data_loaders;
+    
+    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+        data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
+    }
+    
+    const size_t minibatchSize = 60;
+    const size_t saveInterval = 1000;
 
     size_t minibatch = 0;
+
+    const auto save_anet = [&](const dlib::force_flush_to_disk& force_trainer_flush_to_disk) {
+        trainer.get_net(force_trainer_flush_to_disk);
+        anet_type anet = net;
+        anet.clean();
+        cout << "saving network" << endl;
+        serialize("annonet.dnn") << anno_classes_json << anet;
+    };
 
     // The main training loop.  Keep making mini-batches and giving them to the trainer.
     // We will run until the learning rate has dropped by a factor of 1e-6.
@@ -344,9 +343,9 @@ int main(int argc, char** argv) try
         samples.clear();
         labels.clear();
 
-        // make a 60-image mini-batch
+        // make a mini-batch
         training_sample temp;
-        while(samples.size() < 60)
+        while(samples.size() < minibatchSize)
         {
             data.dequeue(temp);
 
@@ -356,38 +355,20 @@ int main(int argc, char** argv) try
 
         trainer.train_one_step(samples, labels);
 
-        if (minibatch++ % 1000 == 0) {
-            trainer.get_net(force_flush_to_disk::no);
-            anet_type anet = net;
-            anet.clean();
-            cout << "saving network" << endl;
-            serialize("annonet.dnn") << anno_classes_json << anet;
+        if (minibatch++ % saveInterval == 0) {
+            save_anet(force_flush_to_disk::no);
         }
     }
 
-    // Training done, tell threads to stop and make sure to wait for them to finish before
-    // moving on.
+    // Training done: tell threads to stop.
     data.disable();
-    data_loader1.join();
-    data_loader2.join();
-    data_loader3.join();
-    data_loader4.join();
 
-    // also wait for threaded processing to stop in the trainer.
-    trainer.get_net();
+    // Wait until they have actually stopped.
+    for (std::thread& data_loader : data_loaders) {
+        data_loader.join();
+    }
 
-    anet_type anet = net;
-    anet.clean();
-    cout << "saving network" << endl;
-    serialize("annonet.dnn") << anno_classes_json << anet;
-
-#if 0
-    anet_type anet = net;
-
-    cout << "Testing the network..." << endl;
-
-    cout << "train accuracy  :  " << calculate_accuracy(anet, get_anno_data_listing(argv[1])) << endl;
-#endif
+    save_anet(force_flush_to_disk::yes);
 }
 catch(std::exception& e)
 {

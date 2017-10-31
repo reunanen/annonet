@@ -89,6 +89,7 @@ int main(int argc, char** argv) try
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
     matrix<rgb_pixel> input_image, input_tile;
+    matrix<rgb_alpha_pixel> ground_truth_image;
     matrix<uint16_t> index_label_tile_resized;
     matrix<rgb_alpha_pixel> rgba_label_image, rgba_label_tile;
     matrix<rgb_pixel> result_image;
@@ -98,11 +99,26 @@ int main(int argc, char** argv) try
     const int max_tile_width = 1023;
     const int max_tile_height = 1023;
 
+    size_t correct = 0;
+    size_t incorrect = 0;
+
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
         const file& file = files[i];
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
         load_image(input_image, file.full_name());
+
+        const std::string label_filename = file.full_name() + "_mask.png";
+        std::ifstream label_file(label_filename, std::ios::binary);
+        const bool has_ground_truth = !!label_file;
+        if (has_ground_truth) {
+            label_file.close();
+            load_image(ground_truth_image, label_filename);
+
+            if (input_image.nr() != ground_truth_image.nr() || input_image.nc() != ground_truth_image.nc()) {
+                throw std::runtime_error("Label image size mismatch detected for " + file.full_name());
+            }
+        }
 
         rgba_label_image.set_size(input_image.nr(), input_image.nc());
 
@@ -150,10 +166,36 @@ int main(int argc, char** argv) try
             }
         }
 
+        if (has_ground_truth) {
+            const long nr = rgba_label_image.nr();
+            const long nc = rgba_label_image.nr();
+            for (size_t r = 0; r < nr; ++r) {
+                for (size_t c = 0; c < nc; ++c) {
+                    const dlib::rgb_alpha_pixel ground_truth_value = ground_truth_image(r, c);
+                    if (ground_truth_value == rgba_ignore_label) {
+                        ; // skip the pixel
+                    }
+                    else {
+                        const dlib::rgb_alpha_pixel inference_value = rgba_label_image(r, c);
+                        if (inference_value == ground_truth_value) {
+                            ++correct;
+                        }
+                        else {
+                            ++incorrect;
+                        }
+                    }
+                }
+            }
+        }
+
         save_png(rgba_label_image, file.full_name() + "_result.png");
     }
 
     std::cout << "\nAll " << files.size() << " images processed!" << std::endl;
+
+    if (correct > 0 || incorrect > 0) {
+        std::cout << "Accuracy = " << 100.0 * correct / (correct + incorrect) << " % (correct = " << correct << ", incorrect = " << incorrect << ")" << std::endl;
+    }
 }
 catch(std::exception& e)
 {
