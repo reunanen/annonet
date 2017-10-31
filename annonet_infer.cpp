@@ -25,30 +25,23 @@ using namespace dlib;
  
 // ----------------------------------------------------------------------------------------
 
-const AnnoClass& find_anno_class(const uint16_t& index_label)
+inline rgb_alpha_pixel index_label_to_rgba_label(uint16_t index_label, const std::vector<AnnoClass>& anno_classes)
 {
-    return find_anno_class(
-        [&index_label](const AnnoClass& anno_class) {
-            return index_label == anno_class.index;
-        }
-    );
+    const AnnoClass& anno_class = anno_classes[index_label];
+    assert(anno_class.index == index_label);
+    return anno_class.rgba_label;
 }
 
-inline rgb_pixel index_label_to_rgb_label(uint16_t index_label)
-{
-    return find_anno_class(index_label).rgb_label;
-}
-
-void index_label_image_to_rgb_label_image(const matrix<uint16_t>& index_label_image, matrix<rgb_pixel>& rgb_label_image)
+void index_label_image_to_rgba_label_image(const matrix<uint16_t>& index_label_image, matrix<rgb_alpha_pixel>& rgba_label_image, const std::vector<AnnoClass>& anno_classes)
 {
     const long nr = index_label_image.nr();
     const long nc = index_label_image.nc();
 
-    rgb_label_image.set_size(nr, nc);
+    rgba_label_image.set_size(nr, nc);
 
     for (long r = 0; r < nr; ++r) {
         for (long c = 0; c < nc; ++c) {
-            rgb_label_image(r, c) = index_label_to_rgb_label(index_label_image(r, c));
+            rgba_label_image(r, c) = index_label_to_rgba_label(index_label_image(r, c), anno_classes);
         }
     }
 }
@@ -82,7 +75,7 @@ int main(int argc, char** argv) try
     if (argc == 1)
     {
         cout << "You call this program like this: " << endl;
-        cout << "./dnn_semantic_segmentation_anno_ex /path/to/image/data" << endl;
+        cout << "./annonet_infer /path/to/image/data" << endl;
         cout << endl;
         cout << "You will also need a trained 'annonet.dnn' file. " << endl;
         cout << endl;
@@ -90,11 +83,14 @@ int main(int argc, char** argv) try
     }
 
     anet_type net;
-    deserialize("annonet.dnn") >> net;
+    std::string anno_classes_json;
+    deserialize("annonet.dnn") >> anno_classes_json >> net;
+
+    const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
     matrix<rgb_pixel> input_image, input_tile;
     matrix<uint16_t> index_label_tile_resized;
-    matrix<rgb_pixel> rgb_label_image, rgb_label_tile;
+    matrix<rgb_alpha_pixel> rgba_label_image, rgba_label_tile;
     matrix<rgb_pixel> result_image;
 
     const auto files = get_images(argv[1]);
@@ -108,7 +104,7 @@ int main(int argc, char** argv) try
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
         load_image(input_image, file.full_name());
 
-        rgb_label_image.set_size(input_image.nr(), input_image.nc());
+        rgba_label_image.set_size(input_image.nr(), input_image.nc());
 
         const auto find_tile_start_position = [](long center, long max_tile_dim) {
             long start_position = center;
@@ -143,18 +139,18 @@ int main(int argc, char** argv) try
                 const matrix<uint16_t>& index_label_tile = net(input_tile);
                 index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
                 resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
-                index_label_image_to_rgb_label_image(index_label_tile_resized, rgb_label_tile);
+                index_label_image_to_rgba_label_image(index_label_tile_resized, rgba_label_tile, anno_classes);
                 const long offset_y = top;
                 const long offset_x = left;
-                for (long tile_y = 0; tile_y < rgb_label_tile.nr(); ++tile_y) {
-                    for (long tile_x = 0; tile_x < rgb_label_tile.nc(); ++tile_x) {
-                        rgb_label_image(tile_y + offset_y, tile_x + offset_x) = rgb_label_tile(tile_y, tile_x);
+                for (long tile_y = 0; tile_y < rgba_label_tile.nr(); ++tile_y) {
+                    for (long tile_x = 0; tile_x < rgba_label_tile.nc(); ++tile_x) {
+                        rgba_label_image(tile_y + offset_y, tile_x + offset_x) = rgba_label_tile(tile_y, tile_x);
                     }
                 }
             }
         }
 
-        save_png(rgb_label_image, file.full_name() + "_result.png");
+        save_png(rgba_label_image, file.full_name() + "_result.png");
     }
 
     std::cout << "\nAll " << files.size() << " images processed!" << std::endl;

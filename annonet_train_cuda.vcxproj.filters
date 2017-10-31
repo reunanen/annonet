@@ -290,6 +290,9 @@
       <Filter>dlib\image_saver</Filter>
     </ClCompile>
     <ClCompile Include="annonet_train.cpp" />
+    <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp">
+      <Filter>cpp-read-file-in-memory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -325,6 +328,9 @@
     <Filter Include="dlib\image_saver">
       <UniqueIdentifier>{42474369-b9d8-423e-94f0-6b224acef588}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cpp-read-file-in-memory">
+      <UniqueIdentifier>{a8669902-4fe6-47f2-a3f3-1f436f740158}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\dlib\dlib\dnn\cuda_dlib.cu">
@@ -344,5 +350,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="annonet.h" />
+    <ClInclude Include="cpp-read-file-in-memory\read-file-in-memory.h">
+      <Filter>cpp-read-file-in-memory</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

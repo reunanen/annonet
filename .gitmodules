@@ -1,3 +1,9 @@
 [submodule "dlib"]
 	path = dlib
 	url = https://github.com/reunanen/dlib
+[submodule "rapidjson"]
+	path = rapidjson
+	url = https://github.com/reunanen/rapidjson
+[submodule "cpp-read-file-in-memory"]
+	path = cpp-read-file-in-memory
+	url = https://github.com/reunanen/cpp-read-file-in-memory

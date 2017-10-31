@@ -17,47 +17,92 @@
 #define ANNONET_H
 
 #include <dlib/dnn.h>
+#include <rapidjson/document.h>
 
 // ----------------------------------------------------------------------------------------
 
-inline bool operator == (const dlib::rgb_pixel& a, const dlib::rgb_pixel& b)
+inline bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
 {
-    return a.red == b.red && a.green == b.green && a.blue == b.blue;
+    return a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha;
 }
 
 // ----------------------------------------------------------------------------------------
 
 struct AnnoClass {
-    AnnoClass(uint16_t index, const dlib::rgb_pixel& rgb_label, const char* classlabel)
-        : index(index), rgb_label(rgb_label), classlabel(classlabel)
+    AnnoClass(uint16_t index, const dlib::rgb_alpha_pixel& rgba_label, const std::string& classlabel)
+        : index(index), rgba_label(rgba_label), classlabel(classlabel)
     {}
 
     const uint16_t index = 0;
-    const dlib::rgb_pixel rgb_label;
-    const char* classlabel = nullptr;
+    const dlib::rgb_alpha_pixel rgba_label;
+    const std::string classlabel;
 };
 
 namespace {
-    constexpr int class_count = 2;
-
-    const std::vector<AnnoClass> classes = {
-        AnnoClass(0, dlib::rgb_pixel(0, 63, 0), "clean"),
-        AnnoClass(1, dlib::rgb_pixel(127, 0, 0), "defect"),
-        AnnoClass(dlib::loss_multiclass_log_per_pixel_::label_to_ignore, dlib::rgb_pixel(0, 0, 0), "ignore"),
-    };
+    dlib::rgb_alpha_pixel rgba_ignore_label(0, 0, 0, 0);
 }
 
-template <typename Predicate>
-const AnnoClass& find_anno_class(Predicate predicate)
+std::vector<AnnoClass> parse_anno_classes(const std::string& json)
 {
-    const auto i = std::find_if(classes.begin(), classes.end(), predicate);
+    if (json.empty()) {
+        // Use the default anno classes
+        return std::vector<AnnoClass>{
+            AnnoClass(0, dlib::rgb_alpha_pixel(0, 255, 0, 64), "clean"),
+            AnnoClass(1, dlib::rgb_alpha_pixel(255, 0, 0, 128), "defect"),
+        };
+    }
 
-    if (i != classes.end()) {
-        return *i;
+    rapidjson::Document doc;
+    doc.Parse(json.c_str());
+    if (doc.HasParseError()) {
+        throw std::runtime_error("Error parsing json\n" + json);
     }
-    else {
-        throw std::runtime_error("Unable to find a matching anno class");
+
+    if (!doc.IsObject()) {
+        throw std::runtime_error("Unexpected anno classes json content - the document should be an object");
     }
+
+    const auto anno_classes_member = doc.FindMember("anno_classes");
+
+    if (anno_classes_member == doc.MemberEnd() || !anno_classes_member->value.IsArray()) {
+        throw std::runtime_error("Unexpected anno classes json content - there should be an anno_classes array");
+    }
+
+    std::vector<AnnoClass> anno_classes;
+
+    for (rapidjson::SizeType i = 0, end = anno_classes_member->value.Size(); i < end; ++i) {
+        const auto& anno_class = anno_classes_member->value[i];
+        const auto name_member = anno_class.FindMember("name");
+        const auto color_member = anno_class.FindMember("color");
+        if (name_member == anno_class.MemberEnd()) {
+            throw std::runtime_error("Unexpected anno classes json content - no name found");
+        }
+        if (color_member == anno_class.MemberEnd()) {
+            throw std::runtime_error("Unexpected anno classes json content - no color found");
+        }
+        const auto& color = color_member->value;
+        const auto red_member = color.FindMember("red");
+        const auto green_member = color.FindMember("green");
+        const auto blue_member = color.FindMember("blue");
+        const auto alpha_member = color.FindMember("alpha");
+        if (red_member == color.MemberEnd() || green_member == color.MemberEnd() || blue_member == color.MemberEnd() || alpha_member == color.MemberEnd()) {
+            throw std::runtime_error("Unexpected anno classes json content - color should have all components (red, green, blue, alpha)");
+        }
+        dlib::rgb_alpha_pixel rgba_value(
+            red_member->value.GetInt(),
+            green_member->value.GetInt(),
+            blue_member->value.GetInt(),
+            alpha_member->value.GetInt()
+        );
+
+        if (rgba_value == rgba_ignore_label) {
+            throw std::runtime_error("Unexpected anno classes json content - rgba (0, 0, 0, 0) is reserved for pixels to be ignored");
+        }
+
+        anno_classes.push_back(AnnoClass(i, rgba_value, name_member->value.GetString()));
+    }
+
+    return anno_classes;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -132,23 +177,25 @@ template <typename SUBNET> using alevel3t = ares<128,ares<128,ares<128,ares_up<1
 template <typename SUBNET> using alevel4t = ares<64,ares<64,ares_up<64,SUBNET>>>;
 #endif
 
+constexpr long default_class_count = 2;
+
 // training network type
 using net_type = dlib::loss_multiclass_log_per_pixel<
-                            dlib::bn_con<dlib::cont<class_count,7,7,2,2,
-                            level4t<level3t</*level2t<level1t<
-                            level1<level2<*/level3<level4<
+                            dlib::bn_con<dlib::cont<default_class_count,7,7,2,2,
+                            level4t</*level3t<level2t<level1t<
+                            level1<level2<level3<*/level4<
                             dlib::max_pool<3,3,2,2,dlib::relu<dlib::bn_con<dlib::con<64,7,7,2,2,
                             dlib::input<dlib::matrix<dlib::rgb_pixel>>
-                            >>>>>>>>>>>/*>>>>*/;
+                            >>>>>>>>>/*>>>>>>*/;
 
-// testing network type (replaced batch normalization with fixed affine transforms)
+// inference network type (replaced batch normalization with fixed affine transforms)
 using anet_type = dlib::loss_multiclass_log_per_pixel<
-                            dlib::affine<dlib::cont<class_count,7,7,2,2,
-                            alevel4t<alevel3t</*alevel2t<alevel1t<
-                            alevel1<alevel2<*/alevel3<alevel4<
+                            dlib::affine<dlib::cont<default_class_count,7,7,2,2,
+                            alevel4t</*alevel3t<alevel2t<alevel1t<
+                            alevel1<alevel2<alevel3<*/alevel4<
                             dlib::max_pool<3,3,2,2,dlib::relu<dlib::affine<dlib::con<64,7,7,2,2,
                             dlib::input<dlib::matrix<dlib::rgb_pixel>>
-                            >>>>>>>>>>>/*>>>>*/;
+                            >>>>>>>>>/*>>>>>>*/;
 
 #endif // __INTELLISENSE__
 

@@ -15,10 +15,12 @@
 
 #include "annonet.h"
 
-#include <iostream>
+#include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include <dlib/data_io.h>
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
+
+#include <iostream>
 #include <iterator>
 #include <unordered_map>
 #include <thread>
@@ -34,7 +36,6 @@ struct training_sample
 };
 
 // ----------------------------------------------------------------------------------------
-
 
 rectangle make_cropping_rect_around_defect(
     int dim,
@@ -136,31 +137,54 @@ std::vector<image_info> get_anno_data_listing(
 
 // ----------------------------------------------------------------------------------------
 
-const AnnoClass& find_anno_class(const dlib::rgb_pixel& rgb_label)
+std::string read_anno_classes_file(const std::string& folder)
 {
-    return find_anno_class(
-        [&rgb_label](const AnnoClass& anno_class) {
-            return rgb_label == anno_class.rgb_label;
+    const std::vector<file> files = get_files_in_directory_tree(folder,
+        [](const file& name) {
+            return name.name() == "anno_classes.json";
+        }, 0); // do not scan subdirectories - the file must be in the root
+
+    if (files.empty()) {
+        std::cout << "Warning: no anno_classes.json file found in " + folder << std::endl;
+        std::cout << " --> Using the default anno classes" << std::endl;
+        return "";
+    }
+
+    if (files.size() > 1) {
+        throw std::runtime_error("Found multiple anno_classes.json files - this shouldn't happen");
+    }
+
+    const std::string json = read_file_as_string(files.front());
+
+    return json;
+}
+
+inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes)
+{
+    if (rgba_label == rgba_ignore_label) {
+        return dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+    }
+    for (const AnnoClass& anno_class : anno_classes) {
+        if (anno_class.rgba_label == rgba_label) {
+            return anno_class.index;
         }
-    );
+    }
+    std::ostringstream error;
+    error << "Unknown class: r = " << rgba_label.red << ", g = " << rgba_label.green << ", b = " << rgba_label.blue << ", alpha = " << rgba_label.alpha;
+    throw std::runtime_error(error.str());
 }
 
-inline uint16_t rgb_label_to_index_label(const dlib::rgb_pixel& rgb_label)
+void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, training_sample& training_sample, const std::vector<AnnoClass>& anno_classes)
 {
-    return find_anno_class(rgb_label).index;
-}
-
-void decode_rgb_label_image(const dlib::matrix<dlib::rgb_pixel>& rgb_label_image, training_sample& training_sample)
-{
-    const long nr = rgb_label_image.nr();
-    const long nc = rgb_label_image.nc();
+    const long nr = rgba_label_image.nr();
+    const long nc = rgba_label_image.nc();
 
     training_sample.label_image.set_size(nr, nc);
     training_sample.labeled_points_by_class.clear();
 
     for (long r = 0; r < nr; ++r) {
         for (long c = 0; c < nc; ++c) {
-            const uint16_t label = rgb_label_to_index_label(rgb_label_image(r, c));
+            const uint16_t label = rgba_label_to_index_label(rgba_label_image(r, c), anno_classes);
             if (label != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
                 training_sample.labeled_points_by_class[label].push_back(point(c, r));
             }
@@ -171,6 +195,7 @@ void decode_rgb_label_image(const dlib::matrix<dlib::rgb_pixel>& rgb_label_image
 
 // ----------------------------------------------------------------------------------------
 
+#if 0
 double calculate_accuracy(anet_type& anet, const std::vector<image_info>& dataset)
 {
     int num_right = 0;
@@ -185,7 +210,7 @@ double calculate_accuracy(anet_type& anet, const std::vector<image_info>& datase
 
         matrix<uint16_t> net_output = anet(training_sample.input_image);
 
-        decode_rgb_label_image(rgb_label_image, training_sample);
+        decode_rgba_label_image(rgb_label_image, training_sample);
 
         const long nr = training_sample.label_image.nr();
         const long nc = training_sample.label_image.nc();
@@ -208,6 +233,7 @@ double calculate_accuracy(anet_type& anet, const std::vector<image_info>& datase
 
     return num_right / static_cast<double>(num_right + num_wrong);
 }
+#endif
 
 // ----------------------------------------------------------------------------------------
 
@@ -218,12 +244,14 @@ int main(int argc, char** argv) try
         cout << "To run this program you need data annotated using the anno program." << endl;
         cout << endl;
         cout << "You call this program like this: " << endl;
-        cout << "./dnn_semantic_segmentation_anno_train_ex /path/to/anno/data" << endl;
+        cout << "./annonet_train /path/to/anno/data" << endl;
         return 1;
     }
 
     cout << "\nSCANNING ANNO DATASET\n" << endl;
 
+    const auto anno_classes_json = read_anno_classes_file(argv[1]);
+    const auto anno_classes = parse_anno_classes(anno_classes_json);
     const auto listing = get_anno_data_listing(argv[1]);
     cout << "images in dataset: " << listing.size() << endl;
     if (listing.size() == 0)
@@ -254,14 +282,14 @@ int main(int argc, char** argv) try
     std::vector<std::future<training_sample>> full_image_futures;
     full_image_futures.reserve(listing.size());
 
-    const auto read_training_sample = [](const image_info& image_info)
+    const auto read_training_sample = [&anno_classes](const image_info& image_info)
     {
         training_sample training_sample;
-        matrix<rgb_pixel> rgb_label_image;
+        matrix<rgb_alpha_pixel> rgba_label_image;
 
         load_image(training_sample.input_image, image_info.image_filename);
-        load_image(rgb_label_image, image_info.label_filename);
-        decode_rgb_label_image(rgb_label_image, training_sample);
+        load_image(rgba_label_image, image_info.label_filename);
+        decode_rgba_label_image(rgba_label_image, training_sample, anno_classes);
         
         return training_sample;
     };
@@ -330,10 +358,10 @@ int main(int argc, char** argv) try
 
         if (minibatch++ % 1000 == 0) {
             trainer.get_net(force_flush_to_disk::no);
-            auto net_copy = net;
-            net_copy.clean();
+            anet_type anet = net;
+            anet.clean();
             cout << "saving network" << endl;
-            serialize("annonet.dnn") << net_copy;
+            serialize("annonet.dnn") << anno_classes_json << anet;
         }
     }
 
@@ -348,9 +376,10 @@ int main(int argc, char** argv) try
     // also wait for threaded processing to stop in the trainer.
     trainer.get_net();
 
-    net.clean();
+    anet_type anet = net;
+    anet.clean();
     cout << "saving network" << endl;
-    serialize("annonet.dnn") << net;
+    serialize("annonet.dnn") << anno_classes_json << anet;
 
 #if 0
     anet_type anet = net;
