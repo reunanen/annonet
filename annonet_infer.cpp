@@ -171,11 +171,19 @@ int main(int argc, char** argv) try
     }
 
     tiling::parameters tiling_parameters;
+#ifdef DLIB_USE_CUDA
     tiling_parameters.max_tile_width = 640;
     tiling_parameters.max_tile_height = 640;
+#else
+    // No need for tiling in CPU-only mode
+    tiling_parameters.max_tile_width = std::numeric_limits<int>::max();
+    tiling_parameters.max_tile_height = std::numeric_limits<int>::max();
+#endif
 
     size_t correct = 0;
     size_t incorrect = 0;
+
+    const auto t0 = std::chrono::steady_clock::now();
 
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
@@ -246,7 +254,10 @@ int main(int argc, char** argv) try
         result_image_write_requests.enqueue(result_image);
     }
 
-    std::cout << "\nAll " << files.size() << " images processed!" << std::endl;
+    const auto t1 = std::chrono::steady_clock::now();
+
+    std::cout << "\nAll " << files.size() << " images processed in "
+        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!" << std::endl;
 
     for (size_t i = 0, end = files.size(); i < end; ++i) {
         bool ok;
