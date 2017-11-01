@@ -4,21 +4,6 @@
     <ClCompile Include="..\dlib\dlib\dnn\cpu_dlib.cpp">
       <Filter>dlib\dnn</Filter>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\cublas_dlibapi.cpp">
-      <Filter>dlib\dnn</Filter>
-    </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\cuda_data_ptr.cpp">
-      <Filter>dlib\dnn</Filter>
-    </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\cudnn_dlibapi.cpp">
-      <Filter>dlib\dnn</Filter>
-    </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\curand_dlibapi.cpp">
-      <Filter>dlib\dnn</Filter>
-    </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\gpu_data.cpp">
-      <Filter>dlib\dnn</Filter>
-    </ClCompile>
     <ClCompile Include="..\dlib\dlib\dnn\tensor_tools.cpp">
       <Filter>dlib\dnn</Filter>
     </ClCompile>
@@ -334,22 +319,6 @@
     <Filter Include="tiling">
       <UniqueIdentifier>{9a1c6b0b-b15d-4eee-b831-d14a229548e9}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\dlib\dlib\dnn\cuda_dlib.cu">
-      <Filter>dlib\dnn</Filter>
-    </None>
-    <None Include="..\dlib\dlib\dnn\cusolver_dlibapi.cu">
-      <Filter>dlib\dnn</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="..\dlib\dlib\dnn\cuda_dlib.cu">
-      <Filter>dlib</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\dlib\dlib\dnn\cusolver_dlibapi.cu">
-      <Filter>dlib</Filter>
-    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="annonet.h" />
