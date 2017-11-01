@@ -82,9 +82,12 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    anet_type net;
+    std::string serialized_runtime_net;
     std::string anno_classes_json;
-    deserialize("annonet.dnn") >> anno_classes_json >> net;
+    deserialize("annonet.dnn") >> anno_classes_json >> serialized_runtime_net;
+
+    NetPimpl::RuntimeNet net;
+    net.Deserialize(serialized_runtime_net);
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 

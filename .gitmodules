@@ -7,3 +7,6 @@
 [submodule "cpp-read-file-in-memory"]
 	path = cpp-read-file-in-memory
 	url = https://github.com/reunanen/cpp-read-file-in-memory
+[submodule "dlib-dnn-pimpl-wrapper"]
+	path = dlib-dnn-pimpl-wrapper
+	url = https://github.com/reunanen/dlib-dnn-pimpl-wrapper

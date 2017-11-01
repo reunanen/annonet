@@ -361,6 +361,7 @@
     <ClCompile Include="..\dlib\dlib\threads\thread_pool_extension.cpp" />
     <ClCompile Include="annonet_train.cpp" />
     <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp" />
+    <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\dlib\dlib\dnn\cuda_dlib.cu" />
@@ -369,6 +370,8 @@
   <ItemGroup>
     <ClInclude Include="annonet.h" />
     <ClInclude Include="cpp-read-file-in-memory\read-file-in-memory.h" />
+    <ClInclude Include="dlib-dnn-pimpl-wrapper\NetPimpl.h" />
+    <ClInclude Include="dlib-dnn-pimpl-wrapper\NetStructure.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

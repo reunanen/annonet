@@ -260,20 +260,22 @@ int main(int argc, char** argv) try
     }
 
     const double initial_learning_rate = 0.1;
-    const double weight_decay = 0.0001;
-    const double momentum = 0.9;
+    const double learning_rate_shrink_factor = 0.1;
+    const double min_learning_rate = 1e-6;
+    const unsigned long iterations_without_progress_threshold = 20000;
 
-    net_type net;
-    dnn_trainer<net_type> trainer(net,sgd(weight_decay, momentum));
-    trainer.be_verbose();
-    trainer.set_learning_rate(initial_learning_rate);
-    trainer.set_synchronization_file("annonet_trainer_state_file.dat", std::chrono::minutes(10));
-    // This threshold is probably excessively large.
-    trainer.set_iterations_without_progress_threshold(20000);
-    trainer.set_previous_loss_values_dump_amount(4000);
+    NetPimpl::TrainingNet training_net;
+    training_net.SetClassCount(anno_classes.size());
+    training_net.SetLearningRate(initial_learning_rate);
+    training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
+    training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
+    training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
+    training_net.BeVerbose();
+
+    // TODO
     // Since the progress threshold is so large might as well set the batch normalization
     // stats window to something big too.
-    set_all_bn_running_stats_window_sizes(net, 1000);
+    //set_all_bn_running_stats_window_sizes(net, 1000);
 
     std::vector<matrix<rgb_pixel>> samples;
     std::vector<matrix<uint16_t>> labels;
@@ -328,17 +330,18 @@ int main(int argc, char** argv) try
 
     size_t minibatch = 0;
 
-    const auto save_anet = [&](const dlib::force_flush_to_disk& force_trainer_flush_to_disk) {
-        trainer.get_net(force_trainer_flush_to_disk);
-        anet_type anet = net;
-        anet.clean();
+    const auto save_inference_net = [&]() {
+        const NetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
+        
+        std::ostringstream serialized;
+        runtime_net.Serialize(serialized);
+
         cout << "saving network" << endl;
-        serialize("annonet.dnn") << anno_classes_json << anet;
+        serialize("annonet.dnn") << anno_classes_json << serialized.str();
     };
 
     // The main training loop.  Keep making mini-batches and giving them to the trainer.
-    // We will run until the learning rate has dropped by a factor of 1e-6.
-    while(trainer.get_learning_rate() >= 1e-6)
+    while (training_net.GetLearningRate() >= min_learning_rate)
     {
         samples.clear();
         labels.clear();
@@ -353,10 +356,10 @@ int main(int argc, char** argv) try
             labels.push_back(std::move(temp.label_image));
         }
 
-        trainer.train_one_step(samples, labels);
+        training_net.StartTraining(samples, labels);
 
         if (minibatch++ % saveInterval == 0) {
-            save_anet(force_flush_to_disk::no);
+            save_inference_net();
         }
     }
 
@@ -368,7 +371,7 @@ int main(int argc, char** argv) try
         data_loader.join();
     }
 
-    save_anet(force_flush_to_disk::yes);
+    save_inference_net();
 }
 catch(std::exception& e)
 {
