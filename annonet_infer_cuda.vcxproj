@@ -356,6 +356,7 @@
     <ClCompile Include="..\dlib\dlib\threads\thread_pool_extension.cpp" />
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp" />
+    <ClCompile Include="tiling\tiling.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\dlib\dlib\dnn\cuda_dlib.cu" />
@@ -365,6 +366,8 @@
     <ClInclude Include="annonet.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetPimpl.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetStructure.h" />
+    <ClInclude Include="tiling\dlib-wrapper.h" />
+    <ClInclude Include="tiling\tiling.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

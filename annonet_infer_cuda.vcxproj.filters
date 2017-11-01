@@ -290,6 +290,9 @@
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClCompile>
+    <ClCompile Include="tiling\tiling.cpp">
+      <Filter>tiling</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -328,6 +331,9 @@
     <Filter Include="dlib-dnn-pimpl-wrapper">
       <UniqueIdentifier>{c4b0e4a8-3d0e-43f7-8572-1ca830cf3fad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="tiling">
+      <UniqueIdentifier>{9a1c6b0b-b15d-4eee-b831-d14a229548e9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\dlib\dlib\dnn\cuda_dlib.cu">
@@ -352,6 +358,12 @@
     </ClInclude>
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetStructure.h">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="tiling\tiling.h">
+      <Filter>tiling</Filter>
+    </ClInclude>
+    <ClInclude Include="tiling\dlib-wrapper.h">
+      <Filter>tiling</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

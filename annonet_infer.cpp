@@ -19,6 +19,7 @@
 #include <dlib/data_io.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/image_saver/save_png.h>
+#include "tiling/dlib-wrapper.h"
 
 using namespace std;
 using namespace dlib;
@@ -169,8 +170,9 @@ int main(int argc, char** argv) try
         }));
     }
 
-    const int max_tile_width = 1023;
-    const int max_tile_height = 1023;
+    tiling::parameters tiling_parameters;
+    tiling_parameters.max_tile_width = 2048;
+    tiling_parameters.max_tile_height = 515;
 
     size_t correct = 0;
     size_t incorrect = 0;
@@ -193,46 +195,28 @@ int main(int argc, char** argv) try
         result_image.filename = ii.file.full_name() + "_result.png";
         result_image.label_image.set_size(input_image.nr(), input_image.nc());
 
-        const auto find_tile_start_position = [](long center, long max_tile_dim) {
-            long start_position = center;
-            while (start_position > 0) {
-                start_position -= max_tile_dim;
-            }
-            if (start_position <= -max_tile_dim / 2) {
-                start_position += max_tile_dim / 2;
-            }
-            assert(start_position > -max_tile_dim / 2);
-            assert(start_position <= 0);
-            return start_position;
-        };
+        std::vector<dlib::rectangle> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
 
-        const long center_row = input_image.nr() / 2;
-        const long center_col = input_image.nc() / 2;
-        long first_tile_start_row = find_tile_start_position(center_row, max_tile_height);
-        long first_tile_start_col = find_tile_start_position(center_col, max_tile_width);
-
-        for (long tile_start_row = first_tile_start_row; tile_start_row < input_image.nr(); tile_start_row += max_tile_height) {
-            for (long tile_start_col = first_tile_start_col; tile_start_col < input_image.nc(); tile_start_col += max_tile_width) {
-                const long top = std::max(tile_start_row, 0L);
-                const long left = std::max(tile_start_col, 0L);
-                const long bottom = std::min(tile_start_row + max_tile_height, input_image.nr()) - 1;
-                const long right = std::min(tile_start_col + max_tile_width, input_image.nc()) - 1;
-                input_tile.set_size(bottom - top + 1, right - left + 1);
-                for (long y = top; y <= bottom; ++y) {
-                    for (long x = left; x <= right; ++x) {
-                        input_tile(y - top, x - left) = input_image(y, x);
-                    }
+        for (const dlib::rectangle& tile : tiles) {
+            const long top = tile.top();
+            const long left = tile.left();
+            const long bottom = tile.bottom();
+            const long right = tile.right();
+            input_tile.set_size(tile.height(), tile.width());
+            for (long y = top; y <= bottom; ++y) {
+                for (long x = left; x <= right; ++x) {
+                    input_tile(y - top, x - left) = input_image(y, x);
                 }
-                const matrix<uint16_t>& index_label_tile = net(input_tile);
-                index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
-                resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
-                index_label_image_to_rgba_label_image(index_label_tile_resized, rgba_label_tile, anno_classes);
-                const long offset_y = top;
-                const long offset_x = left;
-                for (long tile_y = 0; tile_y < rgba_label_tile.nr(); ++tile_y) {
-                    for (long tile_x = 0; tile_x < rgba_label_tile.nc(); ++tile_x) {
-                        result_image.label_image(tile_y + offset_y, tile_x + offset_x) = rgba_label_tile(tile_y, tile_x);
-                    }
+            }
+            const matrix<uint16_t>& index_label_tile = net(input_tile);
+            index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
+            resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
+            index_label_image_to_rgba_label_image(index_label_tile_resized, rgba_label_tile, anno_classes);
+            const long offset_y = top;
+            const long offset_x = left;
+            for (long tile_y = 0; tile_y < rgba_label_tile.nr(); ++tile_y) {
+                for (long tile_x = 0; tile_x < rgba_label_tile.nc(); ++tile_x) {
+                    result_image.label_image(tile_y + offset_y, tile_x + offset_x) = rgba_label_tile(tile_y, tile_x);
                 }
             }
         }
