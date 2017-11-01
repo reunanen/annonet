@@ -57,7 +57,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
@@ -92,7 +92,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
