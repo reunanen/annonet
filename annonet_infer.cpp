@@ -171,8 +171,8 @@ int main(int argc, char** argv) try
     }
 
     tiling::parameters tiling_parameters;
-    tiling_parameters.max_tile_width = 2048;
-    tiling_parameters.max_tile_height = 515;
+    tiling_parameters.max_tile_width = 640;
+    tiling_parameters.max_tile_height = 640;
 
     size_t correct = 0;
     size_t incorrect = 0;
@@ -208,7 +208,7 @@ int main(int argc, char** argv) try
                     input_tile(y - top, x - left) = input_image(y, x);
                 }
             }
-            const matrix<uint16_t>& index_label_tile = net(input_tile);
+            const matrix<uint16_t> index_label_tile = net(input_tile);
             index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
             resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
             index_label_image_to_rgba_label_image(index_label_tile_resized, rgba_label_tile, anno_classes);
