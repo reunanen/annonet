@@ -121,225 +121,225 @@
     <ProjectReference />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_extensions.cpp" />
-    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_1.cpp" />
-    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_2.cpp" />
-    <ClCompile Include="..\dlib\dlib\dnn\cpu_dlib.cpp" />
-    <ClCompile Include="..\dlib\dlib\dnn\tensor_tools.cpp" />
-    <ClCompile Include="..\dlib\dlib\entropy_decoder\entropy_decoder_kernel_2.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcapimin.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcapistd.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jccoefct.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jccolor.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcdctmgr.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jchuff.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcinit.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcmainct.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcmarker.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcmaster.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcomapi.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcparam.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcphuff.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcprepct.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcsample.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdapimin.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdapistd.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdatadst.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdatasrc.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdcoefct.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdcolor.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jddctmgr.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdhuff.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdinput.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmainct.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmarker.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmaster.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmerge.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdphuff.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdpostct.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdsample.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jerror.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jfdctflt.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jfdctfst.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jfdctint.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctflt.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctfst.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctint.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctred.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jmemmgr.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jmemnobs.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jquant1.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jquant2.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libjpeg\jutils.cpp" />
-    <ClCompile Include="..\dlib\dlib\external\libpng\png.c">
+    <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp" />
+    <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_1.cpp" />
+    <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_2.cpp" />
+    <ClCompile Include="dlib\dlib\dnn\cpu_dlib.cpp" />
+    <ClCompile Include="dlib\dlib\dnn\tensor_tools.cpp" />
+    <ClCompile Include="dlib\dlib\entropy_decoder\entropy_decoder_kernel_2.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcapimin.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcapistd.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jccoefct.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jccolor.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcdctmgr.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jchuff.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcinit.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcmainct.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcmarker.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcmaster.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcomapi.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcparam.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcphuff.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcprepct.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcsample.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdapimin.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdapistd.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdatadst.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdatasrc.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdcoefct.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdcolor.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jddctmgr.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdhuff.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdinput.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmainct.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmarker.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmaster.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmerge.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdphuff.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdpostct.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdsample.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jerror.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctflt.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctfst.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctint.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctflt.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctfst.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctint.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctred.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jmemmgr.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jmemnobs.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jquant1.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jquant2.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jutils.cpp" />
+    <ClCompile Include="dlib\dlib\external\libpng\png.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngerror.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngerror.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngget.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngget.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngmem.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngmem.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngpread.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngpread.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngread.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngread.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngrio.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngrio.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngrtran.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngrtran.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngrutil.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngrutil.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngset.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngset.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngtrans.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngtrans.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngwio.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngwio.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngwrite.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngwrite.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngwtran.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngwtran.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\libpng\pngwutil.c">
+    <ClCompile Include="dlib\dlib\external\libpng\pngwutil.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\adler32.c">
+    <ClCompile Include="dlib\dlib\external\zlib\adler32.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\compress.c">
+    <ClCompile Include="dlib\dlib\external\zlib\compress.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\crc32.c">
+    <ClCompile Include="dlib\dlib\external\zlib\crc32.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\deflate.c">
+    <ClCompile Include="dlib\dlib\external\zlib\deflate.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\gzclose.c">
+    <ClCompile Include="dlib\dlib\external\zlib\gzclose.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\gzlib.c">
+    <ClCompile Include="dlib\dlib\external\zlib\gzlib.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\gzread.c">
+    <ClCompile Include="dlib\dlib\external\zlib\gzread.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\gzwrite.c">
+    <ClCompile Include="dlib\dlib\external\zlib\gzwrite.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\infback.c">
+    <ClCompile Include="dlib\dlib\external\zlib\infback.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\inffast.c">
+    <ClCompile Include="dlib\dlib\external\zlib\inffast.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\inflate.c">
+    <ClCompile Include="dlib\dlib\external\zlib\inflate.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\inftrees.c">
+    <ClCompile Include="dlib\dlib\external\zlib\inftrees.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\trees.c">
+    <ClCompile Include="dlib\dlib\external\zlib\trees.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\uncompr.c">
+    <ClCompile Include="dlib\dlib\external\zlib\uncompr.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\external\zlib\zutil.c">
+    <ClCompile Include="dlib\dlib\external\zlib\zutil.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\image_loader\jpeg_loader.cpp">
+    <ClCompile Include="dlib\dlib\image_loader\jpeg_loader.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\libjpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\libjpeg;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\image_loader\png_loader.cpp">
+    <ClCompile Include="dlib\dlib\image_loader\png_loader.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\image_saver\save_png.cpp">
+    <ClCompile Include="dlib\dlib\image_saver\save_png.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">..\dlib\dlib\external\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\dlib\dlib\external\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\threads\async.cpp" />
-    <ClCompile Include="..\dlib\dlib\threads\multithreaded_object_extension.cpp" />
-    <ClCompile Include="..\dlib\dlib\threads\threaded_object_extension.cpp" />
-    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_1.cpp" />
-    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_2.cpp" />
-    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_shared.cpp" />
-    <ClCompile Include="..\dlib\dlib\threads\thread_pool_extension.cpp" />
+    <ClCompile Include="dlib\dlib\threads\async.cpp" />
+    <ClCompile Include="dlib\dlib\threads\multithreaded_object_extension.cpp" />
+    <ClCompile Include="dlib\dlib\threads\threaded_object_extension.cpp" />
+    <ClCompile Include="dlib\dlib\threads\threads_kernel_1.cpp" />
+    <ClCompile Include="dlib\dlib\threads\threads_kernel_2.cpp" />
+    <ClCompile Include="dlib\dlib\threads\threads_kernel_shared.cpp" />
+    <ClCompile Include="dlib\dlib\threads\thread_pool_extension.cpp" />
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp" />
     <ClCompile Include="tiling\tiling.cpp" />
