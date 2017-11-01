@@ -265,6 +265,7 @@ int main(int argc, char** argv) try
     const unsigned long iterations_without_progress_threshold = 20000;
 
     NetPimpl::TrainingNet training_net;
+    training_net.Initialize();
     training_net.SetClassCount(anno_classes.size());
     training_net.SetLearningRate(initial_learning_rate);
     training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
