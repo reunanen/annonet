@@ -70,6 +70,13 @@ std::vector<file> get_images(
 
 // ----------------------------------------------------------------------------------------
 
+struct input_image_type {
+    dlib::file file;
+    matrix<rgb_pixel> input_image;
+    matrix<rgb_alpha_pixel> ground_truth_image;
+    std::string error;
+};
+
 int main(int argc, char** argv) try
 {
     if (argc == 1)
@@ -91,13 +98,56 @@ int main(int argc, char** argv) try
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
-    matrix<rgb_pixel> input_image, input_tile;
-    matrix<rgb_alpha_pixel> ground_truth_image;
+    matrix<rgb_pixel> input_tile;
     matrix<uint16_t> index_label_tile_resized;
     matrix<rgb_alpha_pixel> rgba_label_image, rgba_label_tile;
     matrix<rgb_pixel> result_image;
 
-    const auto files = get_images(argv[1]);
+    auto files = get_images(argv[1]);
+
+    dlib::pipe<dlib::file> full_image_read_requests(files.size());
+    for (dlib::file& file : files) {
+        full_image_read_requests.enqueue(file);
+    }
+
+    dlib::pipe<input_image_type> full_image_read_results(std::thread::hardware_concurrency());
+
+    const auto read_full_image = [](const dlib::file& file)
+    {
+        input_image_type result;
+        try {
+            result.file = file;
+            load_image(result.input_image, file.full_name());
+
+            const std::string label_filename = file.full_name() + "_mask.png";
+            std::ifstream label_file(label_filename, std::ios::binary);
+            const bool has_ground_truth = !!label_file;
+            if (has_ground_truth) {
+                label_file.close();
+                load_image(result.ground_truth_image, label_filename);
+
+                if (result.input_image.nr() != result.ground_truth_image.nr() || result.input_image.nc() != result.ground_truth_image.nc()) {
+                    result.error = "Label image size mismatch";
+                }
+            }
+        }
+        catch (std::exception& e) {
+            result.error = e.what();
+        }
+
+        return result;
+    };
+
+    std::vector<std::thread> full_image_readers;
+
+    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+        full_image_readers.push_back(std::thread([&]() {
+            file file;
+            while (full_image_read_requests.dequeue(file)) {
+                full_image_read_results.enqueue(read_full_image(file));
+            }
+        }));
+    }
 
     const int max_tile_width = 1023;
     const int max_tile_height = 1023;
@@ -107,21 +157,17 @@ int main(int argc, char** argv) try
 
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
-        const file& file = files[i];
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
-        load_image(input_image, file.full_name());
 
-        const std::string label_filename = file.full_name() + "_mask.png";
-        std::ifstream label_file(label_filename, std::ios::binary);
-        const bool has_ground_truth = !!label_file;
-        if (has_ground_truth) {
-            label_file.close();
-            load_image(ground_truth_image, label_filename);
+        input_image_type ii;
 
-            if (input_image.nr() != ground_truth_image.nr() || input_image.nc() != ground_truth_image.nc()) {
-                throw std::runtime_error("Label image size mismatch detected for " + file.full_name());
-            }
+        full_image_read_results.dequeue(ii);
+
+        if (!ii.error.empty()) {
+            throw std::runtime_error(ii.error);
         }
+
+        const auto& input_image = ii.input_image;
 
         rgba_label_image.set_size(input_image.nr(), input_image.nc());
 
@@ -169,12 +215,12 @@ int main(int argc, char** argv) try
             }
         }
 
-        if (has_ground_truth) {
+        if (ii.ground_truth_image.size() > 0) {
             const long nr = rgba_label_image.nr();
             const long nc = rgba_label_image.nr();
             for (size_t r = 0; r < nr; ++r) {
                 for (size_t c = 0; c < nc; ++c) {
-                    const dlib::rgb_alpha_pixel ground_truth_value = ground_truth_image(r, c);
+                    const dlib::rgb_alpha_pixel ground_truth_value = ii.ground_truth_image(r, c);
                     if (ground_truth_value == rgba_ignore_label) {
                         ; // skip the pixel
                     }
@@ -191,7 +237,7 @@ int main(int argc, char** argv) try
             }
         }
 
-        save_png(rgba_label_image, file.full_name() + "_result.png");
+        save_png(rgba_label_image, ii.file.full_name() + "_result.png");
     }
 
     std::cout << "\nAll " << files.size() << " images processed!" << std::endl;
