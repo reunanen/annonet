@@ -1,4 +1,6 @@
 /x64
+/annonet_cpu.VC.db
+/annonet_cpu.VC.VC.opendb
 /annonet_cuda.VC.db
 /annonet_cuda.VC.VC.opendb
 /vc140.pdb

@@ -1,0 +1,369 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\dlib\dlib\dnn\cpu_dlib.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\cublas_dlibapi.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\cuda_data_ptr.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\cudnn_dlibapi.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\curand_dlibapi.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\gpu_data.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\tensor_tools.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_extensions.cpp">
+      <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_1.cpp">
+      <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_2.cpp">
+      <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\async.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\multithreaded_object_extension.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threaded_object_extension.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_1.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_2.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_shared.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\thread_pool_extension.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\image_loader\png_loader.cpp">
+      <Filter>dlib\image_loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\image_loader\jpeg_loader.cpp">
+      <Filter>dlib\image_loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\png.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngerror.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngget.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngmem.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngpread.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngread.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngrio.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngrtran.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngrutil.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngset.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngtrans.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngwio.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngwrite.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngwtran.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libpng\pngwutil.c">
+      <Filter>dlib\external\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcapimin.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcapistd.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jccoefct.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jccolor.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcdctmgr.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jchuff.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcinit.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcmainct.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcmarker.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcmaster.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcomapi.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcparam.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcphuff.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcprepct.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jcsample.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdapimin.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdapistd.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdatadst.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdatasrc.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdcoefct.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdcolor.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jddctmgr.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdhuff.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdinput.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmainct.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmarker.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmaster.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdmerge.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdphuff.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdpostct.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jdsample.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jerror.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jfdctflt.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jfdctfst.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jfdctint.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctflt.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctfst.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctint.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jidctred.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jmemmgr.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jmemnobs.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jquant1.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jquant2.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\libjpeg\jutils.cpp">
+      <Filter>dlib\external\libjpeg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\adler32.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\compress.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\crc32.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\deflate.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\gzclose.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\gzlib.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\gzread.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\gzwrite.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\infback.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\inffast.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\inflate.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\inftrees.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\trees.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\uncompr.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\external\zlib\zutil.c">
+      <Filter>dlib\external\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\entropy_decoder\entropy_decoder_kernel_2.cpp">
+      <Filter>dlib\entropy_decoder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\image_saver\save_png.cpp">
+      <Filter>dlib\image_saver</Filter>
+    </ClCompile>
+    <ClCompile Include="annonet_infer.cpp" />
+    <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="tiling\tiling.cpp">
+      <Filter>tiling</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="dlib">
+      <UniqueIdentifier>{bdb11e9a-1388-4742-9ebc-f0d1305ed66b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\dnn">
+      <UniqueIdentifier>{81d70b1e-3766-4eba-85d4-d90001891b2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\dir_nav">
+      <UniqueIdentifier>{405b3565-376e-4eb9-9d03-587476416313}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\threads">
+      <UniqueIdentifier>{3124e506-b709-4075-b170-1a059fd9f943}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\image_loader">
+      <UniqueIdentifier>{b6c29c7b-0135-40bc-a4a3-1d29cab9182b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\external">
+      <UniqueIdentifier>{fbf8c92a-90bc-436d-9d22-6949fd0e12f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\external\libpng">
+      <UniqueIdentifier>{48e590c8-f208-4aac-ab0d-9feeea77a592}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\external\libjpeg">
+      <UniqueIdentifier>{89e4bde6-d3d5-452d-a7ca-0cb80f0a72a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\external\zlib">
+      <UniqueIdentifier>{f2046731-ed58-4bf8-ab0e-1f2f19d433d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\entropy_decoder">
+      <UniqueIdentifier>{382b1767-8655-4f87-98b5-0a36448a6713}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\image_saver">
+      <UniqueIdentifier>{ad988969-76eb-4aed-9963-5de115bd2539}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib-dnn-pimpl-wrapper">
+      <UniqueIdentifier>{c4b0e4a8-3d0e-43f7-8572-1ca830cf3fad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tiling">
+      <UniqueIdentifier>{9a1c6b0b-b15d-4eee-b831-d14a229548e9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\dlib\dlib\dnn\cuda_dlib.cu">
+      <Filter>dlib\dnn</Filter>
+    </None>
+    <None Include="..\dlib\dlib\dnn\cusolver_dlibapi.cu">
+      <Filter>dlib\dnn</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\dlib\dlib\dnn\cuda_dlib.cu">
+      <Filter>dlib</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\dlib\dlib\dnn\cusolver_dlibapi.cu">
+      <Filter>dlib</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="annonet.h" />
+    <ClInclude Include="dlib-dnn-pimpl-wrapper\NetPimpl.h">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="dlib-dnn-pimpl-wrapper\NetStructure.h">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="tiling\tiling.h">
+      <Filter>tiling</Filter>
+    </ClInclude>
+    <ClInclude Include="tiling\dlib-wrapper.h">
+      <Filter>tiling</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
