@@ -77,6 +77,11 @@ struct input_image_type {
     std::string error;
 };
 
+struct result_image_type {
+    std::string filename;
+    matrix<rgb_alpha_pixel> label_image;
+};
+
 int main(int argc, char** argv) try
 {
     if (argc == 1)
@@ -100,7 +105,7 @@ int main(int argc, char** argv) try
 
     matrix<rgb_pixel> input_tile;
     matrix<uint16_t> index_label_tile_resized;
-    matrix<rgb_alpha_pixel> rgba_label_image, rgba_label_tile;
+    matrix<rgb_alpha_pixel> rgba_label_tile;
     matrix<rgb_pixel> result_image;
 
     auto files = get_images(argv[1]);
@@ -149,6 +154,21 @@ int main(int argc, char** argv) try
         }));
     }
 
+    dlib::pipe<result_image_type> result_image_write_requests(std::thread::hardware_concurrency());
+    dlib::pipe<bool> result_image_write_results(files.size());
+
+    std::vector<std::thread> result_image_writers;
+
+    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+        result_image_writers.push_back(std::thread([&]() {
+            result_image_type result_image;
+            while (result_image_write_requests.dequeue(result_image)) {
+                save_png(result_image.label_image, result_image.filename);
+                result_image_write_results.enqueue(true);
+            }
+        }));
+    }
+
     const int max_tile_width = 1023;
     const int max_tile_height = 1023;
 
@@ -160,6 +180,7 @@ int main(int argc, char** argv) try
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
 
         input_image_type ii;
+        result_image_type result_image;
 
         full_image_read_results.dequeue(ii);
 
@@ -169,7 +190,8 @@ int main(int argc, char** argv) try
 
         const auto& input_image = ii.input_image;
 
-        rgba_label_image.set_size(input_image.nr(), input_image.nc());
+        result_image.filename = ii.file.full_name() + "_result.png";
+        result_image.label_image.set_size(input_image.nr(), input_image.nc());
 
         const auto find_tile_start_position = [](long center, long max_tile_dim) {
             long start_position = center;
@@ -209,15 +231,15 @@ int main(int argc, char** argv) try
                 const long offset_x = left;
                 for (long tile_y = 0; tile_y < rgba_label_tile.nr(); ++tile_y) {
                     for (long tile_x = 0; tile_x < rgba_label_tile.nc(); ++tile_x) {
-                        rgba_label_image(tile_y + offset_y, tile_x + offset_x) = rgba_label_tile(tile_y, tile_x);
+                        result_image.label_image(tile_y + offset_y, tile_x + offset_x) = rgba_label_tile(tile_y, tile_x);
                     }
                 }
             }
         }
 
         if (ii.ground_truth_image.size() > 0) {
-            const long nr = rgba_label_image.nr();
-            const long nc = rgba_label_image.nr();
+            const long nr = result_image.label_image.nr();
+            const long nc = result_image.label_image.nr();
             for (size_t r = 0; r < nr; ++r) {
                 for (size_t c = 0; c < nc; ++c) {
                     const dlib::rgb_alpha_pixel ground_truth_value = ii.ground_truth_image(r, c);
@@ -225,7 +247,7 @@ int main(int argc, char** argv) try
                         ; // skip the pixel
                     }
                     else {
-                        const dlib::rgb_alpha_pixel inference_value = rgba_label_image(r, c);
+                        const dlib::rgb_alpha_pixel inference_value = result_image.label_image(r, c);
                         if (inference_value == ground_truth_value) {
                             ++correct;
                         }
@@ -237,10 +259,27 @@ int main(int argc, char** argv) try
             }
         }
 
-        save_png(rgba_label_image, ii.file.full_name() + "_result.png");
+        result_image_write_requests.enqueue(result_image);
     }
 
     std::cout << "\nAll " << files.size() << " images processed!" << std::endl;
+
+    for (size_t i = 0, end = files.size(); i < end; ++i) {
+        bool ok;
+        result_image_write_results.dequeue(ok);
+    }
+
+    std::cout << "All result images written!" << std::endl;
+
+    full_image_read_requests.disable();
+    result_image_write_requests.disable();
+
+    for (std::thread& image_reader : full_image_readers) {
+        image_reader.join();
+    }
+    for (std::thread& image_writer : result_image_writers) {
+        image_writer.join();
+    }
 
     if (correct > 0 || incorrect > 0) {
         std::cout << "Accuracy = " << 100.0 * correct / (correct + incorrect) << " % (correct = " << correct << ", incorrect = " << incorrect << ")" << std::endl;
