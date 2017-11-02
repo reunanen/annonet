@@ -132,32 +132,6 @@ int main(int argc, char** argv) try
 
     dlib::pipe<sample> full_image_read_results(std::thread::hardware_concurrency());
 
-    const auto read_full_image = [&anno_classes](const image_filenames& image_filenames)
-    {
-        sample result;
-        try {
-            result.image_filenames = image_filenames;
-            load_image(result.input_image, image_filenames.image_filename);
-
-            if (!image_filenames.label_filename.empty()) {
-                matrix<rgb_alpha_pixel> ground_truth_image;
-                load_image(ground_truth_image, image_filenames.label_filename);
-
-                if (result.input_image.nr() != ground_truth_image.nr() || result.input_image.nc() != ground_truth_image.nc()) {
-                    result.error = "Label image size mismatch";
-                }
-                else {
-                    decode_rgba_label_image(ground_truth_image, result, anno_classes);
-                }
-            }
-        }
-        catch (std::exception& e) {
-            result.error = e.what();
-        }
-
-        return result;
-    };
-
     std::vector<std::thread> full_image_readers;
 
     for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
@@ -188,10 +162,10 @@ int main(int argc, char** argv) try
 
     tiling::parameters tiling_parameters;
 #ifdef DLIB_USE_CUDA
-    tiling_parameters.max_tile_width = 640;
-    tiling_parameters.max_tile_height = 640;
+    tiling_parameters.max_tile_width = 2048;
+    tiling_parameters.max_tile_height = 2048;
 #else
-    // in CPU-only mode, we can handle much larger tiles
+    // in CPU-only mode, we can handle larger tiles
     tiling_parameters.max_tile_width = 4096;
     tiling_parameters.max_tile_height = 4096;
 #endif
