@@ -40,13 +40,12 @@ rectangle make_cropping_rect_around_defect(
 // ----------------------------------------------------------------------------------------
 
 void randomly_crop_image (
+    int dim,
     const sample& full_sample,
     sample& crop,
     dlib::rand& rnd
 )
 {
-    const int dim = 227;
-
     DLIB_CASSERT(!full_sample.labeled_points_by_class.empty());
 
     const size_t class_index = rnd.get_random_32bit_number() % full_sample.labeled_points_by_class.size();
@@ -120,10 +119,50 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    cout << "\nSCANNING ANNO DATASET\n" << endl;
+    const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
+    std::cout << "Required input dimension = " << required_input_dimension << std::endl;
 
     const auto anno_classes_json = read_anno_classes_file(argv[1]);
     const auto anno_classes = parse_anno_classes(anno_classes_json);
+
+    const double initial_learning_rate = 0.1;
+    const double learning_rate_shrink_factor = 0.1;
+    const double min_learning_rate = 1e-6;
+    const unsigned long iterations_without_progress_threshold = 20000;
+
+    NetPimpl::TrainingNet training_net;
+    training_net.Initialize();
+    training_net.SetClassCount(anno_classes.size());
+    training_net.SetLearningRate(initial_learning_rate);
+    training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
+    training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
+    training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
+    training_net.BeVerbose();
+
+    // TODO
+    // Since the progress threshold is so large might as well set the batch normalization
+    // stats window to something big too.
+    //set_all_bn_running_stats_window_sizes(net, 1000);
+
+    std::vector<matrix<input_pixel_type>> samples;
+    std::vector<matrix<uint16_t>> labels;
+
+    { // Test that the input size is correct for the net that we have built
+        for (uint16_t label = 0; label < anno_classes.size(); ++label) {
+            matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
+            matrix<uint16_t> label_image(required_input_dimension, required_input_dimension);
+            input_image = 127.5;
+            label_image = label;
+
+            samples.push_back(std::move(input_image));
+            labels.push_back(std::move(label_image));
+        }
+
+        training_net.StartTraining(samples, labels);
+    }
+
+    cout << "\nSCANNING ANNO DATASET\n" << endl;
+
     const auto image_files = find_image_files(argv[1], true);
     cout << "images in dataset: " << image_files.size() << endl;
     if (image_files.size() == 0)
@@ -152,28 +191,6 @@ int main(int argc, char** argv) try
         }));
     }
 
-    const double initial_learning_rate = 0.1;
-    const double learning_rate_shrink_factor = 0.1;
-    const double min_learning_rate = 1e-6;
-    const unsigned long iterations_without_progress_threshold = 20000;
-
-    NetPimpl::TrainingNet training_net;
-    training_net.Initialize();
-    training_net.SetClassCount(anno_classes.size());
-    training_net.SetLearningRate(initial_learning_rate);
-    training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
-    training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
-    training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
-    training_net.BeVerbose();
-
-    // TODO
-    // Since the progress threshold is so large might as well set the batch normalization
-    // stats window to something big too.
-    //set_all_bn_running_stats_window_sizes(net, 1000);
-
-    std::vector<matrix<input_pixel_type>> samples;
-    std::vector<matrix<uint16_t>> labels;
-
     std::deque<sample> full_images;
 
     for (size_t i = 0, end = image_files.size(); i < end; ++i) {
@@ -191,6 +208,8 @@ int main(int argc, char** argv) try
         }
     }
 
+    full_image_read_requests.disable();
+
     cout << endl << "Now training..." << endl;
 
     const size_t minibatchSize = 60;
@@ -201,7 +220,7 @@ int main(int argc, char** argv) try
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
     dlib::pipe<sample> data(2 * minibatchSize);
-    auto pull_crops = [&data, &full_images](time_t seed)
+    auto pull_crops = [&data, &full_images, required_input_dimension](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         matrix<input_pixel_type> input_image;
@@ -211,12 +230,12 @@ int main(int argc, char** argv) try
         {
             const size_t index = rnd.get_random_32bit_number() % full_images.size();
             const sample& ground_truth_sample = full_images[index];
-            randomly_crop_image(ground_truth_sample, temp, rnd);
+            randomly_crop_image(required_input_dimension, ground_truth_sample, temp, rnd);
             data.enqueue(temp);
         }
     };
+
     std::vector<std::thread> data_loaders;
-    
     for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
         data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
     }
@@ -259,10 +278,15 @@ int main(int argc, char** argv) try
     // Training done: tell threads to stop.
     data.disable();
 
-    // Wait until they have actually stopped.
-    for (std::thread& data_loader : data_loaders) {
-        data_loader.join();
-    }
+    const auto join = [](std::vector<thread>& threads)
+    {
+        for (std::thread& thread : threads) {
+            thread.join();
+        }
+    };
+
+    join(full_image_readers);
+    join(data_loaders);
 
     save_inference_net();
 }
