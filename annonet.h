@@ -115,10 +115,12 @@ struct image_filenames
     std::string label_filename;
 };
 
+typedef uint8_t input_pixel_type;
+
 struct sample
 {
     image_filenames image_filenames;
-    dlib::matrix<dlib::rgb_pixel> input_image;
+    dlib::matrix<input_pixel_type> input_image;
     dlib::matrix<uint16_t> label_image;
     std::unordered_map<uint16_t, std::deque<dlib::point>> labeled_points_by_class;
     std::string error;

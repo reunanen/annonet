@@ -120,10 +120,8 @@ int main(int argc, char** argv) try
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
-    matrix<rgb_pixel> input_tile;
+    matrix<input_pixel_type> input_tile;
     matrix<uint16_t> index_label_tile_resized;
-    matrix<rgb_alpha_pixel> rgba_label_tile;
-    matrix<rgb_pixel> result_image;
 
     auto files = find_image_files(argv[1], false);
 

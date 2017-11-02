@@ -171,7 +171,7 @@ int main(int argc, char** argv) try
     // stats window to something big too.
     //set_all_bn_running_stats_window_sizes(net, 1000);
 
-    std::vector<matrix<rgb_pixel>> samples;
+    std::vector<matrix<input_pixel_type>> samples;
     std::vector<matrix<uint16_t>> labels;
 
     std::deque<sample> full_images;
@@ -204,8 +204,7 @@ int main(int argc, char** argv) try
     auto pull_crops = [&data, &full_images](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
-        matrix<rgb_pixel> input_image;
-        matrix<rgb_pixel> rgb_label_image;
+        matrix<input_pixel_type> input_image;
         matrix<uint16_t> index_label_image;
         sample temp;
         while (data.is_enabled())
