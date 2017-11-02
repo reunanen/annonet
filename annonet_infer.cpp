@@ -49,38 +49,54 @@ void index_label_image_to_rgba_label_image(const matrix<uint16_t>& index_label_i
 
 // ----------------------------------------------------------------------------------------
 
-std::vector<file> get_images(
-    const std::string& folder
-)
-{
-    const std::vector<file> files = get_files_in_directory_tree(folder,
-        [](const file& name) {
-            if (match_ending("_mask.png")(name)) {
-                return false;
-            }
-            if (match_ending("_result.png")(name)) {
-                return false;
-            }
-            return match_ending(".jpeg")(name)
-                || match_ending(".jpg")(name)
-                || match_ending(".png")(name);
-        });
+// first index: ground truth, second index: predicted
+typedef std::vector<std::vector<size_t>> confusion_matrix_type;
 
-    return files;
+void init_confusion_matrix(confusion_matrix_type& confusion_matrix, size_t class_count)
+{
+    confusion_matrix.resize(class_count);
+    for (auto& i : confusion_matrix) {
+        i.resize(class_count);
+    }
+}
+
+void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const std::vector<AnnoClass>& anno_classes)
+{
+    size_t max_value = 0;
+    for (const auto& ground_truth : confusion_matrix) {
+        for (const auto& predicted : ground_truth) {
+            max_value = std::max(max_value, predicted);
+        }
+    }
+
+    std::ostringstream max_value_string;
+    max_value_string << max_value;
+
+    const size_t max_value_length = max_value_string.str().length();
+    const size_t column_width = std::max(static_cast<size_t>(4), max_value_length + 2);
+
+    std::cout << std::setw(column_width) << ' ';
+    for (const auto& anno_class : anno_classes) {
+        std::cout << std::right << std::setw(column_width) << anno_class.index;
+    }
+    std::cout << std::endl;
+
+    for (size_t ground_truth_index = 0, end = confusion_matrix.size(); ground_truth_index < end; ++ground_truth_index) {
+        DLIB_CASSERT(ground_truth_index == anno_classes[ground_truth_index].index);
+        std::cout << std::right << std::setw(column_width) << ground_truth_index;
+        for (const auto& predicted : confusion_matrix[ground_truth_index]) {
+            std::cout << std::right << std::setw(column_width) << predicted;
+        }
+        std::cout << std::endl;
+    }
+
 }
 
 // ----------------------------------------------------------------------------------------
 
-struct input_image_type {
-    dlib::file file;
-    matrix<rgb_pixel> input_image;
-    matrix<rgb_alpha_pixel> ground_truth_image;
-    std::string error;
-};
-
 struct result_image_type {
     std::string filename;
-    matrix<rgb_alpha_pixel> label_image;
+    matrix<uint16_t> label_image;
 };
 
 int main(int argc, char** argv) try
@@ -109,31 +125,31 @@ int main(int argc, char** argv) try
     matrix<rgb_alpha_pixel> rgba_label_tile;
     matrix<rgb_pixel> result_image;
 
-    auto files = get_images(argv[1]);
+    auto files = find_image_files(argv[1], false);
 
-    dlib::pipe<dlib::file> full_image_read_requests(files.size());
-    for (dlib::file& file : files) {
-        full_image_read_requests.enqueue(file);
+    dlib::pipe<image_filenames> full_image_read_requests(files.size());
+    for (const image_filenames& file : files) {
+        full_image_read_requests.enqueue(image_filenames(file));
     }
 
-    dlib::pipe<input_image_type> full_image_read_results(std::thread::hardware_concurrency());
+    dlib::pipe<sample> full_image_read_results(std::thread::hardware_concurrency());
 
-    const auto read_full_image = [](const dlib::file& file)
+    const auto read_full_image = [&anno_classes](const image_filenames& image_filenames)
     {
-        input_image_type result;
+        sample result;
         try {
-            result.file = file;
-            load_image(result.input_image, file.full_name());
+            result.image_filenames = image_filenames;
+            load_image(result.input_image, image_filenames.image_filename);
 
-            const std::string label_filename = file.full_name() + "_mask.png";
-            std::ifstream label_file(label_filename, std::ios::binary);
-            const bool has_ground_truth = !!label_file;
-            if (has_ground_truth) {
-                label_file.close();
-                load_image(result.ground_truth_image, label_filename);
+            if (!image_filenames.label_filename.empty()) {
+                matrix<rgb_alpha_pixel> ground_truth_image;
+                load_image(ground_truth_image, image_filenames.label_filename);
 
-                if (result.input_image.nr() != result.ground_truth_image.nr() || result.input_image.nc() != result.ground_truth_image.nc()) {
+                if (result.input_image.nr() != ground_truth_image.nr() || result.input_image.nc() != ground_truth_image.nc()) {
                     result.error = "Label image size mismatch";
+                }
+                else {
+                    decode_rgba_label_image(ground_truth_image, result, anno_classes);
                 }
             }
         }
@@ -148,9 +164,9 @@ int main(int argc, char** argv) try
 
     for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
         full_image_readers.push_back(std::thread([&]() {
-            file file;
-            while (full_image_read_requests.dequeue(file)) {
-                full_image_read_results.enqueue(read_full_image(file));
+            image_filenames image_filenames;
+            while (full_image_read_requests.dequeue(image_filenames)) {
+                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false));
             }
         }));
     }
@@ -163,8 +179,10 @@ int main(int argc, char** argv) try
     for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
         result_image_writers.push_back(std::thread([&]() {
             result_image_type result_image;
+            dlib::matrix<rgb_alpha_pixel> rgba_label_image;
             while (result_image_write_requests.dequeue(result_image)) {
-                save_png(result_image.label_image, result_image.filename);
+                index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
+                save_png(rgba_label_image, result_image.filename);
                 result_image_write_results.enqueue(true);
             }
         }));
@@ -175,13 +193,15 @@ int main(int argc, char** argv) try
     tiling_parameters.max_tile_width = 640;
     tiling_parameters.max_tile_height = 640;
 #else
-    // No need for tiling in CPU-only mode
-    tiling_parameters.max_tile_width = std::numeric_limits<int>::max();
-    tiling_parameters.max_tile_height = std::numeric_limits<int>::max();
+    // in CPU-only mode, we can handle much larger tiles
+    tiling_parameters.max_tile_width = 4096;
+    tiling_parameters.max_tile_height = 4096;
 #endif
 
-    size_t correct = 0;
-    size_t incorrect = 0;
+    // first index: ground truth, second index: predicted
+    confusion_matrix_type confusion_matrix;
+    init_confusion_matrix(confusion_matrix, anno_classes.size());
+    size_t ground_truth_count = 0;
 
     const auto t0 = std::chrono::steady_clock::now();
 
@@ -189,18 +209,18 @@ int main(int argc, char** argv) try
     {
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
 
-        input_image_type ii;
+        sample sample;
         result_image_type result_image;
 
-        full_image_read_results.dequeue(ii);
+        full_image_read_results.dequeue(sample);
 
-        if (!ii.error.empty()) {
-            throw std::runtime_error(ii.error);
+        if (!sample.error.empty()) {
+            throw std::runtime_error(sample.error);
         }
 
-        const auto& input_image = ii.input_image;
+        const auto& input_image = sample.input_image;
 
-        result_image.filename = ii.file.full_name() + "_result.png";
+        result_image.filename = sample.image_filenames.image_filename + "_result.png";
         result_image.label_image.set_size(input_image.nr(), input_image.nc());
 
         std::vector<dlib::rectangle> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
@@ -219,36 +239,24 @@ int main(int argc, char** argv) try
             const matrix<uint16_t> index_label_tile = net(input_tile);
             index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
             resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
-            index_label_image_to_rgba_label_image(index_label_tile_resized, rgba_label_tile, anno_classes);
             const long offset_y = top;
             const long offset_x = left;
-            for (long tile_y = 0; tile_y < rgba_label_tile.nr(); ++tile_y) {
-                for (long tile_x = 0; tile_x < rgba_label_tile.nc(); ++tile_x) {
-                    result_image.label_image(tile_y + offset_y, tile_x + offset_x) = rgba_label_tile(tile_y, tile_x);
+            const long nr = index_label_tile_resized.nr();
+            const long nc = index_label_tile_resized.nc();
+            for (long tile_y = 0; tile_y < nr; ++tile_y) {
+                for (long tile_x = 0; tile_x < nc; ++tile_x) {
+                    result_image.label_image(tile_y + offset_y, tile_x + offset_x) = index_label_tile_resized(tile_y, tile_x);
                 }
             }
         }
 
-        if (ii.ground_truth_image.size() > 0) {
-            const long nr = result_image.label_image.nr();
-            const long nc = result_image.label_image.nr();
-            for (size_t r = 0; r < nr; ++r) {
-                for (size_t c = 0; c < nc; ++c) {
-                    const dlib::rgb_alpha_pixel ground_truth_value = ii.ground_truth_image(r, c);
-                    if (ground_truth_value == rgba_ignore_label) {
-                        ; // skip the pixel
-                    }
-                    else {
-                        const dlib::rgb_alpha_pixel inference_value = result_image.label_image(r, c);
-                        if (inference_value == ground_truth_value) {
-                            ++correct;
-                        }
-                        else {
-                            ++incorrect;
-                        }
-                    }
-                }
+        for (const auto& labeled_points : sample.labeled_points_by_class) {
+            const uint16_t ground_truth_value = labeled_points.first;
+            for (const dlib::point& point : labeled_points.second) {
+                const uint16_t predicted_value = result_image.label_image(point.y(), point.x());
+                ++confusion_matrix[ground_truth_value][predicted_value];                    
             }
+            ground_truth_count += labeled_points.second.size();
         }
 
         result_image_write_requests.enqueue(result_image);
@@ -276,8 +284,9 @@ int main(int argc, char** argv) try
         image_writer.join();
     }
 
-    if (correct > 0 || incorrect > 0) {
-        std::cout << "Accuracy = " << 100.0 * correct / (correct + incorrect) << " % (correct = " << correct << ", incorrect = " << incorrect << ")" << std::endl;
+    if (ground_truth_count) {
+        std::cout << "Confusion matrix:" << std::endl;
+        print_confusion_matrix(confusion_matrix, anno_classes);
     }
 }
 catch(std::exception& e)
