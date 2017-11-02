@@ -201,7 +201,7 @@ std::vector<image_filenames> find_image_files(
             std::cout << "Added file " << image_filenames.image_filename << std::endl;
         }
         else if (require_ground_truth) {
-            std::cout << "Warning: unable to open " << image_filenames.label_filename << std::endl;
+            std::cout << "Warning: unable to open " << label_filename << std::endl;
         }
     }
 
