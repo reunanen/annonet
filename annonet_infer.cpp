@@ -249,16 +249,35 @@ int main(int argc, char** argv) try
 
         full_image_read_results.dequeue(sample);
 
+        dlib::matrix<input_pixel_type> padded_input_image;
+
+        const dlib::matrix<input_pixel_type>* input_image = nullptr;
+
+        rectangle valid_rect;
+
+        const int min_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
+        if (sample.input_image.nr() < min_input_dimension || sample.input_image.nr() < min_input_dimension) {
+            const int w = std::max(static_cast<int>(sample.input_image.nc()), min_input_dimension);
+            const int h = std::max(static_cast<int>(sample.input_image.nr()), min_input_dimension);
+            const rectangle rect = centered_rect(dlib::point(sample.input_image.nc() / 2, sample.input_image.nc() / 2), w, h);
+            const chip_details chip_details(rect, chip_dims(h, w));
+            extract_image_chip(sample.input_image, chip_details, padded_input_image, interpolate_bilinear());
+            input_image = &padded_input_image;
+            valid_rect = centered_rect(dlib::point(sample.input_image.nc() / 2, sample.input_image.nc() / 2), sample.input_image.nc(), sample.input_image.nr());
+        }
+        else {
+            input_image = &sample.input_image;
+            valid_rect = rectangle(0, 0, sample.input_image.nc() - 1, sample.input_image.nr() - 1);
+        }
+
         if (!sample.error.empty()) {
             throw std::runtime_error(sample.error);
         }
 
-        const auto& input_image = sample.input_image;
-
         result_image.filename = sample.image_filenames.image_filename + "_result.png";
-        result_image.label_image.set_size(input_image.nr(), input_image.nc());
+        result_image.label_image.set_size(sample.input_image.nr(), sample.input_image.nc());
 
-        std::vector<dlib::rectangle> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
+        std::vector<dlib::rectangle> tiles = tiling::get_tiles(input_image->nc(), input_image->nr(), tiling_parameters);
 
         for (const dlib::rectangle& tile : tiles) {
             const long top = tile.top();
@@ -268,18 +287,18 @@ int main(int argc, char** argv) try
             input_tile.set_size(tile.height(), tile.width());
             for (long y = top; y <= bottom; ++y) {
                 for (long x = left; x <= right; ++x) {
-                    input_tile(y - top, x - left) = input_image(y, x);
+                    input_tile(y - top, x - left) = input_image->operator()(y, x);
                 }
             }
             const matrix<uint16_t> index_label_tile = net(input_tile);
             index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
             resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
-            const long offset_y = top;
-            const long offset_x = left;
+            const long offset_y = top - valid_rect.top();
+            const long offset_x = left - valid_rect.left();
             const long nr = index_label_tile_resized.nr();
             const long nc = index_label_tile_resized.nc();
-            for (long tile_y = 0; tile_y < nr; ++tile_y) {
-                for (long tile_x = 0; tile_x < nc; ++tile_x) {
+            for (long tile_y = valid_rect.top(); tile_y <= valid_rect.bottom(); ++tile_y) {
+                for (long tile_x = valid_rect.left(); tile_x <= valid_rect.right(); ++tile_x) {
                     result_image.label_image(tile_y + offset_y, tile_x + offset_x) = index_label_tile_resized(tile_y, tile_x);
                 }
             }
