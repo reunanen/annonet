@@ -69,23 +69,44 @@ void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const
         }
     }
 
+    const size_t class_count = anno_classes.size();
+
     std::ostringstream max_value_string;
     max_value_string << max_value;
 
-    const size_t max_value_length = max_value_string.str().length();
-    const size_t column_width = std::max(static_cast<size_t>(4), max_value_length + 2);
+    std::ostringstream max_class_string;
+    max_class_string << class_count - 1;
 
-    std::cout << std::setw(column_width) << ' ';
+    const size_t max_value_length = max_value_string.str().length();
+    const size_t value_column_width = std::max(static_cast<size_t>(4), max_value_length + 2);
+
+    const size_t max_class_length = max_class_string.str().length();
+    const size_t class_column_width = max_class_length + 2;
+
+    const std::string truth_label = "truth";
+    const std::string predicted_label = "predicted";
+
+    const size_t padding = truth_label.length() + class_column_width + value_column_width * class_count / 2 - predicted_label.length() / 2;
+    std::cout << std::setw(padding) << ' ' << predicted_label << std::endl;
+
+    std::cout << std::setw(truth_label.length() + class_column_width) << ' ';
     for (const auto& anno_class : anno_classes) {
-        std::cout << std::right << std::setw(column_width) << anno_class.index;
+        std::cout << std::right << std::setw(value_column_width) << anno_class.index;
     }
     std::cout << std::endl;
 
-    for (size_t ground_truth_index = 0, end = confusion_matrix.size(); ground_truth_index < end; ++ground_truth_index) {
+    for (size_t ground_truth_index = 0; ground_truth_index < class_count; ++ground_truth_index) {
         DLIB_CASSERT(ground_truth_index == anno_classes[ground_truth_index].index);
-        std::cout << std::right << std::setw(column_width) << ground_truth_index;
+        std::cout << std::setw(truth_label.length());
+        if (ground_truth_index == class_count / 2) {
+            std::cout << truth_label;
+        }
+        else {
+            std::cout << ' ';
+        }
+        std::cout << std::right << std::setw(class_column_width) << ground_truth_index;
         for (const auto& predicted : confusion_matrix[ground_truth_index]) {
-            std::cout << std::right << std::setw(column_width) << predicted;
+            std::cout << std::right << std::setw(value_column_width) << predicted;
         }
         std::cout << std::endl;
     }
