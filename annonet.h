@@ -115,7 +115,7 @@ struct image_filenames
     std::string label_filename;
 };
 
-typedef uint8_t input_pixel_type;
+typedef float input_pixel_type;
 
 struct sample
 {
@@ -216,6 +216,10 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
     try {
         dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
         dlib::load_image(sample.input_image, image_filenames.image_filename);
+        
+        sample.input_image -= 127.5;
+        sample.input_image /= 127.5;
+
         if (!image_filenames.label_filename.empty()) {
             dlib::load_image(rgba_label_image, image_filenames.label_filename);
 

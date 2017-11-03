@@ -140,7 +140,12 @@ void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const
     std::cout << std::setw(truth_label.length() + class_column_width) << precision_label << "  ";
     for (size_t predicted_index = 0; predicted_index < class_count; ++predicted_index) {
         std::cout << std::right << std::setw(value_column_width - 2) << std::fixed << std::setprecision(precision_accuracy);
-        std::cout << confusion_matrix[predicted_index][predicted_index] * 100.0 / total_predicted[predicted_index] << " %";
+        if (total_predicted[predicted_index] > 0) {
+            std::cout << confusion_matrix[predicted_index][predicted_index] * 100.0 / total_predicted[predicted_index] << " %";
+        }
+        else {
+            std::cout << "-" << "  ";
+        }
     }
     std::cout << std::endl;
 
@@ -220,8 +225,8 @@ int main(int argc, char** argv) try
 
     tiling::parameters tiling_parameters;
 #ifdef DLIB_USE_CUDA
-    tiling_parameters.max_tile_width = 2048;
-    tiling_parameters.max_tile_height = 2048;
+    tiling_parameters.max_tile_width = 1024;
+    tiling_parameters.max_tile_height = 1024;
 #else
     // in CPU-only mode, we can handle larger tiles
     tiling_parameters.max_tile_width = 4096;
@@ -322,5 +327,5 @@ int main(int argc, char** argv) try
 catch(std::exception& e)
 {
     cout << e.what() << endl;
+    return 1;
 }
-

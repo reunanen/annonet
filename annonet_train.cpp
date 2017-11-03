@@ -73,13 +73,10 @@ void randomly_crop_image (
     extract_image_chip(full_sample.label_image, chip_details, crop.label_image, interpolate_nearest_neighbor());
 
     // Also randomly flip the input image and the labels.
-    //if (rnd.get_random_double() > 0.5) {
-    //    crop.first = flipud(crop.first);
-    //    crop.second = flipud(crop.second);
-    //}
-
-    // And then randomly adjust the colors.
-    apply_random_color_offset(crop.input_image, rnd);
+    if (rnd.get_random_double() > 0.5) {
+        //crop.input_image = flipud(crop.input_image);
+        //crop.label_image = flipud(crop.label_image);
+    }
 }
 
 // ----------------------------------------------------------------------------------------
@@ -151,7 +148,7 @@ int main(int argc, char** argv) try
         for (uint16_t label = 0; label < anno_classes.size(); ++label) {
             matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
             matrix<uint16_t> label_image(required_input_dimension, required_input_dimension);
-            input_image = 127.5;
+            input_image = 0;
             label_image = label;
 
             samples.push_back(std::move(input_image));
@@ -212,7 +209,7 @@ int main(int argc, char** argv) try
 
     cout << endl << "Now training..." << endl;
 
-    const size_t minibatchSize = 60;
+    const size_t minibatchSize = 200;
     const size_t saveInterval = 1000;
 
     // Start a bunch of threads that read images from disk and pull out random crops.  It's
@@ -293,5 +290,5 @@ int main(int argc, char** argv) try
 catch(std::exception& e)
 {
     cout << e.what() << endl;
+    return 1;
 }
-
