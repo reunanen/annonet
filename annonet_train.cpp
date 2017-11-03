@@ -126,6 +126,8 @@ int main(int argc, char** argv) try
     const double learning_rate_shrink_factor = 0.1;
     const double min_learning_rate = 1e-6;
     const unsigned long iterations_without_progress_threshold = 20000;
+    const unsigned long previous_loss_values_dump_amount = 4000;
+    const unsigned long batch_normalization_running_stats_window_size = 1000;
 
     NetPimpl::TrainingNet training_net;
 
@@ -154,13 +156,10 @@ int main(int argc, char** argv) try
     training_net.SetLearningRate(initial_learning_rate);
     training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
     training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
+    training_net.SetPreviousLossValuesDumpAmount(previous_loss_values_dump_amount);
+    training_net.SetAllBatchNormalizationRunningStatsWindowSizes(batch_normalization_running_stats_window_size);
     training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
     training_net.BeVerbose();
-
-    // TODO
-    // Since the progress threshold is so large might as well set the batch normalization
-    // stats window to something big too.
-    //set_all_bn_running_stats_window_sizes(net, 1000);
 
     cout << "\nSCANNING ANNO DATASET\n" << endl;
 
