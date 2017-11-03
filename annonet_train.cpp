@@ -128,6 +128,27 @@ int main(int argc, char** argv) try
     const unsigned long iterations_without_progress_threshold = 20000;
 
     NetPimpl::TrainingNet training_net;
+
+    std::vector<matrix<input_pixel_type>> samples;
+    std::vector<matrix<uint16_t>> labels;
+
+    { // Test that the input size is correct for the net that we have built
+        training_net.Initialize();
+        training_net.SetClassCount(2);
+
+        for (uint16_t label = 0; label < 2; ++label) {
+            matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
+            matrix<uint16_t> label_image(required_input_dimension, required_input_dimension);
+            input_image = label * 255;
+            label_image = label;
+
+            samples.push_back(std::move(input_image));
+            labels.push_back(std::move(label_image));
+        }
+
+        training_net.StartTraining(samples, labels);
+    }
+
     training_net.Initialize();
     training_net.SetClassCount(anno_classes.size());
     training_net.SetLearningRate(initial_learning_rate);
@@ -140,23 +161,6 @@ int main(int argc, char** argv) try
     // Since the progress threshold is so large might as well set the batch normalization
     // stats window to something big too.
     //set_all_bn_running_stats_window_sizes(net, 1000);
-
-    std::vector<matrix<input_pixel_type>> samples;
-    std::vector<matrix<uint16_t>> labels;
-
-    { // Test that the input size is correct for the net that we have built
-        for (uint16_t label = 0; label < anno_classes.size(); ++label) {
-            matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
-            matrix<uint16_t> label_image(required_input_dimension, required_input_dimension);
-            input_image = 0;
-            label_image = label;
-
-            samples.push_back(std::move(input_image));
-            labels.push_back(std::move(label_image));
-        }
-
-        training_net.StartTraining(samples, labels);
-    }
 
     cout << "\nSCANNING ANNO DATASET\n" << endl;
 
