@@ -77,40 +77,77 @@ void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const
     std::ostringstream max_class_string;
     max_class_string << class_count - 1;
 
-    const size_t max_value_length = max_value_string.str().length();
-    const size_t value_column_width = std::max(static_cast<size_t>(4), max_value_length + 2);
-
-    const size_t max_class_length = max_class_string.str().length();
-    const size_t class_column_width = max_class_length + 2;
-
     const std::string truth_label = "truth";
     const std::string predicted_label = "predicted";
+    const std::string precision_label = "precision";
+    const std::string recall_label = "recall";
+    const std::string shortest_max_precision_string = "100 %";
 
-    const size_t padding = truth_label.length() + class_column_width + value_column_width * class_count / 2 - predicted_label.length() / 2;
-    std::cout << std::setw(padding) << ' ' << predicted_label << std::endl;
+    const size_t max_value_length = max_value_string.str().length();
+    const size_t value_column_width = std::max(shortest_max_precision_string.length() + 1, max_value_length + 2);
 
+    const size_t max_class_length = max_class_string.str().length();
+    const size_t class_column_width = max_class_length + 3;
+
+    const size_t recall_column_width = recall_label.length() + 4;
+
+    { // Print the 'predicted' label
+        const size_t padding = truth_label.length() + class_column_width + value_column_width * class_count / 2 + predicted_label.length() / 2;
+        std::cout << std::setw(padding) << std::right << predicted_label << std::endl;
+    }
+
+    // Print class headers
     std::cout << std::setw(truth_label.length() + class_column_width) << ' ';
     for (const auto& anno_class : anno_classes) {
         std::cout << std::right << std::setw(value_column_width) << anno_class.index;
     }
-    std::cout << std::endl;
+    std::cout << std::setw(recall_column_width) << std::right << recall_label << std::endl;
+
+    // Print the confusion matrix itself
+    std::vector<size_t> total_predicted(class_count);
+    size_t total_correct = 0;
+    size_t total = 0;
 
     for (size_t ground_truth_index = 0; ground_truth_index < class_count; ++ground_truth_index) {
         DLIB_CASSERT(ground_truth_index == anno_classes[ground_truth_index].index);
         std::cout << std::setw(truth_label.length());
-        if (ground_truth_index == class_count / 2) {
+        if (ground_truth_index == (class_count - 1) / 2) {
             std::cout << truth_label;
         }
         else {
             std::cout << ' ';
         }
         std::cout << std::right << std::setw(class_column_width) << ground_truth_index;
-        for (const auto& predicted : confusion_matrix[ground_truth_index]) {
+        size_t total_ground_truth = 0;
+        for (size_t predicted_index = 0; predicted_index < class_count; ++predicted_index) {
+            const auto& predicted = confusion_matrix[ground_truth_index][predicted_index];
             std::cout << std::right << std::setw(value_column_width) << predicted;
+            total_predicted[predicted_index] += predicted;
+            total_ground_truth += predicted;
+            if (predicted_index == ground_truth_index) {
+                total_correct += predicted;
+            }
+            total += predicted;
         }
+        std::cout << std::setw(recall_column_width) << std::fixed << std::setprecision(2);
+        std::cout << confusion_matrix[ground_truth_index][ground_truth_index] * 100.0 / total_ground_truth << " %";
         std::cout << std::endl;
     }
 
+    // Print precision
+    assert(truth_label.length() + class_column_width <= precision_label.length());
+    const auto precision_accuracy = std::min(static_cast<size_t>(2), value_column_width - shortest_max_precision_string.length() - 1);
+    std::cout << std::setw(truth_label.length() + class_column_width) << precision_label << "  ";
+    for (size_t predicted_index = 0; predicted_index < class_count; ++predicted_index) {
+        std::cout << std::right << std::setw(value_column_width - 2) << std::fixed << std::setprecision(precision_accuracy);
+        std::cout << confusion_matrix[predicted_index][predicted_index] * 100.0 / total_predicted[predicted_index] << " %";
+    }
+    std::cout << std::endl;
+
+    // Print accuracy
+    std::cout << std::setw(truth_label.length() + class_column_width + class_count * value_column_width) << std::right << "accuracy";
+    std::cout << std::right << std::setw(recall_column_width) << std::fixed << std::setprecision(2);
+    std::cout << total_correct * 100.0 / total << " %" << std::endl;
 }
 
 // ----------------------------------------------------------------------------------------
