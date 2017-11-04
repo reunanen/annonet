@@ -125,9 +125,9 @@ int main(int argc, char** argv) try
     const double initial_learning_rate = 0.1;
     const double learning_rate_shrink_factor = 0.1;
     const double min_learning_rate = 1e-6;
-    const unsigned long iterations_without_progress_threshold = 20000;
-    const unsigned long previous_loss_values_dump_amount = 4000;
-    const unsigned long batch_normalization_running_stats_window_size = 1000;
+    const unsigned long iterations_without_progress_threshold = 2000;
+    const unsigned long previous_loss_values_dump_amount = 400;
+    const unsigned long batch_normalization_running_stats_window_size = 100;
 
     NetPimpl::TrainingNet training_net;
 
@@ -212,7 +212,7 @@ int main(int argc, char** argv) try
 
     cout << endl << "Now training..." << endl;
 
-    const size_t minibatchSize = 200;
+    const size_t minibatchSize = 30;
     const size_t saveInterval = 1000;
 
     // Start a bunch of threads that read images from disk and pull out random crops.  It's
