@@ -227,8 +227,8 @@ int main(int argc, char** argv) try
 
     tiling::parameters tiling_parameters;
 #ifdef DLIB_USE_CUDA
-    tiling_parameters.max_tile_width = 1024;
-    tiling_parameters.max_tile_height = 1024;
+    tiling_parameters.max_tile_width = 2048;
+    tiling_parameters.max_tile_height = 2048;
 #else
     // in CPU-only mode, we can handle larger tiles
     tiling_parameters.max_tile_width = 4096;

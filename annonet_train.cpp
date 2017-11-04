@@ -125,9 +125,9 @@ int main(int argc, char** argv) try
     const double initial_learning_rate = 0.1;
     const double learning_rate_shrink_factor = 0.1;
     const double min_learning_rate = 1e-6;
-    const unsigned long iterations_without_progress_threshold = 2000;
-    const unsigned long previous_loss_values_dump_amount = 400;
-    const unsigned long batch_normalization_running_stats_window_size = 100;
+    const unsigned long iterations_without_progress_threshold = 4000;
+    const unsigned long previous_loss_values_dump_amount = 800;
+    const unsigned long batch_normalization_running_stats_window_size = 200;
 
     NetPimpl::TrainingNet training_net;
 
