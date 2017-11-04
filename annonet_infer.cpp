@@ -263,12 +263,12 @@ int main(int argc, char** argv) try
         result_image.filename = sample.image_filenames.image_filename + "_result.png";
         result_image.label_image.set_size(input_image.nr(), input_image.nc());
 
-        std::vector<dlib::rectangle> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
+        const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
 
-        for (const dlib::rectangle& tile : tiles) {
-            const dlib::point tile_center(tile.left() + tile.width() / 2, tile.top() + tile.height() / 2);
-            const int actual_tile_width = std::max(static_cast<int>(tile.width()), min_input_dimension);
-            const int actual_tile_height = std::max(static_cast<int>(tile.height()), min_input_dimension);
+        for (const tiling::dlib_tile& tile : tiles) {
+            const dlib::point tile_center(tile.full_rect.left() + tile.full_rect.width() / 2, tile.full_rect.top() + tile.full_rect.height() / 2);
+            const int actual_tile_width = std::max(static_cast<int>(tile.full_rect.width()), min_input_dimension);
+            const int actual_tile_height = std::max(static_cast<int>(tile.full_rect.height()), min_input_dimension);
             const rectangle actual_tile_rect = centered_rect(tile_center, actual_tile_width, actual_tile_height);
             const chip_details chip_details(actual_tile_rect, chip_dims(actual_tile_height, actual_tile_width));
             extract_image_chip(input_image, chip_details, input_tile, interpolate_bilinear());
@@ -278,12 +278,12 @@ int main(int argc, char** argv) try
             index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
             resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
 
-            const long valid_left_in_image = tile.left();
-            const long valid_top_in_image = tile.top();
-            const long valid_left_in_tile = std::max(0, (min_input_dimension - static_cast<int>(tile.width())) / 2);
-            const long valid_top_in_tile = std::max(0, (min_input_dimension - static_cast<int>(tile.height())) / 2);
-            for (long y = 0, valid_tile_height = tile.height(); y < valid_tile_height; ++y) {
-                for (long x = 0, valid_tile_width = tile.width(); x < valid_tile_width; ++x) {
+            const long valid_left_in_image = tile.non_overlapping_rect.left();
+            const long valid_top_in_image = tile.non_overlapping_rect.top();
+            const long valid_left_in_tile = tile.non_overlapping_rect.left() - tile.full_rect.left() + std::max(0, (min_input_dimension - static_cast<int>(tile.full_rect.width())) / 2);
+            const long valid_top_in_tile = tile.non_overlapping_rect.top() - tile.full_rect.top() + std::max(0, (min_input_dimension - static_cast<int>(tile.full_rect.height())) / 2);
+            for (long y = 0, valid_tile_height = tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
+                for (long x = 0, valid_tile_width = tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
                     const uint16_t label = index_label_tile_resized(valid_top_in_tile + y, valid_left_in_tile + x);
                     result_image.label_image(valid_top_in_image + y, valid_left_in_image + x) = label;
                 }
@@ -325,7 +325,7 @@ int main(int argc, char** argv) try
     }
 
     if (ground_truth_count) {
-        std::cout << "Confusion matrix:" << std::endl;
+        std::cout << std::endl << "Confusion matrix:" << std::endl;
         print_confusion_matrix(confusion_matrix, anno_classes);
     }
 }
