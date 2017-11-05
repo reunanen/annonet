@@ -78,30 +78,22 @@ void find_equal_class_weights (
 
     std::unordered_map<uint16_t, double> label_weights;
 
+    // try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes
+    constexpr double a_priori_weight = 0.5;
+
     for (const auto& item : label_counts) {
-        label_weights[item.first] = average_weight * (average_count / item.second);
+        label_weights[item.first] = average_weight * pow(average_count / item.second, a_priori_weight);
     }
 
     weighted_label_image.set_size(nr, nc);
-
-#ifdef _DEBUG
-    double total_weight = 0.0;
-#endif
 
     for (int r = 0; r < nr; ++r) {
         for (int c = 0; c < nc; ++c) {
             const uint16_t label = unweighted_label_image(r, c);
             const double weight = label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore ? 0.0 : label_weights[label];
             weighted_label_image(r, c) = dlib::loss_multiclass_log_per_pixel_weighted_::weighted_label(label, weight);
-#ifdef _DEBUG
-            total_weight += weight;
-#endif
         }
     }
-
-#ifdef _DEBUG
-    assert(fabs(total_weight - nr * nc) / (nr * nc) < 1e-6);
-#endif
 }
 
 void randomly_crop_image (
