@@ -100,7 +100,7 @@ void find_equal_class_weights (
     }
 
 #ifdef _DEBUG
-    assert(fabs(total_weight - 1.0) < 1e-6);
+    assert(fabs(total_weight - nr * nc) / (nr * nc) < 1e-6);
 #endif
 }
 
@@ -196,19 +196,22 @@ int main(int argc, char** argv) try
     const unsigned long previous_loss_values_dump_amount = 800;
     const unsigned long batch_normalization_running_stats_window_size = 200;
 
+    const size_t minibatchSize = 30;
+    const size_t saveInterval = 1000;
+
     NetPimpl::TrainingNet training_net;
 
     std::vector<matrix<input_pixel_type>> samples;
     std::vector<NetPimpl::training_label_type> labels;
 
-    { // Test that the input size is correct for the net that we have built
+    { // Test that the input size is correct for the net that we have built, and also that a minibatch fits in GPU memory
         training_net.Initialize();
-        training_net.SetClassCount(2);
+        training_net.SetClassCount(minibatchSize);
 
-        for (uint16_t label = 0; label < 2; ++label) {
+        for (uint16_t label = 0; label < minibatchSize; ++label) {
             matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
             NetPimpl::training_label_type label_image(required_input_dimension, required_input_dimension);
-            input_image = label * 255;
+            input_image = label * 255 / (minibatchSize - 1);
             label_image = label;
 
             samples.push_back(std::move(input_image));
@@ -278,9 +281,6 @@ int main(int argc, char** argv) try
     full_image_read_requests.disable();
 
     cout << endl << "Now training..." << endl;
-
-    const size_t minibatchSize = 30;
-    const size_t saveInterval = 1000;
 
     // Start a bunch of threads that read images from disk and pull out random crops.  It's
     // important to be sure to feed the GPU fast enough to keep it busy.  Using multiple
