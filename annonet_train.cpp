@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <numeric>
 #include <unordered_map>
 #include <thread>
 
@@ -39,10 +40,74 @@ rectangle make_cropping_rect_around_defect(
 
 // ----------------------------------------------------------------------------------------
 
+struct crop
+{
+    NetPimpl::input_type input_image;
+    NetPimpl::training_label_type label_image;
+
+    // prevent having to re-allocate memory constantly
+    dlib::matrix<uint16_t> temporary_unweighted_label_image;
+};
+
+void find_equal_class_weights (
+    const dlib::matrix<uint16_t>& unweighted_label_image,
+    NetPimpl::training_label_type& weighted_label_image
+)
+{
+    const long nr = unweighted_label_image.nr();
+    const long nc = unweighted_label_image.nc();
+
+    std::unordered_map<uint16_t, size_t> label_counts;
+
+    for (int r = 0; r < nr; ++r) {
+        for (int c = 0; c < nc; ++c) {
+            const uint16_t label = unweighted_label_image(r, c);
+            if (label != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
+                ++label_counts[label];
+            }
+        }
+    }
+
+    const size_t total_count = std::accumulate(label_counts.begin(), label_counts.end(), 0,
+        [&](size_t total, const std::pair<uint16_t, size_t>& item) { return total + item.second; });
+
+    DLIB_CASSERT(total_count > 0);
+
+    const double average_weight = 1.0 / total_count;
+    const double average_count = total_count / static_cast<double>(label_counts.size());
+
+    std::unordered_map<uint16_t, double> label_weights;
+
+    for (const auto& item : label_counts) {
+        label_weights[item.first] = average_weight * (average_count / item.second);
+    }
+
+    weighted_label_image.set_size(nr, nc);
+
+#ifdef _DEBUG
+    double total_weight = 0.0;
+#endif
+
+    for (int r = 0; r < nr; ++r) {
+        for (int c = 0; c < nc; ++c) {
+            const uint16_t label = unweighted_label_image(r, c);
+            const double weight = label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore ? 0.0 : label_weights[label];
+            weighted_label_image(r, c) = dlib::loss_multiclass_log_per_pixel_weighted_::weighted_label(label, weight);
+#ifdef _DEBUG
+            total_weight += weight;
+#endif
+        }
+    }
+
+#ifdef _DEBUG
+    assert(fabs(total_weight - 1.0) < 1e-6);
+#endif
+}
+
 void randomly_crop_image (
     int dim,
     const sample& full_sample,
-    sample& crop,
+    crop& crop,
     dlib::rand& rnd
 )
 {
@@ -70,7 +135,9 @@ void randomly_crop_image (
     // Crop the labels correspondingly. However, note that here bilinear
     // interpolation would make absolutely no sense.
     // TODO: mark all invalid areas as ignore.
-    extract_image_chip(full_sample.label_image, chip_details, crop.label_image, interpolate_nearest_neighbor());
+    extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
+
+    find_equal_class_weights(crop.temporary_unweighted_label_image, crop.label_image);
 
     // Also randomly flip the input image and the labels.
     if (rnd.get_random_double() > 0.5) {
@@ -132,7 +199,7 @@ int main(int argc, char** argv) try
     NetPimpl::TrainingNet training_net;
 
     std::vector<matrix<input_pixel_type>> samples;
-    std::vector<matrix<uint16_t>> labels;
+    std::vector<NetPimpl::training_label_type> labels;
 
     { // Test that the input size is correct for the net that we have built
         training_net.Initialize();
@@ -140,7 +207,7 @@ int main(int argc, char** argv) try
 
         for (uint16_t label = 0; label < 2; ++label) {
             matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
-            matrix<uint16_t> label_image(required_input_dimension, required_input_dimension);
+            NetPimpl::training_label_type label_image(required_input_dimension, required_input_dimension);
             input_image = label * 255;
             label_image = label;
 
@@ -219,19 +286,19 @@ int main(int argc, char** argv) try
     // important to be sure to feed the GPU fast enough to keep it busy.  Using multiple
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
-    dlib::pipe<sample> data(2 * minibatchSize);
+    dlib::pipe<crop> data(2 * minibatchSize);
     auto pull_crops = [&data, &full_images, required_input_dimension](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         matrix<input_pixel_type> input_image;
         matrix<uint16_t> index_label_image;
-        sample temp;
+        crop crop;
         while (data.is_enabled())
         {
             const size_t index = rnd.get_random_32bit_number() % full_images.size();
             const sample& ground_truth_sample = full_images[index];
-            randomly_crop_image(required_input_dimension, ground_truth_sample, temp, rnd);
-            data.enqueue(temp);
+            randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd);
+            data.enqueue(crop);
         }
     };
 
@@ -259,13 +326,13 @@ int main(int argc, char** argv) try
         labels.clear();
 
         // make a mini-batch
-        sample temp;
+        crop crop;
         while(samples.size() < minibatchSize)
         {
-            data.dequeue(temp);
+            data.dequeue(crop);
 
-            samples.push_back(std::move(temp.input_image));
-            labels.push_back(std::move(temp.label_image));
+            samples.push_back(std::move(crop.input_image));
+            labels.push_back(std::move(crop.label_image));
         }
 
         training_net.StartTraining(samples, labels);
