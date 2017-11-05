@@ -188,7 +188,7 @@ int main(int argc, char** argv) try
     const unsigned long previous_loss_values_dump_amount = 800;
     const unsigned long batch_normalization_running_stats_window_size = 200;
 
-    const size_t minibatchSize = 30;
+    const size_t minibatchSize = 300;
     const size_t saveInterval = 1000;
 
     NetPimpl::TrainingNet training_net;
