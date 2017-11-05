@@ -73,7 +73,7 @@ void find_equal_class_weights (
 
     DLIB_CASSERT(total_count > 0);
 
-    const double average_weight = 1.0 / total_count;
+    const double average_weight = nr * nc / static_cast<double>(total_count);
     const double average_count = total_count / static_cast<double>(label_counts.size());
 
     std::unordered_map<uint16_t, double> label_weights;
