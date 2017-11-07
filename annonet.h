@@ -119,6 +119,8 @@ typedef uint8_t input_pixel_type;
 
 struct sample
 {
+    int original_width = 0;
+    int original_height = 0;
     image_filenames image_filenames;
     dlib::matrix<input_pixel_type> input_image;
     dlib::matrix<uint16_t> label_image;
@@ -137,7 +139,11 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
         }
     }
     std::ostringstream error;
-    error << "Unknown class: r = " << rgba_label.red << ", g = " << rgba_label.green << ", b = " << rgba_label.blue << ", alpha = " << rgba_label.alpha;
+    error << "Unknown class: "
+        << "r = " << static_cast<int>(rgba_label.red) << ", "
+        << "g = " << static_cast<int>(rgba_label.green) << ", "
+        << "b = " << static_cast<int>(rgba_label.blue) << ", "
+        << "alpha = " << static_cast<int>(rgba_label.alpha);
     throw std::runtime_error(error.str());
 }
 
@@ -208,7 +214,16 @@ std::vector<image_filenames> find_image_files(
     return results;
 }
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth)
+template <typename image_type>
+void resize_label_image(image_type& label_image, int target_width, int target_height)
+{
+    image_type temp;
+    dlib::set_image_size(temp, target_height, target_width);
+    dlib::resize_image(label_image, temp, dlib::interpolate_nearest_neighbor());
+    std::swap(label_image, temp);
+}
+
+sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
     sample sample;
     sample.image_filenames = image_filenames;
@@ -216,15 +231,20 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
     try {
         dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
         dlib::load_image(sample.input_image, image_filenames.image_filename);
-        
+        sample.original_width = sample.input_image.nc();
+        sample.original_height = sample.input_image.nr();
+        dlib::resize_image(1.0 / downscaling_factor, sample.input_image);
+
         if (!image_filenames.label_filename.empty()) {
             dlib::load_image(rgba_label_image, image_filenames.label_filename);
 
-            if (sample.input_image.nr() == rgba_label_image.nr() || sample.input_image.nc() == rgba_label_image.nc()) {
-                decode_rgba_label_image(rgba_label_image, sample, anno_classes);
+            if (rgba_label_image.nr() != sample.original_height || rgba_label_image.nc() != sample.original_width) {
+                sample.error = "Label image size mismatch";
             }
             else {
-                sample.error = "Label image size mismatch";
+                resize_label_image(rgba_label_image, sample.input_image.nc(), sample.input_image.nr());
+                assert(sample.input_image.nr() == rgba_label_image.nr() || sample.input_image.nc() == rgba_label_image.nc());
+                decode_rgba_label_image(rgba_label_image, sample, anno_classes);
             }
         }
         else if (require_ground_truth) {

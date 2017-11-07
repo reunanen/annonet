@@ -16,6 +16,7 @@
 #include "annonet.h"
 
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
+#include "cxxopts/include/cxxopts.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
 
@@ -79,7 +80,7 @@ void find_equal_class_weights (
     std::unordered_map<uint16_t, double> label_weights;
 
     // try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes
-    constexpr double a_priori_weight = 0.5;
+    constexpr double a_priori_weight = 0.0;
 
     for (const auto& item : label_counts) {
         label_weights[item.first] = average_weight * pow(average_count / item.second, a_priori_weight);
@@ -166,7 +167,7 @@ std::string read_anno_classes_file(const std::string& folder)
 
 int main(int argc, char** argv) try
 {
-    if (argc != 2)
+    if (argc == 1)
     {
         cout << "To run this program you need data annotated using the anno program." << endl;
         cout << endl;
@@ -175,10 +176,39 @@ int main(int argc, char** argv) try
         return 1;
     }
 
+    cxxopts::Options options("annonet_train", "Train semantic-segmentation networks using data generated in anno");
+
+    options.add_options()
+        ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
+        ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
+        ;
+
+    try {
+        options.parse_positional("input-directory");
+        options.parse(argc, argv);
+
+        cxxopts::check_required(options, { "input-directory" });
+
+        std::cout << "Input directory = " << options["input-directory"].as<std::string>() << std::endl;
+        std::cout << "Downscaling factor = " << options["downscaling-factor"].as<double>() << std::endl;
+
+        if (options["downscaling-factor"].as<double>() <= 0.0) {
+            throw std::runtime_error("The downscaling factor has to be strictly positive.");
+        }
+    }
+    catch (std::exception& e) {
+        cerr << e.what() << std::endl;
+        cerr << std::endl;
+        cerr << options.help() << std::endl;
+        return 2;
+    }
+
+    const double downscaling_factor = options["downscaling-factor"].as<double>();
+
     const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
     std::cout << "Required input dimension = " << required_input_dimension << std::endl;
 
-    const auto anno_classes_json = read_anno_classes_file(argv[1]);
+    const auto anno_classes_json = read_anno_classes_file(options["input-directory"].as<std::string>());
     const auto anno_classes = parse_anno_classes(anno_classes_json);
 
     const double initial_learning_rate = 0.1;
@@ -188,7 +218,7 @@ int main(int argc, char** argv) try
     const unsigned long previous_loss_values_dump_amount = 800;
     const unsigned long batch_normalization_running_stats_window_size = 200;
 
-    const size_t minibatchSize = 300;
+    const size_t minibatchSize = 150;
     const size_t saveInterval = 1000;
 
     NetPimpl::TrainingNet training_net;
@@ -225,7 +255,7 @@ int main(int argc, char** argv) try
 
     cout << "\nSCANNING ANNO DATASET\n" << endl;
 
-    const auto image_files = find_image_files(argv[1], true);
+    const auto image_files = find_image_files(options["input-directory"].as<std::string>(), true);
     cout << "images in dataset: " << image_files.size() << endl;
     if (image_files.size() == 0)
     {
@@ -248,7 +278,7 @@ int main(int argc, char** argv) try
         full_image_readers.push_back(std::thread([&]() {
             image_filenames image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
-                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, true));
+                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, true, downscaling_factor));
             }
         }));
     }
@@ -308,7 +338,7 @@ int main(int argc, char** argv) try
         runtime_net.Serialize(serialized);
 
         cout << "saving network" << endl;
-        serialize("annonet.dnn") << anno_classes_json << serialized.str();
+        serialize("annonet.dnn") << anno_classes_json << downscaling_factor << serialized.str();
     };
 
     // The main training loop.  Keep making mini-batches and giving them to the trainer.

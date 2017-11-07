@@ -13,3 +13,6 @@
 [submodule "tiling"]
 	path = tiling
 	url = https://github.com/reunanen/tiling
+[submodule "cxxopts"]
+	path = cxxopts
+	url = https://github.com/reunanen/cxxopts

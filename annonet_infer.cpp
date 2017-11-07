@@ -159,6 +159,8 @@ void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const
 
 struct result_image_type {
     std::string filename;
+    int original_width = 0;
+    int original_height = 0;
     matrix<uint16_t> label_image;
 };
 
@@ -174,9 +176,12 @@ int main(int argc, char** argv) try
         return 1;
     }
 
+    double downscaling_factor = 1.0;
     std::string serialized_runtime_net;
     std::string anno_classes_json;
-    deserialize("annonet.dnn") >> anno_classes_json >> serialized_runtime_net;
+    deserialize("annonet.dnn") >> anno_classes_json >> downscaling_factor >> serialized_runtime_net;
+
+    std::cout << "Deserializing annonet, downscaling factor = " << downscaling_factor << std::endl;
 
     NetPimpl::RuntimeNet net;
     net.Deserialize(std::istringstream(serialized_runtime_net));
@@ -201,7 +206,7 @@ int main(int argc, char** argv) try
         full_image_readers.push_back(std::thread([&]() {
             image_filenames image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
-                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false));
+                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false, downscaling_factor));
             }
         }));
     }
@@ -216,6 +221,7 @@ int main(int argc, char** argv) try
             result_image_type result_image;
             dlib::matrix<rgb_alpha_pixel> rgba_label_image;
             while (result_image_write_requests.dequeue(result_image)) {
+                resize_label_image(result_image.label_image, result_image.original_width, result_image.original_height);
                 index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
                 save_png(rgba_label_image, result_image.filename);
                 result_image_write_results.enqueue(true);
@@ -227,8 +233,8 @@ int main(int argc, char** argv) try
 
     tiling::parameters tiling_parameters;
 #ifdef DLIB_USE_CUDA
-    tiling_parameters.max_tile_width = 2048;
-    tiling_parameters.max_tile_height = 2048;
+    tiling_parameters.max_tile_width = 512;
+    tiling_parameters.max_tile_height = 512;
 #else
     // in CPU-only mode, we can handle larger tiles
     tiling_parameters.max_tile_width = 4096;
@@ -262,6 +268,8 @@ int main(int argc, char** argv) try
 
         result_image.filename = sample.image_filenames.image_filename + "_result.png";
         result_image.label_image.set_size(input_image.nr(), input_image.nc());
+        result_image.original_width = sample.original_width;
+        result_image.original_height = sample.original_height;
 
         const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
 
