@@ -97,11 +97,12 @@ void find_equal_class_weights (
     }
 }
 
-void randomly_crop_image (
+void randomly_crop_image(
     int dim,
     const sample& full_sample,
     crop& crop,
-    dlib::rand& rnd
+    dlib::rand& rnd,
+    bool allow_flip_upside_down
 )
 {
     DLIB_CASSERT(!full_sample.labeled_points_by_class.empty());
@@ -133,9 +134,9 @@ void randomly_crop_image (
     find_equal_class_weights(crop.temporary_unweighted_label_image, crop.label_image);
 
     // Also randomly flip the input image and the labels.
-    if (rnd.get_random_double() > 0.5) {
-        //crop.input_image = flipud(crop.input_image);
-        //crop.label_image = flipud(crop.label_image);
+    if (allow_flip_upside_down && rnd.get_random_double() > 0.5) {
+        crop.input_image = flipud(crop.input_image);
+        crop.label_image = flipud(crop.label_image);
     }
 }
 
@@ -181,6 +182,7 @@ int main(int argc, char** argv) try
     options.add_options()
         ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
+        ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ;
 
     try {
@@ -204,6 +206,7 @@ int main(int argc, char** argv) try
     }
 
     const double downscaling_factor = options["downscaling-factor"].as<double>();
+    const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
 
     const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
     std::cout << "Required input dimension = " << required_input_dimension << std::endl;
@@ -309,7 +312,7 @@ int main(int argc, char** argv) try
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
     dlib::pipe<crop> data(2 * minibatchSize);
-    auto pull_crops = [&data, &full_images, required_input_dimension](time_t seed)
+    auto pull_crops = [&data, &full_images, required_input_dimension, allow_flip_upside_down](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         matrix<input_pixel_type> input_image;
@@ -319,7 +322,7 @@ int main(int argc, char** argv) try
         {
             const size_t index = rnd.get_random_32bit_number() % full_images.size();
             const sample& ground_truth_sample = full_images[index];
-            randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd);
+            randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, allow_flip_upside_down);
             data.enqueue(crop);
         }
     };
