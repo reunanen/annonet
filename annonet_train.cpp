@@ -183,6 +183,7 @@ int main(int argc, char** argv) try
         ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
+        ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
         ;
 
     try {
@@ -207,6 +208,17 @@ int main(int argc, char** argv) try
 
     const double downscaling_factor = options["downscaling-factor"].as<double>();
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
+    const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
+
+    std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
+
+    if (!classes_to_ignore.empty()) {
+        std::cout << "Classes to ignore =";
+        for (uint16_t class_to_ignore : classes_to_ignore) {
+            std::cout << " " << class_to_ignore;
+        }
+        std::cout << std::endl;
+    }
 
     const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
     std::cout << "Required input dimension = " << required_input_dimension << std::endl;
@@ -277,11 +289,25 @@ int main(int argc, char** argv) try
 
     std::vector<std::thread> full_image_readers;
     
+    const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
+        for (const auto class_to_ignore : classes_to_ignore) {
+            const auto i = sample.labeled_points_by_class.find(class_to_ignore);
+            if (i != sample.labeled_points_by_class.end()) {
+                for (const dlib::point& point : i->second) {
+                    sample.label_image(point.y(), point.x()) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+                }
+                sample.labeled_points_by_class.erase(class_to_ignore);
+            }
+        }
+    };
+
     for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
         full_image_readers.push_back(std::thread([&]() {
             image_filenames image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
-                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, true, downscaling_factor));
+                sample sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
+                ignore_classes_to_ignore(sample);
+                full_image_read_results.enqueue(sample);
             }
         }));
     }
