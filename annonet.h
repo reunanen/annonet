@@ -181,7 +181,9 @@ std::vector<image_filenames> find_image_files(
         }
         return dlib::match_ending(".jpeg")(name)
             || dlib::match_ending(".jpg")(name)
-            || dlib::match_ending(".png")(name);
+            || dlib::match_ending(".JPG")(name)
+            || dlib::match_ending(".png")(name)
+            || dlib::match_ending(".PNG")(name);
     });
 
     std::vector<image_filenames> results;
