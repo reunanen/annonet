@@ -238,7 +238,7 @@ int main(int argc, char** argv) try
 
     NetPimpl::TrainingNet training_net;
 
-    std::vector<matrix<input_pixel_type>> samples;
+    std::vector<NetPimpl::input_type> samples;
     std::vector<NetPimpl::training_label_type> labels;
 
     { // Test that the input size is correct for the net that we have built, and also that a minibatch fits in GPU memory
@@ -246,7 +246,7 @@ int main(int argc, char** argv) try
         training_net.SetClassCount(minibatchSize);
 
         for (uint16_t label = 0; label < minibatchSize; ++label) {
-            matrix<input_pixel_type> input_image(required_input_dimension, required_input_dimension);
+            NetPimpl::input_type input_image(required_input_dimension, required_input_dimension);
             NetPimpl::training_label_type label_image(required_input_dimension, required_input_dimension);
             input_image = label * 255 / (minibatchSize - 1);
             label_image = label;
@@ -341,7 +341,7 @@ int main(int argc, char** argv) try
     auto pull_crops = [&data, &full_images, required_input_dimension, allow_flip_upside_down](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
-        matrix<input_pixel_type> input_image;
+        NetPimpl::input_type input_image;
         matrix<uint16_t> index_label_image;
         crop crop;
         while (data.is_enabled())

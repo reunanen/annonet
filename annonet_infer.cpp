@@ -188,7 +188,7 @@ int main(int argc, char** argv) try
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
-    matrix<input_pixel_type> input_tile;
+    NetPimpl::input_type input_tile;
     matrix<uint16_t> index_label_tile_resized;
 
     auto files = find_image_files(argv[1], false);

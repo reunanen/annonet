@@ -122,7 +122,7 @@ struct sample
     int original_width = 0;
     int original_height = 0;
     image_filenames image_filenames;
-    dlib::matrix<input_pixel_type> input_image;
+    NetPimpl::input_type input_image;
     dlib::matrix<uint16_t> label_image;
     std::unordered_map<uint16_t, std::deque<dlib::point>> labeled_points_by_class;
     std::string error;
