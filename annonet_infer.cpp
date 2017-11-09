@@ -315,6 +315,8 @@ int main(int argc, char** argv) try
     tiling::parameters tiling_parameters;
     tiling_parameters.max_tile_width = options["tile-max-width"].as<int>();
     tiling_parameters.max_tile_height = options["tile-max-height"].as<int>();
+    tiling_parameters.overlap_x = min_input_dimension;
+    tiling_parameters.overlap_y = min_input_dimension;
 
     DLIB_CASSERT(tiling_parameters.max_tile_width >= min_input_dimension);
     DLIB_CASSERT(tiling_parameters.max_tile_height >= min_input_dimension);
