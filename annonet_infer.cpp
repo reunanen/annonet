@@ -281,7 +281,7 @@ int main(int argc, char** argv) try
             const chip_details chip_details(actual_tile_rect, chip_dims(actual_tile_height, actual_tile_width));
             extract_image_chip(input_image, chip_details, input_tile, interpolate_bilinear());
 
-            const matrix<uint16_t> index_label_tile = net(input_tile);
+            const matrix<uint16_t> index_label_tile = net(input_tile, { 1.0, 0.00001 });
 
             index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
             resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());

@@ -184,7 +184,7 @@ int main(int argc, char** argv) try
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
-        ("minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
+        ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ;
 
@@ -251,7 +251,7 @@ int main(int argc, char** argv) try
         for (uint16_t label = 0; label < minibatch_size; ++label) {
             NetPimpl::input_type input_image(required_input_dimension, required_input_dimension);
             NetPimpl::training_label_type label_image(required_input_dimension, required_input_dimension);
-            input_image = label * 255 / (minibatch_size - 1);
+            //input_image = label * 255 / (minibatch_size - 1);
             label_image = label;
 
             samples.push_back(std::move(input_image));
