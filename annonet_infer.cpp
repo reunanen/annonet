@@ -15,6 +15,7 @@
 
 #include "annonet.h"
 
+#include "cxxopts/include/cxxopts.hpp"
 #include <iostream>
 #include <dlib/data_io.h>
 #include <dlib/gui_widgets.h>
@@ -23,7 +24,44 @@
 
 using namespace std;
 using namespace dlib;
- 
+
+// ----------------------------------------------------------------------------------------
+
+struct gain_factor
+{
+    uint16_t class_index = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+    double gain = 1.0;
+};
+
+gain_factor parse_gain_factor(const std::string& gain_factor_from_command_line)
+{
+    const auto colon_pos = gain_factor_from_command_line.find(':');
+    if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= gain_factor_from_command_line.length() - 1) {
+        throw std::runtime_error("The gain factors must be supplied in the format index:factor (e.g., 1:1.5)");
+    }
+    gain_factor gain_factor;
+    gain_factor.class_index = std::stoul(gain_factor_from_command_line.substr(0, colon_pos));
+    gain_factor.gain = std::stod(gain_factor_from_command_line.substr(colon_pos + 1));
+    return gain_factor;
+}
+
+std::vector<double> parse_gain_factors(const std::vector<std::string>& gain_factors_from_command_line, uint16_t class_count)
+{
+    std::vector<double> gain_factors(class_count, 1.0);
+
+    for (const auto gain_factor_from_command_line : gain_factors_from_command_line) {
+        const gain_factor gain_factor = parse_gain_factor(gain_factor_from_command_line);
+        if (gain_factor.class_index >= class_count) {
+            std::ostringstream error;
+            error << "Can't set gain factor for index " << gain_factor.class_index << " when there are only " << class_count << " classes";
+            throw std::runtime_error(error.str());
+        }
+        gain_factors[gain_factor.class_index] = gain_factor.gain;
+    }
+
+    return gain_factors;
+}
+
 // ----------------------------------------------------------------------------------------
 
 inline rgb_alpha_pixel index_label_to_rgba_label(uint16_t index_label, const std::vector<AnnoClass>& anno_classes)
@@ -176,6 +214,28 @@ int main(int argc, char** argv) try
         return 1;
     }
 
+    cxxopts::Options options("annonet_infer", "Do inference using trained semantic-segmentation networks");
+
+    options.add_options()
+        ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
+        ("g,gain-factor", "Supply a class-specific gain factor, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
+        ;
+
+    try {
+        options.parse_positional("input-directory");
+        options.parse(argc, argv);
+
+        cxxopts::check_required(options, { "input-directory" });
+
+        std::cout << "Input directory = " << options["input-directory"].as<std::string>() << std::endl;
+    }
+    catch (std::exception& e) {
+        cerr << e.what() << std::endl;
+        cerr << std::endl;
+        cerr << options.help() << std::endl;
+        return 2;
+    }
+
     double downscaling_factor = 1.0;
     std::string serialized_runtime_net;
     std::string anno_classes_json;
@@ -188,10 +248,20 @@ int main(int argc, char** argv) try
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
+    const std::vector<double> gain_factors = parse_gain_factors(options["gain-factor"].as<std::vector<std::string>>(), anno_classes.size());
+
+    assert(gain_factors.size() == anno_classes.size());
+
+    std::cout << "Using gain factors:";
+    for (size_t class_index = 0, end = gain_factors.size(); class_index < end; ++class_index) {
+        std::cout << " " << class_index << ":" << gain_factors[class_index];
+    }
+    std::cout << std::endl;
+
     NetPimpl::input_type input_tile;
     matrix<uint16_t> index_label_tile_resized;
 
-    auto files = find_image_files(argv[1], false);
+    auto files = find_image_files(options["input-directory"].as<std::string>(), false);
 
     dlib::pipe<image_filenames> full_image_read_requests(files.size());
     for (const image_filenames& file : files) {
@@ -281,7 +351,7 @@ int main(int argc, char** argv) try
             const chip_details chip_details(actual_tile_rect, chip_dims(actual_tile_height, actual_tile_width));
             extract_image_chip(input_image, chip_details, input_tile, interpolate_bilinear());
 
-            const matrix<uint16_t> index_label_tile = net(input_tile, { 1.0, 0.00001 });
+            const matrix<uint16_t> index_label_tile = net(input_tile, gain_factors);
 
             index_label_tile_resized.set_size(input_tile.nr(), input_tile.nc());
             resize_image(index_label_tile, index_label_tile_resized, interpolate_nearest_neighbor());
