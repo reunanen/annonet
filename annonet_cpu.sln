@@ -13,17 +13,27 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		DebugGrayscaleInput|x64 = DebugGrayscaleInput|x64
 		Release|x64 = Release|x64
+		ReleaseGrayscaleInput|x64 = ReleaseGrayscaleInput|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.Debug|x64.ActiveCfg = Debug|x64
 		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.Debug|x64.Build.0 = Debug|x64
+		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.DebugGrayscaleInput|x64.ActiveCfg = DebugGrayscaleInput|x64
+		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.DebugGrayscaleInput|x64.Build.0 = DebugGrayscaleInput|x64
 		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.Release|x64.ActiveCfg = Release|x64
 		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.Release|x64.Build.0 = Release|x64
+		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.ReleaseGrayscaleInput|x64.ActiveCfg = ReleaseGrayscaleInput|x64
+		{0A81CF58-E4DD-4294-834C-B8DA25380E01}.ReleaseGrayscaleInput|x64.Build.0 = ReleaseGrayscaleInput|x64
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.Debug|x64.ActiveCfg = Debug|x64
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.Debug|x64.Build.0 = Debug|x64
+		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.DebugGrayscaleInput|x64.ActiveCfg = DebugGrayscaleInput|x64
+		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.DebugGrayscaleInput|x64.Build.0 = DebugGrayscaleInput|x64
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.Release|x64.ActiveCfg = Release|x64
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.Release|x64.Build.0 = Release|x64
+		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.ReleaseGrayscaleInput|x64.ActiveCfg = ReleaseGrayscaleInput|x64
+		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.ReleaseGrayscaleInput|x64.Build.0 = ReleaseGrayscaleInput|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
