@@ -186,6 +186,7 @@ int main(int argc, char** argv) try
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
+        ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
         ;
 
     try {
@@ -213,10 +214,12 @@ int main(int argc, char** argv) try
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
     const auto save_interval = options["save-interval"].as<size_t>();
+    const auto relative_training_length = std::max(0.01, options["relative-training-length"].as<double>());
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
     std::cout << "Save interval = " << save_interval << std::endl;
+    std::cout << "Relative training length = " << relative_training_length << std::endl;
 
     if (!classes_to_ignore.empty()) {
         std::cout << "Classes to ignore =";
@@ -235,9 +238,9 @@ int main(int argc, char** argv) try
     const double initial_learning_rate = 0.1;
     const double learning_rate_shrink_factor = 0.1;
     const double min_learning_rate = 1e-6;
-    const unsigned long iterations_without_progress_threshold = 4000;
-    const unsigned long previous_loss_values_dump_amount = 800;
-    const unsigned long batch_normalization_running_stats_window_size = 200;
+    const unsigned long iterations_without_progress_threshold = static_cast<unsigned long>(std::round(relative_training_length * 2000));
+    const unsigned long previous_loss_values_dump_amount = static_cast<unsigned long>(std::round(relative_training_length * 400));
+    const unsigned long batch_normalization_running_stats_window_size = static_cast<unsigned long>(std::round(relative_training_length * 100));
 
     NetPimpl::TrainingNet training_net;
 
