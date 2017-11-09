@@ -13,17 +13,27 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
+		DebugGrayscaleInput|x64 = DebugGrayscaleInput|x64
 		Release|x64 = Release|x64
+		ReleaseGrayscaleInput|x64 = ReleaseGrayscaleInput|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{11A70020-D7EA-435D-93BB-303225BE4D2F}.Debug|x64.ActiveCfg = Debug|x64
 		{11A70020-D7EA-435D-93BB-303225BE4D2F}.Debug|x64.Build.0 = Debug|x64
+		{11A70020-D7EA-435D-93BB-303225BE4D2F}.DebugGrayscaleInput|x64.ActiveCfg = DebugGrayscaleInput|x64
+		{11A70020-D7EA-435D-93BB-303225BE4D2F}.DebugGrayscaleInput|x64.Build.0 = DebugGrayscaleInput|x64
 		{11A70020-D7EA-435D-93BB-303225BE4D2F}.Release|x64.ActiveCfg = Release|x64
 		{11A70020-D7EA-435D-93BB-303225BE4D2F}.Release|x64.Build.0 = Release|x64
+		{11A70020-D7EA-435D-93BB-303225BE4D2F}.ReleaseGrayscaleInput|x64.ActiveCfg = ReleaseGrayscaleInput|x64
+		{11A70020-D7EA-435D-93BB-303225BE4D2F}.ReleaseGrayscaleInput|x64.Build.0 = ReleaseGrayscaleInput|x64
 		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.Debug|x64.ActiveCfg = Debug|x64
 		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.Debug|x64.Build.0 = Debug|x64
+		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.DebugGrayscaleInput|x64.ActiveCfg = DebugGrayscaleInput|x64
+		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.DebugGrayscaleInput|x64.Build.0 = DebugGrayscaleInput|x64
 		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.Release|x64.ActiveCfg = Release|x64
 		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.Release|x64.Build.0 = Release|x64
+		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.ReleaseGrayscaleInput|x64.ActiveCfg = ReleaseGrayscaleInput|x64
+		{ECFF7221-22F0-40D2-BF3C-74B4C65699DE}.ReleaseGrayscaleInput|x64.Build.0 = ReleaseGrayscaleInput|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
