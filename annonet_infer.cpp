@@ -216,9 +216,20 @@ int main(int argc, char** argv) try
 
     cxxopts::Options options("annonet_infer", "Do inference using trained semantic-segmentation networks");
 
+#ifdef DLIB_USE_CUDA
+    const std::string default_max_tile_width = "512";
+    const std::string default_max_tile_height = "512";
+#else
+    // in CPU-only mode, we can handle larger tiles
+    const std::string default_max_tile_width = "4096";
+    const std::string default_max_tile_height = "4096";
+#endif
+
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("g,gain-factor", "Supply a class-specific gain factor, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
+        ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
+        ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ;
 
     try {
@@ -302,14 +313,8 @@ int main(int argc, char** argv) try
     const int min_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
 
     tiling::parameters tiling_parameters;
-#ifdef DLIB_USE_CUDA
-    tiling_parameters.max_tile_width = 512;
-    tiling_parameters.max_tile_height = 512;
-#else
-    // in CPU-only mode, we can handle larger tiles
-    tiling_parameters.max_tile_width = 4096;
-    tiling_parameters.max_tile_height = 4096;
-#endif
+    tiling_parameters.max_tile_width = options["tile-max-width"].as<int>();
+    tiling_parameters.max_tile_height = options["tile-max-height"].as<int>();
 
     DLIB_CASSERT(tiling_parameters.max_tile_width >= min_input_dimension);
     DLIB_CASSERT(tiling_parameters.max_tile_height >= min_input_dimension);
