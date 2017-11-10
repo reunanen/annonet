@@ -249,13 +249,13 @@ int main(int argc, char** argv) try
 
     { // Test that the input size is correct for the net that we have built, and also that a minibatch fits in GPU memory
         training_net.Initialize();
-        training_net.SetClassCount(minibatch_size);
+        training_net.SetClassCount(anno_classes.size());
 
         for (uint16_t label = 0; label < minibatch_size; ++label) {
             NetPimpl::input_type input_image(required_input_dimension, required_input_dimension);
             NetPimpl::training_label_type label_image(required_input_dimension, required_input_dimension);
             //input_image = label * 255 / (minibatch_size - 1);
-            label_image = label;
+            label_image = label % anno_classes.size();
 
             samples.push_back(std::move(input_image));
             labels.push_back(std::move(label_image));
