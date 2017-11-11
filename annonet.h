@@ -51,6 +51,19 @@ struct AnnoClass {
     const std::string classlabel;
 };
 
+struct AnnoNet {
+    NetPimpl::RuntimeNet runtime_net;
+    std::string anno_classes_json;
+    std::vector<AnnoClass> anno_classes;
+    double downscaling_factor = 1.0;
+
+    //void Serialize(std::ostream& out) const;
+    void Deserialize(std::istream& in);
+
+    //void Serialize(const std::string& filename) const;
+    void Deserialize(const std::string& filename);
+};
+
 namespace {
     dlib::rgb_alpha_pixel rgba_ignore_label(0, 0, 0, 0);
 }
