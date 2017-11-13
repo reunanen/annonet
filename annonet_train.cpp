@@ -97,12 +97,30 @@ void find_equal_class_weights (
     }
 }
 
+#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+void add_random_noise(dlib::matrix<uint8_t>& image, double noise_level, dlib::rand& rnd)
+{
+    const long nr = image.nr();
+    const long nc = image.nc();
+
+    for (long r = 0; r < nr; ++r) {
+        for (long c = 0; c < nc; ++c) {
+            int old_value = image(r, c);
+            int noise = static_cast<int>(std::round(rnd.get_random_gaussian() * noise_level));
+            int new_value = old_value + noise;
+            int new_value_clamped = std::max(0, std::min(new_value, static_cast<int>(std::numeric_limits<uint8_t>::max())));
+            image(r, c) = new_value_clamped;
+        }
+    }
+}
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+
 void randomly_crop_image(
     int dim,
     const sample& full_sample,
     crop& crop,
     dlib::rand& rnd,
-    bool allow_flip_upside_down
+    const cxxopts::Options& options
 )
 {
     DLIB_CASSERT(!full_sample.labeled_points_by_class.empty());
@@ -133,11 +151,26 @@ void randomly_crop_image(
 
     find_equal_class_weights(crop.temporary_unweighted_label_image, crop.label_image);
 
+    const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
+
     // Also randomly flip the input image and the labels.
     if (allow_flip_upside_down && rnd.get_random_double() > 0.5) {
         crop.input_image = flipud(crop.input_image);
         crop.label_image = flipud(crop.label_image);
     }
+
+#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+    double grayscale_noise_level_stddev = options["grayscale-noise-level-stddev"].as<double>();
+    if (grayscale_noise_level_stddev > 0.0) {
+        double grayscale_noise_level = fabs(rnd.get_random_gaussian() * grayscale_noise_level_stddev);
+        add_random_noise(crop.input_image, grayscale_noise_level, rnd);
+    }
+#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+    const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
+    if (allow_random_color_offset > 0) {
+        apply_random_color_offset(crop.input_image, rnd);
+    }
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
 }
 
 // ----------------------------------------------------------------------------------------
@@ -183,6 +216,11 @@ int main(int argc, char** argv) try
         ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
+#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+        ("n,grayscale-noise-level-stddev", "Set the standard deviation of the level of grayscale noise to add", cxxopts::value<double>()->default_value("0.0"))
+#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+        ("c,allow-random-color-offset", "Randomly apply color offsets")
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
@@ -344,7 +382,7 @@ int main(int argc, char** argv) try
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
     dlib::pipe<crop> data(2 * minibatch_size);
-    auto pull_crops = [&data, &full_images, required_input_dimension, allow_flip_upside_down](time_t seed)
+    auto pull_crops = [&data, &full_images, required_input_dimension, &options](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         NetPimpl::input_type input_image;
@@ -354,7 +392,7 @@ int main(int argc, char** argv) try
         {
             const size_t index = rnd.get_random_32bit_number() % full_images.size();
             const sample& ground_truth_sample = full_images[index];
-            randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, allow_flip_upside_down);
+            randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, options);
             data.enqueue(crop);
         }
     };
