@@ -27,19 +27,19 @@ using namespace dlib;
 
 // ----------------------------------------------------------------------------------------
 
-struct gain
+struct gain_type
 {
     uint16_t class_index = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
     double gain = 0.0;
 };
 
-gain parse_gain(const std::string& gain_from_command_line)
+gain_type parse_gain(const std::string& gain_from_command_line)
 {
     const auto colon_pos = gain_from_command_line.find(':');
     if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= gain_from_command_line.length() - 1) {
         throw std::runtime_error("The gains must be supplied in the format index:gain (e.g., 1:-0.5)");
     }
-    gain gain;
+    gain_type gain;
     gain.class_index = std::stoul(gain_from_command_line.substr(0, colon_pos));
     gain.gain = std::stod(gain_from_command_line.substr(colon_pos + 1));
     return gain;
@@ -49,8 +49,8 @@ std::vector<double> parse_gains(const std::vector<std::string>& gains_from_comma
 {
     std::vector<double> gains(class_count, 0.0);
 
-    for (const auto gains_factor_from_command_line : gains_from_command_line) {
-        const gain gain = parse_gain(gain_from_command_line);
+    for (const auto gain_from_command_line : gains_from_command_line) {
+        const gain_type gain = parse_gain(gain_from_command_line);
         if (gain.class_index >= class_count) {
             std::ostringstream error;
             error << "Can't set gain for index " << gain.class_index << " when there are only " << class_count << " classes";
@@ -59,7 +59,7 @@ std::vector<double> parse_gains(const std::vector<std::string>& gains_from_comma
         gains[gain.class_index] = gain.gain;
     }
 
-    return gain;
+    return gains;
 }
 
 // ----------------------------------------------------------------------------------------
