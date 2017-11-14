@@ -14,13 +14,13 @@
 */
 
 #include "annonet.h"
+#include "annonet_infer.h"
 
 #include "cxxopts/include/cxxopts.hpp"
 #include <iostream>
 #include <dlib/data_io.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/image_saver/save_png.h>
-#include "tiling/dlib-wrapper.h"
 
 using namespace std;
 using namespace dlib;
@@ -348,51 +348,7 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
-
-        for (const tiling::dlib_tile& tile : tiles) {
-
-            const dlib::point tile_center(tile.full_rect.left() + tile.full_rect.width() / 2, tile.full_rect.top() + tile.full_rect.height() / 2);
-
-            const int recommended_tile_width = NetPimpl::RuntimeNet::GetRecommendedInputDimension(tile.full_rect.width());
-            const int recommended_tile_height = NetPimpl::RuntimeNet::GetRecommendedInputDimension(tile.full_rect.height());
-            const int recommended_tile_left = tile_center.x() - recommended_tile_width / 2;
-            const int recommended_tile_top = tile_center.y() - recommended_tile_height / 2;
-
-            assert(recommended_tile_width >= tile.full_rect.width());
-            assert(recommended_tile_height >= tile.full_rect.height());
-            assert(recommended_tile_width >= min_input_dimension);
-            assert(recommended_tile_height >= min_input_dimension);
-
-            tiling::dlib_tile actual_tile;
-            actual_tile.full_rect = dlib::rectangle(recommended_tile_left, recommended_tile_top, recommended_tile_left + recommended_tile_width - 1, recommended_tile_top + recommended_tile_height - 1);
-            actual_tile.non_overlapping_rect = tile.non_overlapping_rect;
-
-            assert(actual_tile.full_rect.width() == recommended_tile_width);
-            assert(actual_tile.full_rect.height() == recommended_tile_height);
-
-            const int actual_tile_width = actual_tile.full_rect.width();
-            const int actual_tile_height = actual_tile.full_rect.height();
-            const rectangle actual_tile_rect = centered_rect(tile_center, actual_tile_width, actual_tile_height);
-            const chip_details chip_details(actual_tile_rect, chip_dims(actual_tile_height, actual_tile_width));
-            extract_image_chip(input_image, chip_details, input_tile, interpolate_bilinear());
-
-            const matrix<uint16_t> index_label_tile = net(input_tile, gain_factors);
-
-            DLIB_CASSERT(index_label_tile.nr() == input_tile.nr());
-            DLIB_CASSERT(index_label_tile.nc() == input_tile.nc());
-
-            const long valid_left_in_image = actual_tile.non_overlapping_rect.left();
-            const long valid_top_in_image = actual_tile.non_overlapping_rect.top();
-            const long valid_left_in_tile = actual_tile.non_overlapping_rect.left() - actual_tile.full_rect.left();
-            const long valid_top_in_tile = actual_tile.non_overlapping_rect.top() - actual_tile.full_rect.top();
-            for (long y = 0, valid_tile_height = actual_tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
-                for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
-                    const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);
-                    result_image.label_image(valid_top_in_image + y, valid_left_in_image + x) = label;
-                }
-            }
-        }
+        annonet_infer(net, sample.input_image, result_image.label_image, gain_factors, tiling_parameters, input_tile);
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;

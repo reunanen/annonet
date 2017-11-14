@@ -371,5 +371,6 @@
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetDimensions.h">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClInclude>
+    <ClInclude Include="annonet_infer.h" />
   </ItemGroup>
 </Project>
