@@ -151,9 +151,13 @@ void randomly_crop_image(
 
     find_equal_class_weights(crop.temporary_unweighted_label_image, crop.label_image);
 
+    // Randomly flip the input image and the labels.
+    const bool allow_flip_left_right = options.count("allow-flip-left-right") > 0;
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
-
-    // Also randomly flip the input image and the labels.
+    if (allow_flip_left_right && rnd.get_random_double() > 0.5) {
+        crop.input_image = fliplr(crop.input_image);
+        crop.label_image = fliplr(crop.label_image);
+    }
     if (allow_flip_upside_down && rnd.get_random_double() > 0.5) {
         crop.input_image = flipud(crop.input_image);
         crop.label_image = flipud(crop.label_image);
@@ -216,6 +220,7 @@ int main(int argc, char** argv) try
         ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
+        ("l,allow-flip-left-right", "Randomly flip input images horizontally")
 #ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("n,grayscale-noise-level-stddev", "Set the standard deviation of the level of grayscale noise to add", cxxopts::value<double>()->default_value("0.0"))
 #else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
