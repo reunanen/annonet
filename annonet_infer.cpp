@@ -303,6 +303,7 @@ int main(int argc, char** argv) try
             dlib::matrix<rgb_alpha_pixel> rgba_label_image;
             while (result_image_write_requests.dequeue(result_image)) {
                 resize_label_image(result_image.label_image, result_image.original_width, result_image.original_height);
+                fix_output_image_orientation(result_image.label_image);
                 index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
                 save_png(rgba_label_image, result_image.filename);
                 result_image_write_results.enqueue(true);

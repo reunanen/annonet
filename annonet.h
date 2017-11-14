@@ -231,6 +231,12 @@ void fix_input_image_orientation(image_type& image)
     image = dlib::trans(dlib::fliplr(image));
 }
 
+template <typename image_type>
+void fix_output_image_orientation(image_type& image)
+{
+    image = dlib::fliplr(dlib::trans(image));
+}
+
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
     sample sample;
