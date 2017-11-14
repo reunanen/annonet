@@ -24,7 +24,7 @@ void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint16_t>& result_image,
-    const std::vector<double>& gain_factors = std::vector<double>(),
+    const std::vector<double>& gains = std::vector<double>(),
     const tiling::parameters& tiling_parameters = tiling::parameters(),
     NetPimpl::input_type& temp_input_tile = NetPimpl::input_type() // Can be supplied to avoid unnecessary memory re-allocations
 )
@@ -58,7 +58,7 @@ void annonet_infer(
         const dlib::chip_details chip_details(actual_tile_rect, dlib::chip_dims(actual_tile_height, actual_tile_width));
         dlib::extract_image_chip(input_image, chip_details, temp_input_tile, dlib::interpolate_bilinear());
 
-        const dlib::matrix<uint16_t> index_label_tile = net(temp_input_tile, gain_factors);
+        const dlib::matrix<uint16_t> index_label_tile = net(temp_input_tile, gains);
 
         DLIB_CASSERT(index_label_tile.nr() == temp_input_tile.nr());
         DLIB_CASSERT(index_label_tile.nc() == temp_input_tile.nc());

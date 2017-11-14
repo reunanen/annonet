@@ -27,39 +27,39 @@ using namespace dlib;
 
 // ----------------------------------------------------------------------------------------
 
-struct gain_factor
+struct gain
 {
     uint16_t class_index = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    double gain = 1.0;
+    double gain = 0.0;
 };
 
-gain_factor parse_gain_factor(const std::string& gain_factor_from_command_line)
+gain parse_gain(const std::string& gain_from_command_line)
 {
-    const auto colon_pos = gain_factor_from_command_line.find(':');
-    if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= gain_factor_from_command_line.length() - 1) {
-        throw std::runtime_error("The gain factors must be supplied in the format index:factor (e.g., 1:1.5)");
+    const auto colon_pos = gain_from_command_line.find(':');
+    if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= gain_from_command_line.length() - 1) {
+        throw std::runtime_error("The gains must be supplied in the format index:gain (e.g., 1:-0.5)");
     }
-    gain_factor gain_factor;
-    gain_factor.class_index = std::stoul(gain_factor_from_command_line.substr(0, colon_pos));
-    gain_factor.gain = std::stod(gain_factor_from_command_line.substr(colon_pos + 1));
-    return gain_factor;
+    gain gain;
+    gain.class_index = std::stoul(gain_from_command_line.substr(0, colon_pos));
+    gain.gain = std::stod(gain_from_command_line.substr(colon_pos + 1));
+    return gain;
 }
 
-std::vector<double> parse_gain_factors(const std::vector<std::string>& gain_factors_from_command_line, uint16_t class_count)
+std::vector<double> parse_gains(const std::vector<std::string>& gains_from_command_line, uint16_t class_count)
 {
-    std::vector<double> gain_factors(class_count, 1.0);
+    std::vector<double> gains(class_count, 0.0);
 
-    for (const auto gain_factor_from_command_line : gain_factors_from_command_line) {
-        const gain_factor gain_factor = parse_gain_factor(gain_factor_from_command_line);
-        if (gain_factor.class_index >= class_count) {
+    for (const auto gains_factor_from_command_line : gains_from_command_line) {
+        const gain gain = parse_gain(gain_from_command_line);
+        if (gain.class_index >= class_count) {
             std::ostringstream error;
-            error << "Can't set gain factor for index " << gain_factor.class_index << " when there are only " << class_count << " classes";
+            error << "Can't set gain for index " << gain.class_index << " when there are only " << class_count << " classes";
             throw std::runtime_error(error.str());
         }
-        gain_factors[gain_factor.class_index] = gain_factor.gain;
+        gains[gain.class_index] = gain.gain;
     }
 
-    return gain_factors;
+    return gain;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -227,7 +227,7 @@ int main(int argc, char** argv) try
 
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
-        ("g,gain-factor", "Supply a class-specific gain factor, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
+        ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ;
@@ -259,13 +259,13 @@ int main(int argc, char** argv) try
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
-    const std::vector<double> gain_factors = parse_gain_factors(options["gain-factor"].as<std::vector<std::string>>(), anno_classes.size());
+    const std::vector<double> gains = parse_gains(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
 
-    assert(gain_factors.size() == anno_classes.size());
+    assert(gains.size() == anno_classes.size());
 
-    std::cout << "Using gain factors:";
-    for (size_t class_index = 0, end = gain_factors.size(); class_index < end; ++class_index) {
-        std::cout << " " << class_index << ":" << gain_factors[class_index];
+    std::cout << "Using gains:";
+    for (size_t class_index = 0, end = gains.size(); class_index < end; ++class_index) {
+        std::cout << " " << class_index << ":" << gains[class_index];
     }
     std::cout << std::endl;
 
@@ -348,7 +348,7 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gain_factors, tiling_parameters, input_tile);
+        annonet_infer(net, sample.input_image, result_image.label_image, gains, tiling_parameters, input_tile);
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
