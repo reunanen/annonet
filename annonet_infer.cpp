@@ -27,39 +27,39 @@ using namespace dlib;
 
 // ----------------------------------------------------------------------------------------
 
-struct gain_type
+struct class_specific_value_type
 {
     uint16_t class_index = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    double gain = 0.0;
+    double value = 0.0;
 };
 
-gain_type parse_gain(const std::string& gain_from_command_line)
+class_specific_value_type parse_class_specific_value(const std::string& string_from_command_line)
 {
-    const auto colon_pos = gain_from_command_line.find(':');
-    if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= gain_from_command_line.length() - 1) {
+    const auto colon_pos = string_from_command_line.find(':');
+    if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= string_from_command_line.length() - 1) {
         throw std::runtime_error("The gains must be supplied in the format index:gain (e.g., 1:-0.5)");
     }
-    gain_type gain;
-    gain.class_index = std::stoul(gain_from_command_line.substr(0, colon_pos));
-    gain.gain = std::stod(gain_from_command_line.substr(colon_pos + 1));
-    return gain;
+    class_specific_value_type class_specific_value;
+    class_specific_value.class_index = std::stoul(string_from_command_line.substr(0, colon_pos));
+    class_specific_value.value = std::stod(string_from_command_line.substr(colon_pos + 1));
+    return class_specific_value;
 }
 
-std::vector<double> parse_gains(const std::vector<std::string>& gains_from_command_line, uint16_t class_count)
+std::vector<double> parse_class_specific_values(const std::vector<std::string>& strings_from_command_line, uint16_t class_count)
 {
-    std::vector<double> gains(class_count, 0.0);
+    std::vector<double> class_specific_values(class_count, 0.0);
 
-    for (const auto gain_from_command_line : gains_from_command_line) {
-        const gain_type gain = parse_gain(gain_from_command_line);
-        if (gain.class_index >= class_count) {
+    for (const auto string_from_command_line : strings_from_command_line) {
+        const auto class_specific_value = parse_class_specific_value(string_from_command_line);
+        if (class_specific_value.class_index >= class_count) {
             std::ostringstream error;
-            error << "Can't set gain for index " << gain.class_index << " when there are only " << class_count << " classes";
+            error << "Can't define class-specific value for index " << class_specific_value.class_index << " when there are only " << class_count << " classes";
             throw std::runtime_error(error.str());
         }
-        gains[gain.class_index] = gain.gain;
+        class_specific_values[class_specific_value.class_index] = class_specific_value.value;
     }
 
-    return gains;
+    return class_specific_values;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -228,6 +228,7 @@ int main(int argc, char** argv) try
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
+        ("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ;
@@ -259,9 +260,11 @@ int main(int argc, char** argv) try
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
-    const std::vector<double> gains = parse_gains(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
+    const std::vector<double> gains = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
+    const std::vector<double> detection_levels = parse_class_specific_values(options["detection"].as<std::vector<std::string>>(), anno_classes.size());
 
     assert(gains.size() == anno_classes.size());
+    assert(detection_levels.size() == anno_classes.size());
 
     std::cout << "Using gains:";
     for (size_t class_index = 0, end = gains.size(); class_index < end; ++class_index) {
@@ -269,7 +272,13 @@ int main(int argc, char** argv) try
     }
     std::cout << std::endl;
 
-    NetPimpl::input_type input_tile;
+    std::cout << "Using detection levels:";
+    for (size_t class_index = 0, end = detection_levels.size(); class_index < end; ++class_index) {
+        std::cout << " " << class_index << ":" << detection_levels[class_index];
+    }
+    std::cout << std::endl;
+
+    annonet_infer_temp temp;
     matrix<uint16_t> index_label_tile_resized;
 
     auto files = find_image_files(options["input-directory"].as<std::string>(), false);
@@ -349,7 +358,7 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gains, tiling_parameters, input_tile);
+        annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
