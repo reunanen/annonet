@@ -19,17 +19,37 @@
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
 #include <dlib/dnn.h>
 #include "tiling/dlib-wrapper.h"
+#include <unordered_set>
+
+// Can be supplied to avoid unnecessary memory re-allocations
+struct annonet_infer_temp
+{
+    NetPimpl::input_type input_tile;
+    std::vector<dlib::point> detection_seeds;
+    dlib::matrix<unsigned int> connected_blobs;
+};
 
 void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint16_t>& result_image,
     const std::vector<double>& gains = std::vector<double>(),
+    const std::vector<double>& detection_levels = std::vector<double>(),
     const tiling::parameters& tiling_parameters = tiling::parameters(),
-    NetPimpl::input_type& temp_input_tile = NetPimpl::input_type() // Can be supplied to avoid unnecessary memory re-allocations
+    annonet_infer_temp& temp = annonet_infer_temp()
 )
 {
+    const bool use_detection_level = std::any_of(detection_levels.begin(), detection_levels.end(),
+        [](const double value) {
+            assert(value >= 0.0);
+            return value > 0.0;
+        });
+
     result_image.set_size(input_image.nr(), input_image.nc());
+
+    if (use_detection_level) {
+        temp.detection_seeds.clear();
+    }
 
     const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
 
@@ -56,12 +76,12 @@ void annonet_infer(
         const int actual_tile_height = actual_tile.full_rect.height();
         const dlib::rectangle actual_tile_rect = dlib::centered_rect(tile_center, actual_tile_width, actual_tile_height);
         const dlib::chip_details chip_details(actual_tile_rect, dlib::chip_dims(actual_tile_height, actual_tile_width));
-        dlib::extract_image_chip(input_image, chip_details, temp_input_tile, dlib::interpolate_bilinear());
+        dlib::extract_image_chip(input_image, chip_details, temp.input_tile, dlib::interpolate_bilinear());
 
-        const dlib::matrix<uint16_t> index_label_tile = net(temp_input_tile, gains);
+        const dlib::matrix<uint16_t> index_label_tile = net(temp.input_tile, gains);
 
-        DLIB_CASSERT(index_label_tile.nr() == temp_input_tile.nr());
-        DLIB_CASSERT(index_label_tile.nc() == temp_input_tile.nc());
+        DLIB_CASSERT(index_label_tile.nr() == temp.input_tile.nr());
+        DLIB_CASSERT(index_label_tile.nc() == temp.input_tile.nc());
 
         const long valid_left_in_image = actual_tile.non_overlapping_rect.left();
         const long valid_top_in_image = actual_tile.non_overlapping_rect.top();
@@ -71,6 +91,60 @@ void annonet_infer(
             for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
                 const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);
                 result_image(valid_top_in_image + y, valid_left_in_image + x) = label;
+            }
+        }
+
+        if (use_detection_level) {
+
+            const auto tensor_index = [](const dlib::tensor& t, long sample, long k, long row, long column)
+            {
+                // See: https://github.com/davisking/dlib/blob/4dfeb7e186dd1bf6ac91273509f687293bd4230a/dlib/dnn/tensor_abstract.h#L38
+                return ((sample * t.k() + k) * t.nr() + row) * t.nc() + column;
+            };
+
+            const dlib::tensor& output_tensor = net.GetOutput();
+
+            DLIB_CASSERT(output_tensor.nr() == recommended_tile_height);
+            DLIB_CASSERT(output_tensor.nc() == recommended_tile_width);
+
+            const float* const out_data = output_tensor.host();
+
+            for (long y = 0, valid_tile_height = actual_tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
+                for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
+                    const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);
+                    if (label > 0) {
+                        const float clean_output = out_data[tensor_index(output_tensor, 0, 0, valid_top_in_tile + y, valid_left_in_tile + x)];
+                        const float label_output = out_data[tensor_index(output_tensor, 0, label, valid_top_in_tile + y, valid_left_in_tile + x)];
+                        if (label_output - clean_output > detection_levels[label] - detection_levels[0]) {
+                            temp.detection_seeds.emplace_back(valid_left_in_image + x, valid_top_in_image + y);
+                        }                        
+                    }
+                }
+            }
+        }
+    }
+
+    if (use_detection_level) {
+        const unsigned long connected_blob_count = dlib::label_connected_blobs(result_image, dlib::zero_pixels_are_background(), dlib::neighbors_8(), dlib::connected_if_equal(), temp.connected_blobs);
+
+        std::unordered_set<unsigned int> detected_blobs;
+
+        for (const dlib::point& point : temp.detection_seeds) {
+            const unsigned int blob = temp.connected_blobs(point.y(), point.x());
+            detected_blobs.insert(blob);
+        }
+
+        const long nr = input_image.nr();
+        const long nc = input_image.nc();
+
+        for (long r = 0; r < nr; ++r) {
+            for (long c = 0; c < nc; ++c) {
+                const unsigned int blob = temp.connected_blobs(r, c);
+                if (blob > 0) {
+                    if (detected_blobs.find(blob) == detected_blobs.end()) {
+                        result_image(r, c) = 0;
+                    }
+                }
             }
         }
     }
