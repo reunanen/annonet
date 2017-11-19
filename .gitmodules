@@ -16,3 +16,6 @@
 [submodule "cxxopts"]
 	path = cxxopts
 	url = https://github.com/reunanen/cxxopts
+[submodule "lru-timday"]
+	path = lru-timday
+	url = https://github.com/reunanen/lru-timday
