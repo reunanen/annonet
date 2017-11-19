@@ -65,6 +65,9 @@ struct crop
 
     // prevent having to re-allocate memory constantly
     dlib::matrix<uint16_t> temporary_unweighted_label_image;
+
+    std::string warning;
+    std::string error;
 };
 
 void find_equal_class_weights (
@@ -379,16 +382,15 @@ int main(int argc, char** argv) try
             const sample& ground_truth_sample = full_images_cache(image_filenames);
 
             if (!ground_truth_sample.error.empty()) {
-                // TODO: do something with the error
+                crop.error = ground_truth_sample.error;
             }
-            else if (!ground_truth_sample.labeled_points_by_class.empty()) {
+            else if (ground_truth_sample.labeled_points_by_class.empty()) {
+                crop.warning = "Warning: no labeled points in " + ground_truth_sample.image_filenames.label_filename;
+            }
+            else {
                 randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, options);
-                data.enqueue(crop);
             }
-            // TODO:
-            //else {
-            //    std::cout << std::endl << "Warning: no labeled points in " << ground_truth_sample.image_filenames.label_filename << std::endl;
-            //}
+            data.enqueue(crop);
         }
     };
 
@@ -417,12 +419,20 @@ int main(int argc, char** argv) try
 
         // make a mini-batch
         crop crop;
-        while(samples.size() < minibatch_size)
+        while (samples.size() < minibatch_size)
         {
             data.dequeue(crop);
 
-            samples.push_back(std::move(crop.input_image));
-            labels.push_back(std::move(crop.label_image));
+            if (!crop.error.empty()) {
+                throw std::runtime_error(crop.error);
+            }
+            else if (!crop.warning.empty()) {
+                std::cout << crop.warning << std::endl;
+            }
+            else {
+                samples.push_back(std::move(crop.input_image));
+                labels.push_back(std::move(crop.label_image));
+            }
         }
 
         training_net.StartTraining(samples, labels);
