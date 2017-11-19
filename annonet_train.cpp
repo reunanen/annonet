@@ -351,16 +351,6 @@ int main(int argc, char** argv) try
         }
     };
 
-        //if (!ground_truth_sample.error.empty()) {
-        //    throw std::runtime_error(ground_truth_sample.error);
-        //}
-        //if (!ground_truth_sample.labeled_points_by_class.empty()) {
-        //    full_images.push_back(std::move(ground_truth_sample));
-        //}
-        //else {
-        //    std::cout << std::endl << "Warning: no labeled points in " << ground_truth_sample.image_filenames.label_filename << std::endl;
-        //}
-
     shared_lru_cache_using_std<image_filenames, sample, std::unordered_map> full_images_cache(
         [&](const image_filenames& image_filenames) {
             sample sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
