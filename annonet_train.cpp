@@ -236,6 +236,9 @@ int main(int argc, char** argv) try
 
     cxxopts::Options options("annonet_train", "Train semantic-segmentation networks using data generated in anno");
 
+    std::ostringstream default_data_loader_thread_count;
+    default_data_loader_thread_count << std::thread::hardware_concurrency();
+
     options.add_options()
         ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
@@ -251,6 +254,7 @@ int main(int argc, char** argv) try
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
+        ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ;
 
     try {
@@ -280,12 +284,14 @@ int main(int argc, char** argv) try
     const auto save_interval = options["save-interval"].as<size_t>();
     const auto relative_training_length = std::max(0.01, options["relative-training-length"].as<double>());
     const auto cached_image_count = options["cached-image-count"].as<int>();
+    const auto data_loader_thread_count = std::max(1U, options["data-loader-thread-count"].as<unsigned int>());
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
     std::cout << "Save interval = " << save_interval << std::endl;
     std::cout << "Relative training length = " << relative_training_length << std::endl;
     std::cout << "Cached image count = " << cached_image_count << std::endl;
+    std::cout << "Data loader thread count = " << data_loader_thread_count << std::endl;
 
     if (!classes_to_ignore.empty()) {
         std::cout << "Classes to ignore =";
@@ -395,7 +401,7 @@ int main(int argc, char** argv) try
     };
 
     std::vector<std::thread> data_loaders;
-    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+    for (unsigned int i = 0; i < data_loader_thread_count; ++i) {
         data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
     }
     
