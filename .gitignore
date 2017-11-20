@@ -7,3 +7,5 @@
 /.vs
 /annonet_infer_cuda.vcxproj.user
 /annonet_train_cuda.vcxproj.user
+/annonet_infer_cpu.vcxproj.user
+/annonet_train_cpu.vcxproj.user
