@@ -216,6 +216,9 @@ int main(int argc, char** argv) try
 
     cxxopts::Options options("annonet_infer", "Do inference using trained semantic-segmentation networks");
 
+    std::ostringstream hardware_concurrency;
+    hardware_concurrency << std::thread::hardware_concurrency();
+
 #ifdef DLIB_USE_CUDA
     const std::string default_max_tile_width = "512";
     const std::string default_max_tile_height = "512";
@@ -231,6 +234,8 @@ int main(int argc, char** argv) try
         ("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
+        ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
+        ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ;
 
     try {
@@ -288,11 +293,14 @@ int main(int argc, char** argv) try
         full_image_read_requests.enqueue(image_filenames(file));
     }
 
-    dlib::pipe<sample> full_image_read_results(std::thread::hardware_concurrency());
+    const int full_image_reader_count = std::max(1, options["full-image-reader-thread-count"].as<int>());
+    const int result_image_writer_count = std::max(1, options["result-image-writer-thread-count"].as<int>());
+
+    dlib::pipe<sample> full_image_read_results(full_image_reader_count);
 
     std::vector<std::thread> full_image_readers;
 
-    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+    for (unsigned int i = 0; i < full_image_reader_count; ++i) {
         full_image_readers.push_back(std::thread([&]() {
             image_filenames image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
@@ -301,12 +309,12 @@ int main(int argc, char** argv) try
         }));
     }
 
-    dlib::pipe<result_image_type> result_image_write_requests(std::thread::hardware_concurrency());
+    dlib::pipe<result_image_type> result_image_write_requests(result_image_writer_count);
     dlib::pipe<bool> result_image_write_results(files.size());
 
     std::vector<std::thread> result_image_writers;
 
-    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+    for (unsigned int i = 0; i < result_image_writer_count; ++i) {
         result_image_writers.push_back(std::thread([&]() {
             result_image_type result_image;
             dlib::matrix<rgb_alpha_pixel> rgba_label_image;
