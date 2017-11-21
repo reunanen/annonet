@@ -255,6 +255,7 @@ int main(int argc, char** argv) try
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
+        ("no-empty-label-image-warning", "Do not warn about empty label images")
         ;
 
     try {
@@ -285,6 +286,7 @@ int main(int argc, char** argv) try
     const auto relative_training_length = std::max(0.01, options["relative-training-length"].as<double>());
     const auto cached_image_count = options["cached-image-count"].as<int>();
     const auto data_loader_thread_count = std::max(1U, options["data-loader-thread-count"].as<unsigned int>());
+    const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
@@ -423,7 +425,9 @@ int main(int argc, char** argv) try
                 throw std::runtime_error(crop.error);
             }
             else if (!crop.warning.empty()) {
-                std::cout << crop.warning << std::endl;
+				if (warn_about_empty_label_images) {
+					std::cout << crop.warning << std::endl;
+				}
             }
             else {
                 samples.push_back(std::move(crop.input_image));
