@@ -17,6 +17,7 @@
 
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
+#include "lru-timday/shared_lru_cache_using_std.h"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
 
@@ -41,6 +42,22 @@ rectangle make_cropping_rect_around_defect(
 
 // ----------------------------------------------------------------------------------------
 
+namespace std {
+    template <>
+    struct hash<image_filenames> {
+        std::size_t operator()(const image_filenames& image_filenames) const {
+            return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
+        }
+    };
+
+    bool operator ==(const image_filenames& a, const image_filenames& b) {
+        return a.image_filename == b.image_filename
+            && a.label_filename == b.label_filename;
+    }
+}
+
+// ----------------------------------------------------------------------------------------
+
 struct crop
 {
     NetPimpl::input_type input_image;
@@ -48,6 +65,9 @@ struct crop
 
     // prevent having to re-allocate memory constantly
     dlib::matrix<uint16_t> temporary_unweighted_label_image;
+
+    std::string warning;
+    std::string error;
 };
 
 void find_equal_class_weights (
@@ -216,6 +236,9 @@ int main(int argc, char** argv) try
 
     cxxopts::Options options("annonet_train", "Train semantic-segmentation networks using data generated in anno");
 
+    std::ostringstream default_data_loader_thread_count;
+    default_data_loader_thread_count << std::thread::hardware_concurrency();
+
     options.add_options()
         ("d,downscaling-factor", "The downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
@@ -230,6 +253,8 @@ int main(int argc, char** argv) try
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
+        ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
+        ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ;
 
     try {
@@ -258,11 +283,15 @@ int main(int argc, char** argv) try
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
     const auto save_interval = options["save-interval"].as<size_t>();
     const auto relative_training_length = std::max(0.01, options["relative-training-length"].as<double>());
+    const auto cached_image_count = options["cached-image-count"].as<int>();
+    const auto data_loader_thread_count = std::max(1U, options["data-loader-thread-count"].as<unsigned int>());
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
     std::cout << "Save interval = " << save_interval << std::endl;
     std::cout << "Relative training length = " << relative_training_length << std::endl;
+    std::cout << "Cached image count = " << cached_image_count << std::endl;
+    std::cout << "Data loader thread count = " << data_loader_thread_count << std::endl;
 
     if (!classes_to_ignore.empty()) {
         std::cout << "Classes to ignore =";
@@ -290,23 +319,6 @@ int main(int argc, char** argv) try
     std::vector<NetPimpl::input_type> samples;
     std::vector<NetPimpl::training_label_type> labels;
 
-    { // Test that the input size is correct for the net that we have built, and also that a minibatch fits in GPU memory
-        training_net.Initialize();
-        training_net.SetClassCount(anno_classes.size());
-
-        for (uint16_t label = 0; label < minibatch_size; ++label) {
-            NetPimpl::input_type input_image(required_input_dimension, required_input_dimension);
-            NetPimpl::training_label_type label_image(required_input_dimension, required_input_dimension);
-            //input_image = label * 255 / (minibatch_size - 1);
-            label_image = label % anno_classes.size();
-
-            samples.push_back(std::move(input_image));
-            labels.push_back(std::move(label_image));
-        }
-
-        training_net.StartTraining(samples, labels);
-    }
-
     training_net.Initialize();
     training_net.SetClassCount(anno_classes.size());
     training_net.SetLearningRate(initial_learning_rate);
@@ -327,17 +339,6 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    dlib::pipe<image_filenames> full_image_read_requests(image_files.size());
-
-    for (const image_filenames& original : image_files) {
-        image_filenames copy = original;
-        full_image_read_requests.enqueue(copy);
-    }
-
-    dlib::pipe<sample> full_image_read_results(std::thread::hardware_concurrency());
-
-    std::vector<std::thread> full_image_readers;
-    
     const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
         for (const auto class_to_ignore : classes_to_ignore) {
             const auto i = sample.labeled_points_by_class.find(class_to_ignore);
@@ -350,35 +351,12 @@ int main(int argc, char** argv) try
         }
     };
 
-    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
-        full_image_readers.push_back(std::thread([&]() {
-            image_filenames image_filenames;
-            while (full_image_read_requests.dequeue(image_filenames)) {
-                sample sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
-                ignore_classes_to_ignore(sample);
-                full_image_read_results.enqueue(sample);
-            }
-        }));
-    }
-
-    std::deque<sample> full_images;
-
-    for (size_t i = 0, end = image_files.size(); i < end; ++i) {
-        std::cout << "\rReading image " << (i + 1) << " of " << end << "...";
-        sample ground_truth_sample;
-        full_image_read_results.dequeue(ground_truth_sample);
-        if (!ground_truth_sample.error.empty()) {
-            throw std::runtime_error(ground_truth_sample.error);
-        }
-        if (!ground_truth_sample.labeled_points_by_class.empty()) {
-            full_images.push_back(std::move(ground_truth_sample));
-        }
-        else {
-            std::cout << std::endl << "Warning: no labeled points in " << ground_truth_sample.image_filenames.label_filename << std::endl;
-        }
-    }
-
-    full_image_read_requests.disable();
+    shared_lru_cache_using_std<image_filenames, sample, std::unordered_map> full_images_cache(
+        [&](const image_filenames& image_filenames) {
+            sample sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
+            ignore_classes_to_ignore(sample);
+            return sample;
+        }, cached_image_count);
 
     cout << endl << "Now training..." << endl;
 
@@ -387,7 +365,7 @@ int main(int argc, char** argv) try
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
     dlib::pipe<crop> data(2 * minibatch_size);
-    auto pull_crops = [&data, &full_images, required_input_dimension, &options](time_t seed)
+    auto pull_crops = [&data, &full_images_cache, &image_files, required_input_dimension, &options](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         NetPimpl::input_type input_image;
@@ -395,15 +373,25 @@ int main(int argc, char** argv) try
         crop crop;
         while (data.is_enabled())
         {
-            const size_t index = rnd.get_random_32bit_number() % full_images.size();
-            const sample& ground_truth_sample = full_images[index];
-            randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, options);
+            const size_t index = rnd.get_random_32bit_number() % image_files.size();
+            const image_filenames& image_filenames = image_files[index];
+            const sample& ground_truth_sample = full_images_cache(image_filenames);
+
+            if (!ground_truth_sample.error.empty()) {
+                crop.error = ground_truth_sample.error;
+            }
+            else if (ground_truth_sample.labeled_points_by_class.empty()) {
+                crop.warning = "Warning: no labeled points in " + ground_truth_sample.image_filenames.label_filename;
+            }
+            else {
+                randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, options);
+            }
             data.enqueue(crop);
         }
     };
 
     std::vector<std::thread> data_loaders;
-    for (unsigned int i = 0, end = std::thread::hardware_concurrency(); i < end; ++i) {
+    for (unsigned int i = 0; i < data_loader_thread_count; ++i) {
         data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
     }
     
@@ -427,12 +415,20 @@ int main(int argc, char** argv) try
 
         // make a mini-batch
         crop crop;
-        while(samples.size() < minibatch_size)
+        while (samples.size() < minibatch_size)
         {
             data.dequeue(crop);
 
-            samples.push_back(std::move(crop.input_image));
-            labels.push_back(std::move(crop.label_image));
+            if (!crop.error.empty()) {
+                throw std::runtime_error(crop.error);
+            }
+            else if (!crop.warning.empty()) {
+                std::cout << crop.warning << std::endl;
+            }
+            else {
+                samples.push_back(std::move(crop.input_image));
+                labels.push_back(std::move(crop.label_image));
+            }
         }
 
         training_net.StartTraining(samples, labels);
@@ -452,7 +448,6 @@ int main(int argc, char** argv) try
         }
     };
 
-    join(full_image_readers);
     join(data_loaders);
 
     save_inference_net();
