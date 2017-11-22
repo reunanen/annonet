@@ -353,10 +353,11 @@ int main(int argc, char** argv) try
         }
     };
 
-    shared_lru_cache_using_std<image_filenames, sample, std::unordered_map> full_images_cache(
+    shared_lru_cache_using_std<image_filenames, std::shared_ptr<sample>, std::unordered_map> full_images_cache(
         [&](const image_filenames& image_filenames) {
-            sample sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
-            ignore_classes_to_ignore(sample);
+            std::shared_ptr<sample> sample(new sample);
+            *sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
+            ignore_classes_to_ignore(*sample);
             return sample;
         }, cached_image_count);
 
@@ -377,16 +378,16 @@ int main(int argc, char** argv) try
         {
             const size_t index = rnd.get_random_32bit_number() % image_files.size();
             const image_filenames& image_filenames = image_files[index];
-            const sample& ground_truth_sample = full_images_cache(image_filenames);
+            const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
 
-            if (!ground_truth_sample.error.empty()) {
-                crop.error = ground_truth_sample.error;
+            if (!ground_truth_sample->error.empty()) {
+                crop.error = ground_truth_sample->error;
             }
-            else if (ground_truth_sample.labeled_points_by_class.empty()) {
-                crop.warning = "Warning: no labeled points in " + ground_truth_sample.image_filenames.label_filename;
+            else if (ground_truth_sample->labeled_points_by_class.empty()) {
+                crop.warning = "Warning: no labeled points in " + ground_truth_sample->image_filenames.label_filename;
             }
             else {
-                randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, options);
+                randomly_crop_image(required_input_dimension, *ground_truth_sample, crop, rnd, options);
             }
             data.enqueue(crop);
         }
