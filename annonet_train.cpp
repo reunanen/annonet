@@ -202,7 +202,9 @@ int main(int argc, char** argv) try
         ("c,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
-        ("ignore-large-nonzero-regions", "Ignore large non-zero regions", cxxopts::value<double>())
+        ("ignore-large-nonzero-regions-by-area", "Ignore large non-zero regions by area", cxxopts::value<double>())
+        ("ignore-large-nonzero-regions-by-width", "Ignore large non-zero regions by width", cxxopts::value<double>())
+        ("ignore-large-nonzero-regions-by-height", "Ignore large non-zero regions by height", cxxopts::value<double>())
         ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
@@ -234,7 +236,9 @@ int main(int argc, char** argv) try
     }
 
     const double downscaling_factor = options["downscaling-factor"].as<double>();
-    const double ignore_large_nonzero_regions_relative_limit = options.count("ignore-large-nonzero-regions") ? options["ignore-large-nonzero-regions"].as<double>() : std::numeric_limits<double>::infinity();
+    const double ignore_large_nonzero_regions_by_area = options.count("ignore-large-nonzero-regions-by-area") ? options["ignore-large-nonzero-regions-by-area"].as<double>() : std::numeric_limits<double>::infinity();
+    const double ignore_large_nonzero_regions_by_width = options.count("ignore-large-nonzero-regions-by-width") ? options["ignore-large-nonzero-regions-by-width"].as<double>() : std::numeric_limits<double>::infinity();
+    const double ignore_large_nonzero_regions_by_height = options.count("ignore-large-nonzero-regions-by-height") ? options["ignore-large-nonzero-regions-by-height"].as<double>() : std::numeric_limits<double>::infinity();
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
@@ -245,7 +249,6 @@ int main(int argc, char** argv) try
     const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
-    std::cout << "Ignore large non-zero regions relative limit = " << ignore_large_nonzero_regions_relative_limit << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
     std::cout << "Save interval = " << save_interval << std::endl;
     std::cout << "Relative training length = " << relative_training_length << std::endl;
@@ -310,7 +313,7 @@ int main(int argc, char** argv) try
         }
     };
 
-    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_relative_limit](sample& sample) {
+    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample& sample) {
         if (sample.labeled_points_by_class.empty()) {
             return; // no annotations
         }
@@ -319,17 +322,25 @@ int main(int argc, char** argv) try
         }
         const auto receptive_field_side = NetPimpl::TrainingNet::GetRequiredInputDimension();
         const double receptive_field_area = receptive_field_side * receptive_field_side;
-        const double max_blob_point_count_to_keep = ignore_large_nonzero_regions_relative_limit * receptive_field_area;
-        if (max_blob_point_count_to_keep >= sample.label_image.nr() * sample.label_image.nc()) {
+        const double max_blob_point_count_to_keep = ignore_large_nonzero_regions_by_area * receptive_field_area;
+        const double max_blob_width_to_keep = ignore_large_nonzero_regions_by_width * receptive_field_side;
+        const double max_blob_height_to_keep = ignore_large_nonzero_regions_by_height * receptive_field_side;
+        if (max_blob_point_count_to_keep >= sample.label_image.nr() * sample.label_image.nc() && max_blob_width_to_keep >= sample.label_image.nc() && max_blob_height_to_keep >= sample.label_image.nr()) {
             return; // would keep everything in any case
         }
         dlib::matrix<unsigned long> blobs;
         const unsigned long blob_count = dlib::label_connected_blobs(sample.label_image, zero_and_ignored_pixels_are_background(), neighbors_8(), connected_if_equal(), blobs);
         std::vector<std::deque<dlib::point>> blob_points(blob_count);
+        std::vector<std::pair<long, long>> blob_minmax_x(blob_count, std::make_pair(std::numeric_limits<long>::max(), std::numeric_limits<long>::min()));
+        std::vector<std::pair<long, long>> blob_minmax_y(blob_count, std::make_pair(std::numeric_limits<long>::max(), std::numeric_limits<long>::min()));
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             for (const dlib::point& point : labeled_points.second) {
                 const unsigned long blob_index = blobs(point.y(), point.x());
                 blob_points[blob_index].push_back(point);
+                blob_minmax_x[blob_index].first  = std::min(point.x(), blob_minmax_x[blob_index].first);
+                blob_minmax_x[blob_index].second = std::max(point.x(), blob_minmax_x[blob_index].second);
+                blob_minmax_y[blob_index].first  = std::min(point.y(), blob_minmax_y[blob_index].first);
+                blob_minmax_y[blob_index].second = std::max(point.y(), blob_minmax_y[blob_index].second);
             }
        }
 
@@ -337,9 +348,20 @@ int main(int argc, char** argv) try
         for (unsigned long blob_index = 0; blob_index < blob_count; ++blob_index) {
             const auto& points = blob_points[blob_index];
             if (points.empty()) {
-                // nothing to do
+                continue; // nothing to do
             }
-            else if (blob_index == 0 || points.size() <= max_blob_point_count_to_keep) {
+            const auto ignore_blob_by_size = [&]() {
+                if (points.size() > max_blob_point_count_to_keep) {
+                    return true;
+                }
+                const auto blob_width  = [&]() { return blob_minmax_x[blob_index].second - blob_minmax_x[blob_index].first + 1; };
+                const auto blob_height = [&]() { return blob_minmax_y[blob_index].second - blob_minmax_y[blob_index].first + 1; };
+                if (blob_width() > max_blob_width_to_keep || blob_height() > max_blob_height_to_keep) {
+                    return true;
+                }
+                return false;
+            };
+            if (blob_index == 0 || !ignore_blob_by_size()) {
                 // keep
                 const auto point = points.front();
                 const uint16_t label = sample.label_image(point.y(), point.x());
