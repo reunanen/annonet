@@ -14,6 +14,7 @@
 */
 
 #include "annonet.h"
+#include "annonet_train.h"
 
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
@@ -23,8 +24,6 @@
 
 #include <iostream>
 #include <iterator>
-#include <numeric>
-#include <unordered_map>
 #include <thread>
 
 using namespace std;
@@ -69,51 +68,6 @@ struct crop
     std::string warning;
     std::string error;
 };
-
-void set_class_weights (
-    const dlib::matrix<uint16_t>& unweighted_label_image,
-    NetPimpl::training_label_type& weighted_label_image,
-    double a_priori_weight
-)
-{
-    const long nr = unweighted_label_image.nr();
-    const long nc = unweighted_label_image.nc();
-
-    std::unordered_map<uint16_t, size_t> label_counts;
-
-    for (int r = 0; r < nr; ++r) {
-        for (int c = 0; c < nc; ++c) {
-            const uint16_t label = unweighted_label_image(r, c);
-            if (label != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-                ++label_counts[label];
-            }
-        }
-    }
-
-    const size_t total_count = std::accumulate(label_counts.begin(), label_counts.end(), 0,
-        [&](size_t total, const std::pair<uint16_t, size_t>& item) { return total + item.second; });
-
-    DLIB_CASSERT(total_count > 0);
-
-    const double average_weight = nr * nc / static_cast<double>(total_count);
-    const double average_count = total_count / static_cast<double>(label_counts.size());
-
-    std::unordered_map<uint16_t, double> label_weights;
-
-    for (const auto& item : label_counts) {
-        label_weights[item.first] = average_weight * pow(average_count / item.second, a_priori_weight);
-    }
-
-    weighted_label_image.set_size(nr, nc);
-
-    for (int r = 0; r < nr; ++r) {
-        for (int c = 0; c < nc; ++c) {
-            const uint16_t label = unweighted_label_image(r, c);
-            const double weight = label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore ? 0.0 : label_weights[label];
-            weighted_label_image(r, c) = dlib::loss_multiclass_log_per_pixel_weighted_::weighted_label(label, weight);
-        }
-    }
-}
 
 #ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
 void add_random_noise(dlib::matrix<uint8_t>& image, double noise_level, dlib::rand& rnd)
@@ -167,7 +121,7 @@ void randomly_crop_image(
     // TODO: mark all invalid areas as ignore.
     extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
 
-    set_class_weights(crop.temporary_unweighted_label_image, crop.label_image, options["a-priori-weight"].as<double>());
+    set_weights(crop.temporary_unweighted_label_image, crop.label_image, options["class-weight"].as<double>(), options["image-weight"].as<double>());
 
     // Randomly flip the input image and the labels.
     const bool allow_flip_left_right = options.count("allow-flip-left-right") > 0;
@@ -248,7 +202,8 @@ int main(int argc, char** argv) try
         ("c,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
-        ("a,a-priori-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
+        ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
+        ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))

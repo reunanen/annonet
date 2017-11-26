@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="annonet.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="dlib">
+      <UniqueIdentifier>{743ad4b2-a60b-4d19-8a35-97f489b20a8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\threads">
+      <UniqueIdentifier>{00f334aa-b6a8-456e-8258-2b96dc6daa46}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_shared.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_1.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threads_kernel_2.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\async.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\multithreaded_object_extension.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\thread_pool_extension.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\threads\threaded_object_extension.cpp">
+      <Filter>dlib\threads</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
