@@ -19,3 +19,6 @@
 [submodule "lru-timday"]
 	path = lru-timday
 	url = https://github.com/reunanen/lru-timday
+[submodule "test/picotest"]
+	path = test/picotest
+	url = https://github.com/reunanen/picotest/

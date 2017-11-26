@@ -5,7 +5,10 @@
 /annonet_cuda.VC.VC.opendb
 /vc140.pdb
 /.vs
-/annonet_infer_cuda.vcxproj.user
-/annonet_train_cuda.vcxproj.user
 /annonet_infer_cpu.vcxproj.user
 /annonet_train_cpu.vcxproj.user
+/annonet_infer_cuda.vcxproj.user
+/annonet_train_cuda.vcxproj.user
+/test/x64
+/test/annonet_test_cpu.vcxproj.user
+/test/annonet_test_cuda.vcxproj.user

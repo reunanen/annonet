@@ -4,13 +4,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "annonet_infer_cpu", "annonet_infer_cpu.vcxproj", "{0A81CF58-E4DD-4294-834C-B8DA25380E01}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C6F32C08-52D7-4813-93C8-DC17971936E7} = {C6F32C08-52D7-4813-93C8-DC17971936E7}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "annonet_train_cpu", "annonet_train_cpu.vcxproj", "{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C6F32C08-52D7-4813-93C8-DC17971936E7} = {C6F32C08-52D7-4813-93C8-DC17971936E7}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "annonet_test_cpu", "test\annonet_test_cpu.vcxproj", "{C6F32C08-52D7-4813-93C8-DC17971936E7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{76A202F1-7861-4351-B63C-34A6F698EFB4}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		DebugGrayscaleInput|x64 = DebugGrayscaleInput|x64
@@ -34,8 +41,19 @@ Global
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.Release|x64.Build.0 = Release|x64
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.ReleaseGrayscaleInput|x64.ActiveCfg = ReleaseGrayscaleInput|x64
 		{FA3BCF5A-9BBC-4E53-9EAC-9BC1D7EF032C}.ReleaseGrayscaleInput|x64.Build.0 = ReleaseGrayscaleInput|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.Debug|x64.ActiveCfg = Debug|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.Debug|x64.Build.0 = Debug|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.DebugGrayscaleInput|x64.ActiveCfg = DebugGrayscaleInput|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.DebugGrayscaleInput|x64.Build.0 = DebugGrayscaleInput|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.Release|x64.ActiveCfg = Release|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.Release|x64.Build.0 = Release|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.ReleaseGrayscaleInput|x64.ActiveCfg = ReleaseGrayscaleInput|x64
+		{C6F32C08-52D7-4813-93C8-DC17971936E7}.ReleaseGrayscaleInput|x64.Build.0 = ReleaseGrayscaleInput|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C6F32C08-52D7-4813-93C8-DC17971936E7} = {76A202F1-7861-4351-B63C-34A6F698EFB4}
 	EndGlobalSection
 EndGlobal
