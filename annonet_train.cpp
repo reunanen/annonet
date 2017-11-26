@@ -70,9 +70,10 @@ struct crop
     std::string error;
 };
 
-void find_equal_class_weights (
+void set_class_weights (
     const dlib::matrix<uint16_t>& unweighted_label_image,
-    NetPimpl::training_label_type& weighted_label_image
+    NetPimpl::training_label_type& weighted_label_image,
+    double a_priori_weight
 )
 {
     const long nr = unweighted_label_image.nr();
@@ -98,9 +99,6 @@ void find_equal_class_weights (
     const double average_count = total_count / static_cast<double>(label_counts.size());
 
     std::unordered_map<uint16_t, double> label_weights;
-
-    // try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes
-    constexpr double a_priori_weight = 0.0;
 
     for (const auto& item : label_counts) {
         label_weights[item.first] = average_weight * pow(average_count / item.second, a_priori_weight);
@@ -169,7 +167,7 @@ void randomly_crop_image(
     // TODO: mark all invalid areas as ignore.
     extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
 
-    find_equal_class_weights(crop.temporary_unweighted_label_image, crop.label_image);
+    set_class_weights(crop.temporary_unweighted_label_image, crop.label_image, options["a-priori-weight"].as<double>());
 
     // Randomly flip the input image and the labels.
     const bool allow_flip_left_right = options.count("allow-flip-left-right") > 0;
@@ -250,6 +248,7 @@ int main(int argc, char** argv) try
         ("c,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
+        ("a,a-priori-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
