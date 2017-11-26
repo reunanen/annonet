@@ -202,6 +202,7 @@ int main(int argc, char** argv) try
         ("c,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
+        ("ignore-large-nonzero-regions", "Ignore large non-zero regions", cxxopts::value<double>())
         ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
@@ -233,6 +234,7 @@ int main(int argc, char** argv) try
     }
 
     const double downscaling_factor = options["downscaling-factor"].as<double>();
+    const double ignore_large_nonzero_regions_relative_limit = options.count("ignore-large-nonzero-regions") ? options["ignore-large-nonzero-regions"].as<double>() : std::numeric_limits<double>::infinity();
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
@@ -243,6 +245,7 @@ int main(int argc, char** argv) try
     const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
+    std::cout << "Ignore large non-zero regions relative limit = " << ignore_large_nonzero_regions_relative_limit << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
     std::cout << "Save interval = " << save_interval << std::endl;
     std::cout << "Relative training length = " << relative_training_length << std::endl;
@@ -307,10 +310,62 @@ int main(int argc, char** argv) try
         }
     };
 
-    shared_lru_cache_using_std<image_filenames, sample, std::unordered_map> full_images_cache(
+    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_relative_limit](sample& sample) {
+        if (sample.labeled_points_by_class.empty()) {
+            return; // no annotations
+        }
+        if (sample.labeled_points_by_class.size() == 1 && sample.labeled_points_by_class.begin()->first == 0) {
+            return; // background only
+        }
+        const auto receptive_field_side = NetPimpl::TrainingNet::GetRequiredInputDimension();
+        const double receptive_field_area = receptive_field_side * receptive_field_side;
+        const double max_blob_point_count_to_keep = ignore_large_nonzero_regions_relative_limit * receptive_field_area;
+        if (max_blob_point_count_to_keep >= sample.label_image.nr() * sample.label_image.nc()) {
+            return; // would keep everything in any case
+        }
+        dlib::matrix<unsigned long> blobs;
+        const unsigned long blob_count = dlib::label_connected_blobs(sample.label_image, zero_and_ignored_pixels_are_background(), neighbors_8(), connected_if_equal(), blobs);
+        std::vector<std::deque<dlib::point>> blob_points(blob_count);
+        for (const auto& labeled_points : sample.labeled_points_by_class) {
+            for (const dlib::point& point : labeled_points.second) {
+                const unsigned long blob_index = blobs(point.y(), point.x());
+                blob_points[blob_index].push_back(point);
+            }
+       }
+
+        decltype(sample.labeled_points_by_class) labeled_points_to_keep;
+        for (unsigned long blob_index = 0; blob_index < blob_count; ++blob_index) {
+            const auto& points = blob_points[blob_index];
+            if (points.empty()) {
+                // nothing to do
+            }
+            else if (blob_index == 0 || points.size() <= max_blob_point_count_to_keep) {
+                // keep
+                const auto point = points.front();
+                const uint16_t label = sample.label_image(point.y(), point.x());
+#ifdef _DEBUG
+                for (size_t i = 1, end = points.size(); i < end; ++i) {
+                    assert(sample.label_image(point.y(), point.x()) == label);
+                }
+#endif // _DEBUG
+                std::move(points.begin(), points.end(), std::back_inserter(labeled_points_to_keep[label]));
+            }
+            else {
+                // ignore
+                for (const auto& point : points) {
+                    uint16_t& label = sample.label_image(point.y(), point.x());
+                    label = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+                }
+            }
+        }
+        std::swap(sample.labeled_points_by_class, labeled_points_to_keep);
+    };
+
+    shared_lru_cache_using_std<image_filenames, std::shared_ptr<sample>, std::unordered_map> full_images_cache(
         [&](const image_filenames& image_filenames) {
-            sample sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
-            ignore_classes_to_ignore(sample);
+            std::shared_ptr<sample> sample(new sample);
+            *sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
+            ignore_classes_to_ignore(*sample);
             return sample;
         }, cached_image_count);
 
@@ -334,16 +389,16 @@ int main(int argc, char** argv) try
 
             const size_t index = rnd.get_random_32bit_number() % image_files.size();
             const image_filenames& image_filenames = image_files[index];
-            const sample& ground_truth_sample = full_images_cache(image_filenames);
+            const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
 
-            if (!ground_truth_sample.error.empty()) {
-                crop.error = ground_truth_sample.error;
+            if (!ground_truth_sample->error.empty()) {
+                crop.error = ground_truth_sample->error;
             }
-            else if (ground_truth_sample.labeled_points_by_class.empty()) {
-                crop.warning = "Warning: no labeled points in " + ground_truth_sample.image_filenames.label_filename;
+            else if (ground_truth_sample->labeled_points_by_class.empty()) {
+                crop.warning = "Warning: no labeled points in " + ground_truth_sample->image_filenames.label_filename;
             }
             else {
-                randomly_crop_image(required_input_dimension, ground_truth_sample, crop, rnd, options);
+                randomly_crop_image(required_input_dimension, *ground_truth_sample, crop, rnd, options);
             }
             data.enqueue(crop);
         }
