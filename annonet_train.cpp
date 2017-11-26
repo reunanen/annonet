@@ -375,6 +375,9 @@ int main(int argc, char** argv) try
         crop crop;
         while (data.is_enabled())
         {
+            crop.error.clear();
+            crop.warning.clear();
+
             const size_t index = rnd.get_random_32bit_number() % image_files.size();
             const image_filenames& image_filenames = image_files[index];
             const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
