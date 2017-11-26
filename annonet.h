@@ -32,6 +32,21 @@ inline bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_p
 
 // ----------------------------------------------------------------------------------------
 
+struct zero_and_ignored_pixels_are_background
+{
+    template <typename image_type>
+    bool operator() (
+        const image_type& label_image,
+        const dlib::point& point
+    ) const
+    {
+        const uint16_t label = label_image[point.y()][point.x()];
+        return label == 0 || label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+    }
+};
+
+// ----------------------------------------------------------------------------------------
+
 struct AnnoClass {
     AnnoClass(uint16_t index, const dlib::rgb_alpha_pixel& rgba_label, const std::string& classlabel)
         : index(index), rgba_label(rgba_label), classlabel(classlabel)
