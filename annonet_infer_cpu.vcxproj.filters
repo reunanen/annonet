@@ -281,6 +281,7 @@
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClCompile>
     <ClCompile Include="annonet_infer_main.cpp" />
+    <ClCompile Include="annonet_infer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -340,5 +341,6 @@
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetDimensions.h">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClInclude>
+    <ClInclude Include="annonet_infer.h" />
   </ItemGroup>
 </Project>
