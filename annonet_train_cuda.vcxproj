@@ -561,7 +561,6 @@
     <ClCompile Include="dlib\dlib\threads\threads_kernel_2.cpp" />
     <ClCompile Include="dlib\dlib\threads\threads_kernel_shared.cpp" />
     <ClCompile Include="dlib\dlib\threads\thread_pool_extension.cpp" />
-    <ClCompile Include="annonet_train.cpp" />
     <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp" />
   </ItemGroup>

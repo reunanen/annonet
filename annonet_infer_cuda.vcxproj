@@ -555,7 +555,6 @@
     <ClCompile Include="dlib\dlib\threads\threads_kernel_2.cpp" />
     <ClCompile Include="dlib\dlib\threads\threads_kernel_shared.cpp" />
     <ClCompile Include="dlib\dlib\threads\thread_pool_extension.cpp" />
-    <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp" />
     <ClCompile Include="tiling\tiling.cpp" />
   </ItemGroup>

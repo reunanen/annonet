@@ -289,7 +289,6 @@
     <ClCompile Include="dlib\dlib\image_saver\save_jpeg.cpp">
       <Filter>dlib\image_saver</Filter>
     </ClCompile>
-    <ClCompile Include="annonet_train.cpp" />
     <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp">
       <Filter>cpp-read-file-in-memory</Filter>
     </ClCompile>

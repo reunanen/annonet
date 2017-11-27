@@ -224,6 +224,7 @@
     <ProjectReference />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="annonet_infer_main.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetDimensions.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_1.cpp" />
@@ -540,7 +541,6 @@
     <ClCompile Include="dlib\dlib\threads\threads_kernel_2.cpp" />
     <ClCompile Include="dlib\dlib\threads\threads_kernel_shared.cpp" />
     <ClCompile Include="dlib\dlib\threads\thread_pool_extension.cpp" />
-    <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp" />
     <ClCompile Include="tiling\tiling.cpp" />
   </ItemGroup>
