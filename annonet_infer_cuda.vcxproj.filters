@@ -286,7 +286,6 @@
     <ClCompile Include="dlib\dlib\image_saver\save_png.cpp">
       <Filter>dlib\image_saver</Filter>
     </ClCompile>
-    <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClCompile>
@@ -296,6 +295,7 @@
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetDimensions.cpp">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClCompile>
+    <ClCompile Include="annonet_infer_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
