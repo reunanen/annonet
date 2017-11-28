@@ -224,6 +224,7 @@
     <ProjectReference />
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="annonet.cpp" />
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet_infer_main.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetDimensions.cpp" />
