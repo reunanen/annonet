@@ -57,9 +57,6 @@ struct AnnoNet {
     std::vector<AnnoClass> anno_classes;
     double downscaling_factor = 1.0;
 
-    //void Serialize(std::ostream& out) const;
-    void Deserialize(std::istream& in);
-
     //void Serialize(const std::string& filename) const;
     void Deserialize(const std::string& filename);
 };

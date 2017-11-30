@@ -27,24 +27,6 @@ inline bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_p
 
 // ----------------------------------------------------------------------------------------
 
-//void AnnoNet::Serialize(std::ostream& out) const
-//{
-//    TODO: add implementation
-//}
-
-void AnnoNet::Deserialize(std::istream& in)
-{
-    std::string serialized_runtime_net;
-    double serialized_downscaling_factor = 1.0;
-    deserialize("annonet.dnn") >> anno_classes_json >> serialized_downscaling_factor >> serialized_runtime_net;
-
-    // TODO: first make sure everything can be read, and only then do the assignment to member variables (and otherwise throw)
-
-    anno_classes = parse_anno_classes(anno_classes_json);
-    downscaling_factor = serialized_downscaling_factor;
-    runtime_net.Deserialize(std::istringstream(serialized_runtime_net));
-}
-
 //void AnnoNet::Serialize(const std::string& filename) const
 //{
 //    Serialize(std::ofstream(filename, std::ios::binary));
@@ -52,7 +34,15 @@ void AnnoNet::Deserialize(std::istream& in)
 
 void AnnoNet::Deserialize(const std::string& filename)
 {
-    Deserialize(std::ifstream(filename, std::ios::binary));
+    std::string serialized_runtime_net;
+    double serialized_downscaling_factor = 1.0;
+    dlib::deserialize(filename) >> anno_classes_json >> serialized_downscaling_factor >> serialized_runtime_net;
+
+    // TODO: first make sure everything can be read, and only then do the assignment to member variables (and otherwise throw)
+
+    anno_classes = parse_anno_classes(anno_classes_json);
+    downscaling_factor = serialized_downscaling_factor;
+    runtime_net.Deserialize(std::istringstream(serialized_runtime_net));
 }
 
 // ----------------------------------------------------------------------------------------
