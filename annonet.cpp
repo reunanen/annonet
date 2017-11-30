@@ -207,7 +207,8 @@ void resize_label_image(image_type& label_image, int target_width, int target_he
     std::swap(label_image, temp);
 }
 
-// Explicit instantiation
+// Explicit instantiations
+template void resize_label_image<dlib::matrix<uint16_t>>(dlib::matrix<uint16_t>& label_image, int target_width, int target_height);
 template void resize_label_image<NetPimpl::output_type>(NetPimpl::output_type& label_image, int target_width, int target_height);
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
