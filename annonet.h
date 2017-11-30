@@ -113,9 +113,6 @@ void fix_output_image_orientation(image_type& image)
     image = dlib::fliplr(dlib::trans(image));
 }
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
-{
-    sample sample;
-    sample.image_filenames = image_filenames;
+sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 
 #endif // ANNONET_H
