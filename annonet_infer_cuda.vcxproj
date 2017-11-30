@@ -565,6 +565,7 @@
   <ItemGroup>
     <ClInclude Include="annonet.h" />
     <ClInclude Include="annonet_infer.h" />
+    <ClInclude Include="dlib-dnn-pimpl-wrapper\MemoryManager.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetDimensions.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetPimpl.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetStructure.h" />

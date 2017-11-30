@@ -372,5 +372,8 @@
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClInclude>
     <ClInclude Include="annonet_infer.h" />
+    <ClInclude Include="dlib-dnn-pimpl-wrapper\MemoryManager.h">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
