@@ -299,6 +299,7 @@
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClCompile>
     <ClCompile Include="annonet.cpp" />
+    <ClCompile Include="annonet_train_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
