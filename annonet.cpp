@@ -219,12 +219,15 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
     try {
         dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
         dlib::load_image(sample.input_image, image_filenames.image_filename);
+        fix_input_image_orientation(sample.input_image);
+
         sample.original_width = sample.input_image.nc();
         sample.original_height = sample.input_image.nr();
         dlib::resize_image(1.0 / downscaling_factor, sample.input_image);
 
         if (!image_filenames.label_filename.empty()) {
             dlib::load_image(rgba_label_image, image_filenames.label_filename);
+            fix_input_image_orientation(rgba_label_image);
 
             if (rgba_label_image.nr() != sample.original_height || rgba_label_image.nc() != sample.original_width) {
                 sample.error = "Label image size mismatch";
