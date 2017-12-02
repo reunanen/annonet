@@ -16,8 +16,8 @@
     easy to embed even in actual applications.
 */
 
-#ifndef ANNONET_INFER
-#define ANNONET_INFER
+#ifndef ANNONET_INFER_H
+#define ANNONET_INFER_H
 
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
 #include "tiling/tiling.h"
