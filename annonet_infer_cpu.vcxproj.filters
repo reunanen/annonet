@@ -282,6 +282,7 @@
     </ClCompile>
     <ClCompile Include="annonet_infer_main.cpp" />
     <ClCompile Include="annonet_infer.cpp" />
+    <ClCompile Include="annonet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">

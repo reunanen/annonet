@@ -443,6 +443,8 @@ int main(int argc, char** argv) try
         serialize("annonet.dnn") << anno_classes_json << downscaling_factor << serialized.str();
     };
 
+    std::set<std::string> warnings_already_printed;
+
     // The main training loop.  Keep making mini-batches and giving them to the trainer.
     while (training_net.GetLearningRate() >= min_learning_rate)
     {
@@ -459,9 +461,10 @@ int main(int argc, char** argv) try
                 throw std::runtime_error(crop.error);
             }
             else if (!crop.warning.empty()) {
-				if (warn_about_empty_label_images) {
-					std::cout << crop.warning << std::endl;
-				}
+                if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                    std::cout << crop.warning << std::endl;
+                    warnings_already_printed.insert(crop.warning);
+                }
             }
             else {
                 samples.push_back(std::move(crop.input_image));
