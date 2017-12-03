@@ -199,7 +199,7 @@ int main(int argc, char** argv) try
 #ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("n,grayscale-noise-level-stddev", "Set the standard deviation of the level of grayscale noise to add", cxxopts::value<double>()->default_value("0.0"))
 #else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-        ("c,allow-random-color-offset", "Randomly apply color offsets")
+        ("o,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
         ("ignore-large-nonzero-regions-by-area", "Ignore large non-zero regions by area", cxxopts::value<double>())
