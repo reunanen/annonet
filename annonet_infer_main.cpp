@@ -308,6 +308,7 @@ int main(int argc, char** argv) try
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
+        ("no-confusion-matrix-per-region", "Do not calculate confusion matrix per region (it can be slow)")
         ;
 
     try {
@@ -369,6 +370,7 @@ int main(int argc, char** argv) try
 
     const int full_image_reader_count = std::max(1, options["full-image-reader-thread-count"].as<int>());
     const int result_image_writer_count = std::max(1, options["result-image-writer-thread-count"].as<int>());
+    const bool calculate_confusion_matrix_per_region = options.count("no-confusion-matrix-per-region") == 0;
 
     dlib::pipe<sample> full_image_read_results(full_image_reader_count);
 
@@ -454,7 +456,9 @@ int main(int argc, char** argv) try
             ground_truth_count += labeled_points.second.size();
         }
 
-        update_confusion_matrix_per_region(confusion_matrix_per_region, sample.labeled_points_by_class, sample.label_image, result_image.label_image, update_confusion_matrix_per_region_temp);
+        if (calculate_confusion_matrix_per_region) {
+            update_confusion_matrix_per_region(confusion_matrix_per_region, sample.labeled_points_by_class, sample.label_image, result_image.label_image, update_confusion_matrix_per_region_temp);
+        }
 
         result_image_write_requests.enqueue(result_image);
     }
@@ -485,8 +489,10 @@ int main(int argc, char** argv) try
         std::cout << std::endl << "Confusion matrix per pixel:" << std::endl;
         print_confusion_matrix(confusion_matrix_per_pixel, anno_classes);
 
-        std::cout << std::endl << "Confusion matrix per region (two-way):" << std::endl;
-        print_confusion_matrix(confusion_matrix_per_region, anno_classes);
+        if (calculate_confusion_matrix_per_region) {
+            std::cout << std::endl << "Confusion matrix per region (two-way):" << std::endl;
+            print_confusion_matrix(confusion_matrix_per_region, anno_classes);
+        }
     }
 }
 catch(std::exception& e)
