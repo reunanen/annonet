@@ -33,7 +33,8 @@ std::vector<AnnoClass> parse_anno_classes(const std::string& json)
         // Use the default anno classes
         return std::vector<AnnoClass>{
             AnnoClass(0, dlib::rgb_alpha_pixel(0, 255, 0, 64), "clean"),
-            AnnoClass(1, dlib::rgb_alpha_pixel(255, 0, 0, 128), "defect"),
+            AnnoClass(1, dlib::rgb_alpha_pixel(255, 255, 0, 128), "minor defect"),
+            AnnoClass(2, dlib::rgb_alpha_pixel(255, 0, 0, 128), "major defect"),
         };
     }
 
