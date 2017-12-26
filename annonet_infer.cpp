@@ -21,6 +21,54 @@
 #include "tiling/dlib-wrapper.h"
 #include <unordered_set>
 
+template <
+    typename image_type
+>
+void outpaint(
+    dlib::image_view<image_type>& img,
+    dlib::rectangle inside
+)
+{
+    inside = inside.intersect(get_rect(img));
+    if (inside.is_empty())
+    {
+        return;
+    }
+
+    for (long r = 0; r < inside.top(); ++r) {
+        for (long c = 0; c < inside.left(); ++c) {
+            img[r][c] = img[inside.top()][inside.left()];
+        }
+        for (long c = inside.left(); c <= inside.right(); ++c) {
+            img[r][c] = img[inside.top()][c];
+        }
+        for (long c = inside.right() + 1; c < img.nc(); ++c) {
+            img[r][c] = img[inside.top()][inside.right()];
+        }
+    }
+    for (long r = inside.top(); r <= inside.bottom(); ++r) {
+        for (long c = 0; c < inside.left(); ++c) {
+            img[r][c] = img[r][inside.left()];
+        }
+        for (long c = inside.right() + 1; c < img.nc(); ++c) {
+            img[r][c] = img[r][inside.right()];
+        }
+    }
+    for (long r = inside.bottom() + 1; r < img.nr(); ++r) {
+        for (long c = 0; c < inside.left(); ++c) {
+            img[r][c] = img[inside.bottom()][inside.left()];
+        }
+        for (long c = inside.left(); c <= inside.right(); ++c) {
+            img[r][c] = img[inside.bottom()][c];
+        }
+        for (long c = inside.right() + 1; c < img.nc(); ++c) {
+            img[r][c] = img[inside.bottom()][inside.right()];
+        }
+    }
+
+    // TODO: even blur from outside
+}
+
 void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
@@ -69,6 +117,11 @@ void annonet_infer(
         const dlib::rectangle actual_tile_rect = dlib::centered_rect(tile_center, actual_tile_width, actual_tile_height);
         const dlib::chip_details chip_details(actual_tile_rect, dlib::chip_dims(actual_tile_height, actual_tile_width));
         dlib::extract_image_chip(input_image, chip_details, temp.input_tile, dlib::interpolate_bilinear());
+
+        if (!dlib::rectangle(input_image.nc(), input_image.nr()).contains(chip_details.rect)) {
+            const dlib::rectangle inside(-chip_details.rect.tl_corner(), get_rect(input_image).br_corner() - chip_details.rect.tl_corner());
+            outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_tile), inside);
+        }
 
         const dlib::matrix<uint16_t> index_label_tile = net(temp.input_tile, gains);
 
