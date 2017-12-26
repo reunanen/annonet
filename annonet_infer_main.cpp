@@ -221,6 +221,18 @@ void update_confusion_matrix_per_region(
         std::unordered_map<uint16_t, size_t> votes_ground_truth;
         std::unordered_map<uint16_t, size_t> votes_predicted;
 
+        const auto find_class_with_most_votes = [](const std::unordered_map<uint16_t, size_t>& votes) {
+            if (votes.empty()) {
+                return static_cast<uint16_t>(dlib::loss_multiclass_log_per_pixel_::label_to_ignore);
+            }
+            const auto max_vote = std::max_element(votes.begin(), votes.end(),
+                [](const pair<uint16_t, size_t>& vote1, const pair<uint16_t, size_t>& vote2) {
+                return vote1.second < vote2.second;
+            });
+            assert(max_vote != votes.end());
+            return max_vote->first;
+        };
+
         for (const auto i : labeled_points_by_class) {
             const auto ground_truth = i.first;
             for (const dlib::point& point : i.second) {
@@ -228,40 +240,36 @@ void update_confusion_matrix_per_region(
                 const auto y = point.y();
                 if (blobs(y, x) == blob_number) {
                     assert(ground_truth_label_image(y, x) == ground_truth);
-                    if (ground_truth > 0) {
-                        ++votes_ground_truth[ground_truth];
-                    }
+                    ++votes_ground_truth[ground_truth];
                     const auto predicted = result_label_image(y, x);
-                    if (predicted > 0) {
-                        ++votes_predicted[predicted];
-                    }
+                    ++votes_predicted[predicted];
                 }
             }
-        }
 
-        const auto find_class_with_most_votes = [](const std::unordered_map<uint16_t, size_t>& votes) {
-            if (votes.empty()) {
-                return static_cast<uint16_t>(0);
+            // If ground-truth is predominantly non-background, consider predictions to be background only if there are not any other votes.
+            // (Rationale: in our world, detections are important - we do not want to ignore any, even if they are small in terms of area.)
+            const bool ground_truth_predominantly_non_background = find_class_with_most_votes(votes_ground_truth) != 0;
+            const bool predicted_background_only = votes_predicted.size() == 1 && votes_predicted.find(0) != votes_predicted.end();
+            if (ground_truth_predominantly_non_background && !predicted_background_only) {
+                votes_predicted.erase(0);
             }
-            const auto max_vote = std::max_element(votes.begin(), votes.end(),
-                [](const pair<uint16_t, size_t>& vote1, const pair<uint16_t, size_t>& vote2) {
-                    return vote1.second < vote2.second;
-                });
-            assert(max_vote != votes.end());
-            return max_vote->first;
-        };
+        }
 
         return std::make_pair(find_class_with_most_votes(votes_ground_truth), find_class_with_most_votes(votes_predicted));
     };
 
     for (unsigned long blob = 0; blob < ground_truth_blob_count; ++blob) {
         const auto v = vote_blob_class(blob, temp.ground_truth_blobs);
-        ++confusion_matrix_per_region[v.first][v.second];
+        if (v.first != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
+            ++confusion_matrix_per_region[v.first][v.second];
+        }
     }
 
     for (unsigned long blob = 0; blob < result_blob_count; ++blob) {
         const auto v = vote_blob_class(blob, temp.result_blobs);
-        ++confusion_matrix_per_region[v.first][v.second];
+        if (v.first != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
+            ++confusion_matrix_per_region[v.first][v.second];
+        }
     }
 }
 
