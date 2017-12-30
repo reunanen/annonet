@@ -41,23 +41,23 @@ void set_weights (
     const size_t total_count = std::accumulate(label_counts.begin(), label_counts.end(), 0,
         [&](size_t total, const std::pair<uint16_t, size_t>& item) { return total + item.second; });
 
-    DLIB_CASSERT(total_count > 0);
-
-    const double average_count = total_count / static_cast<double>(label_counts.size());
-
     std::unordered_map<uint16_t, double> label_weights;
 
-    double total_unnormalized_weight = 0.0;
-    for (const auto& item : label_counts) {
-        const double unnormalized_label_weight = pow(average_count / item.second, class_weight);
-        label_weights[item.first] = unnormalized_label_weight;
-        total_unnormalized_weight += item.second * unnormalized_label_weight;
-    }
+    if (total_count > 0) {
+        const double average_count = total_count / static_cast<double>(label_counts.size());
 
-    // normalize label weights
-    const double target_total_weight = total_count * pow(nr * nc / static_cast<double>(total_count), image_weight);
-    for (auto& item : label_weights) {
-        item.second *= target_total_weight / total_unnormalized_weight;
+        double total_unnormalized_weight = 0.0;
+        for (const auto& item : label_counts) {
+            const double unnormalized_label_weight = pow(average_count / item.second, class_weight);
+            label_weights[item.first] = unnormalized_label_weight;
+            total_unnormalized_weight += item.second * unnormalized_label_weight;
+        }
+
+        // normalize label weights
+        const double target_total_weight = total_count * pow(nr * nc / static_cast<double>(total_count), image_weight);
+        for (auto& item : label_weights) {
+            item.second *= target_total_weight / total_unnormalized_weight;
+        }
     }
 
     weighted_label_image.set_size(nr, nc);
