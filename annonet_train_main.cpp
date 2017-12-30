@@ -139,11 +139,7 @@ void randomly_crop_image(
     const chip_details chip_details(rect, chip_dims(dim_before_downscaling, dim_before_downscaling));
 
     if (further_downscaling_factor > 1.0) {
-        // Crop the input image.
         extract_image_chip(full_sample.input_image, chip_details, temp.input_image, interpolate_bilinear());
-
-        // Crop the labels correspondingly. However, note that here bilinear
-        // interpolation would make absolutely no sense.
         extract_image_chip(full_sample.label_image, chip_details, temp.label_image, interpolate_nearest_neighbor());
 
         crop.input_image.set_size(dim, dim);
