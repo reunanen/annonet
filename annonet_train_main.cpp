@@ -428,6 +428,8 @@ int main(int argc, char** argv) try
         }, cached_image_count);
 
     cout << endl << "Now training..." << endl;
+   
+    set_low_priority();
 
     // Start a bunch of threads that read images from disk and pull out random crops.  It's
     // important to be sure to feed the GPU fast enough to keep it busy.  Using multiple

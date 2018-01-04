@@ -358,6 +358,8 @@ int main(int argc, char** argv) try
     }
     std::cout << std::endl;
 
+    set_low_priority();
+
     annonet_infer_temp temp;
     matrix<uint16_t> index_label_tile_resized;
 

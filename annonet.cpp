@@ -248,3 +248,14 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
 
     return sample;
 };
+
+void set_low_priority()
+{
+#ifdef _WIN32
+    if (!SetPriorityClass(GetCurrentProcess(), IDLE_PRIORITY_CLASS)) {
+        std::cerr << "Error setting low priority" << std::endl;
+    }
+#else // WIN32
+    // TODO
+#endif // WIN32
+}
