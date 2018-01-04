@@ -90,4 +90,6 @@ void resize_label_image(image_type& label_image, int target_width, int target_he
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 
+void set_low_priority();
+
 #endif // ANNONET_H
