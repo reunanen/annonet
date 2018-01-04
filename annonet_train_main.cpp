@@ -241,6 +241,9 @@ int main(int argc, char** argv) try
         ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
+        ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
+        ("learning-rate-shrink-factor", "Set learning rate shrink factor", cxxopts::value<double>()->default_value("0.1"))
+        ("min-learning-rate", "Set minimum learning rate", cxxopts::value<double>()->default_value("1e-6"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
@@ -277,6 +280,9 @@ int main(int argc, char** argv) try
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
+    const auto initial_learning_rate = options["initial-learning-rate"].as<double>();
+    const auto learning_rate_shrink_factor = options["learning-rate-shrink-factor"].as<double>();
+    const auto min_learning_rate = options["min-learning-rate"].as<double>();
     const auto save_interval = options["save-interval"].as<size_t>();
     const auto relative_training_length = std::max(0.01, options["relative-training-length"].as<double>());
     const auto cached_image_count = options["cached-image-count"].as<int>();
@@ -285,6 +291,9 @@ int main(int argc, char** argv) try
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
+    std::cout << "Initial learning rate = " << initial_learning_rate << std::endl;
+    std::cout << "Learning rate shrink factor = " << learning_rate_shrink_factor << std::endl;
+    std::cout << "Min learning rate = " << min_learning_rate << std::endl;
     std::cout << "Save interval = " << save_interval << std::endl;
     std::cout << "Relative training length = " << relative_training_length << std::endl;
     std::cout << "Cached image count = " << cached_image_count << std::endl;
@@ -304,9 +313,6 @@ int main(int argc, char** argv) try
     const auto anno_classes_json = read_anno_classes_file(options["input-directory"].as<std::string>());
     const auto anno_classes = parse_anno_classes(anno_classes_json);
 
-    const double initial_learning_rate = 0.1;
-    const double learning_rate_shrink_factor = 0.1;
-    const double min_learning_rate = 1e-6;
     const unsigned long iterations_without_progress_threshold = static_cast<unsigned long>(std::round(relative_training_length * 2000));
     const unsigned long previous_loss_values_dump_amount = static_cast<unsigned long>(std::round(relative_training_length * 400));
     const unsigned long batch_normalization_running_stats_window_size = static_cast<unsigned long>(std::round(relative_training_length * 100));
@@ -317,14 +323,14 @@ int main(int argc, char** argv) try
     std::vector<NetPimpl::training_label_type> labels;
 
     training_net.Initialize();
+    training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
+    training_net.BeVerbose();
     training_net.SetClassCount(anno_classes.size());
     training_net.SetLearningRate(initial_learning_rate);
     training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
     training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
     training_net.SetPreviousLossValuesDumpAmount(previous_loss_values_dump_amount);
     training_net.SetAllBatchNormalizationRunningStatsWindowSizes(batch_normalization_running_stats_window_size);
-    training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
-    training_net.BeVerbose();
 
     cout << "\nSCANNING ANNO DATASET\n" << endl;
 
