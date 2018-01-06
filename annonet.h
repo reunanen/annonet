@@ -112,4 +112,6 @@ void fix_output_image_orientation(image_type& image)
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 
+void set_low_priority();
+
 #endif // ANNONET_H
