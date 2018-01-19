@@ -115,26 +115,10 @@ void randomly_crop_image(
 
     const size_t point_index = rnd.get_random_64bit_number() % i->second.size();
 
-    const auto random_rect_containing_point = [&rnd](const dlib::point& point, long width, long height, const dlib::rectangle& limits) {
-        DLIB_ASSERT(limits.contains(point));
-        const long min_center_x = std::max(limits.left() + width / 2, point.x() - width / 2);
-        const long max_center_x = std::min(limits.right() - width / 2, point.x() + width / 2);
-        const long min_center_y = std::max(limits.top() + height / 2, point.y() - height / 2);
-        const long max_center_y = std::min(limits.bottom() - height / 2, point.y() + height / 2);
-        const long center_x = min_center_x + rnd.get_random_32bit_number() % (max_center_x - min_center_x + 1);
-        const long center_y = min_center_y + rnd.get_random_32bit_number() % (max_center_y - min_center_y + 1);
-        const auto rect = dlib::centered_rect(dlib::point(center_x, center_y), width, height);
-        DLIB_ASSERT(rect.width() == width);
-        DLIB_ASSERT(rect.height() == height);
-        DLIB_ASSERT(limits.contains(rect));
-        DLIB_ASSERT(rect.contains(point));
-        return rect;
-    };
-
     const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
     const int dim_before_downscaling = std::round(dim * further_downscaling_factor);
 
-    const rectangle rect = random_rect_containing_point(i->second[point_index], dim_before_downscaling, dim_before_downscaling, dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
+    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling, dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
 
     const chip_details chip_details(rect, chip_dims(dim_before_downscaling, dim_before_downscaling));
 
