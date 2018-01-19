@@ -175,7 +175,7 @@ void randomly_crop_image(
     }
 #else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
     const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
-    if (allow_random_color_offset > 0) {
+    if (allow_random_color_offset) {
         apply_random_color_offset(crop.input_image, rnd);
     }
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
