@@ -30,7 +30,8 @@ struct annonet_infer_temp
     dlib::matrix<unsigned int> connected_blobs;
 };
 
-void annonet_infer(
+// returns p
+double annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint16_t>& result_image,

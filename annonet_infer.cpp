@@ -69,7 +69,8 @@ void outpaint(
     // TODO: even blur from outside
 }
 
-void annonet_infer(
+// returns p
+double annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint16_t>& result_image,
@@ -92,6 +93,8 @@ void annonet_infer(
     }
 
     const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
+
+    double max_p = 0.0;
 
     for (const tiling::dlib_tile& tile : tiles) {
 
@@ -139,7 +142,7 @@ void annonet_infer(
             }
         }
 
-        if (use_detection_level) {
+        {
 
             const auto tensor_index = [](const dlib::tensor& t, long sample, long k, long row, long column)
             {
@@ -156,20 +159,23 @@ void annonet_infer(
 
             for (long y = 0, valid_tile_height = actual_tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
                 for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
-                    const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);
+                    const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);                    
                     if (label > 0) {
                         const float clean_output = out_data[tensor_index(output_tensor, 0, 0, valid_top_in_tile + y, valid_left_in_tile + x)];
                         const float label_output = out_data[tensor_index(output_tensor, 0, label, valid_top_in_tile + y, valid_left_in_tile + x)];
                         if (label_output - clean_output > detection_levels[label] - detection_levels[0]) {
                             temp.detection_seeds.emplace_back(valid_left_in_image + x, valid_top_in_image + y);
-                        }                        
+                        }
+
+                        const double p = exp(label_output) / (exp(label_output) + exp(clean_output));
+                        max_p = std::max(p, max_p);
                     }
                 }
             }
         }
     }
 
-    if (use_detection_level) {
+    {
         const unsigned long connected_blob_count = dlib::label_connected_blobs(result_image, dlib::zero_pixels_are_background(), dlib::neighbors_8(), dlib::connected_if_equal(), temp.connected_blobs);
 
         std::unordered_set<unsigned int> detected_blobs;
@@ -193,4 +199,6 @@ void annonet_infer(
             }
         }
     }
+
+    return max_p;
 }

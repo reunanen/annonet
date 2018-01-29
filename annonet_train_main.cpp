@@ -118,7 +118,10 @@ void randomly_crop_image(
     const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
     const int dim_before_downscaling = std::round(dim * further_downscaling_factor);
 
-    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling, dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
+    const bool image_is_large_enough = full_sample.input_image.nr() >= dim_before_downscaling && full_sample.input_image.nc() >= dim_before_downscaling;
+    const rectangle rect = image_is_large_enough
+        ? random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling, dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1))
+        : centered_rect(dlib::point(rnd.get_random_32bit_number() % full_sample.input_image.nc(), rnd.get_random_32bit_number() % full_sample.input_image.nr()), dim_before_downscaling, dim_before_downscaling);
 
     const chip_details chip_details(rect, chip_dims(dim_before_downscaling, dim_before_downscaling));
 
@@ -291,7 +294,7 @@ int main(int argc, char** argv) try
         std::cout << std::endl;
     }
 
-    const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
+    const int required_input_dimension = 227; //s NetPimpl::TrainingNet::GetRequiredInputDimension();
     std::cout << "Required input dimension = " << required_input_dimension << std::endl;
 
     const auto anno_classes_json = read_anno_classes_file(options["input-directory"].as<std::string>());

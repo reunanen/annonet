@@ -280,6 +280,7 @@ struct result_image_type {
     int original_width = 0;
     int original_height = 0;
     matrix<uint16_t> label_image;
+    double p = 0.0;
 };
 
 int main(int argc, char** argv) try
@@ -406,7 +407,13 @@ int main(int argc, char** argv) try
                 resize_label_image(result_image.label_image, result_image.original_width, result_image.original_height);
                 index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
                 save_png(rgba_label_image, result_image.filename);
-                result_image_write_results.enqueue(true);
+
+                {
+                    std::ofstream p_out(result_image.filename + ".txt");
+                    p_out << std::fixed << std::setprecision(20) << result_image.p;
+                }
+
+                result_image_write_results.enqueue(true);                
             }
         }));
     }
@@ -452,7 +459,7 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        result_image.p = annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
