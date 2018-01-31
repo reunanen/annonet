@@ -77,7 +77,8 @@ double annonet_infer(
     const std::vector<double>& gains,
     const std::vector<double>& detection_levels,
     const tiling::parameters& tiling_parameters,
-    annonet_infer_temp& temp
+    annonet_infer_temp& temp,
+    double confidence_multiplier
 )
 {
     const bool use_detection_level = std::any_of(detection_levels.begin(), detection_levels.end(),
@@ -167,7 +168,7 @@ double annonet_infer(
                             temp.detection_seeds.emplace_back(valid_left_in_image + x, valid_top_in_image + y);
                         }
 
-                        const double p = exp(label_output) / (exp(label_output) + exp(clean_output));
+                        const double p = exp(confidence_multiplier * label_output) / (exp(confidence_multiplier * label_output) + exp(confidence_multiplier * clean_output));
                         max_p = std::max(p, max_p);
                     }
                 }

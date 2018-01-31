@@ -38,7 +38,8 @@ double annonet_infer(
     const std::vector<double>& gains = std::vector<double>(),
     const std::vector<double>& detection_levels = std::vector<double>(),
     const tiling::parameters& tiling_parameters = tiling::parameters(),
-    annonet_infer_temp& temp = annonet_infer_temp()
+    annonet_infer_temp& temp = annonet_infer_temp(),
+    double confidence_multiplier = 1.0
 );
 
 #endif // ANNONET_INFER_H

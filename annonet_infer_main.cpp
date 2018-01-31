@@ -317,6 +317,7 @@ int main(int argc, char** argv) try
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
+        ("c,confidence-multiplier", "Decrease to be more confident about the estimated probabilities", cxxopts::value<double>()->default_value("1.0"))
         ;
 
     try {
@@ -380,6 +381,7 @@ int main(int argc, char** argv) try
 
     const int full_image_reader_count = std::max(1, options["full-image-reader-thread-count"].as<int>());
     const int result_image_writer_count = std::max(1, options["result-image-writer-thread-count"].as<int>());
+    const double confidence_multiplier = options["confidence-multiplier"].as<double>();
 
     dlib::pipe<sample> full_image_read_results(full_image_reader_count);
 
@@ -459,7 +461,7 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        result_image.p = annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        result_image.p = annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp, confidence_multiplier);
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
