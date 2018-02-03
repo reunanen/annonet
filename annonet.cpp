@@ -169,12 +169,14 @@ std::vector<image_filenames> find_image_files(
 
         if (label_file_exists || !require_ground_truth) {
             results.push_back(image_filenames);
-            std::cout << "Added file " << image_filenames.image_filename << std::endl;
+            std::cout << "\rFound " << results.size() << " files...";
         }
         else if (require_ground_truth) {
             std::cout << "Warning: unable to open " << label_filename << std::endl;
         }
     }
+
+    std::cout << std::endl;
 
     return results;
 }
