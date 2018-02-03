@@ -242,6 +242,8 @@ int main(int argc, char** argv) try
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("input-dimension-multiplier", "Size of input patches, relative to minimum required", cxxopts::value<double>()->default_value("3.0"))
+        ("net-width-scaler", "Scaler of net width", cxxopts::value<double>()->default_value("1.0"))
+        ("net-width-min-filter-count", "Minimum net width filter count", cxxopts::value<int>()->default_value("1"))
         ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
         ("learning-rate-shrink-factor", "Set learning rate shrink factor", cxxopts::value<double>()->default_value("0.1"))
         ("min-learning-rate", "Set minimum learning rate", cxxopts::value<double>()->default_value("1e-6"))
@@ -282,6 +284,8 @@ int main(int argc, char** argv) try
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
     const auto input_dimension_multiplier = options["input-dimension-multiplier"].as<double>();
+    const auto net_width_scaler = options["net-width-scaler"].as<double>();
+    const auto net_width_min_filter_count = options["net-width-min-filter-count"].as<int>();
     const auto initial_learning_rate = options["initial-learning-rate"].as<double>();
     const auto learning_rate_shrink_factor = options["learning-rate-shrink-factor"].as<double>();
     const auto min_learning_rate = options["min-learning-rate"].as<double>();
@@ -293,6 +297,7 @@ int main(int argc, char** argv) try
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
+    std::cout << "Net width scaler = " << net_width_scaler << ", min filter count = " << net_width_min_filter_count << std::endl;
     std::cout << "Initial learning rate = " << initial_learning_rate << std::endl;
     std::cout << "Learning rate shrink factor = " << learning_rate_shrink_factor << std::endl;
     std::cout << "Min learning rate = " << min_learning_rate << std::endl;
@@ -331,6 +336,7 @@ int main(int argc, char** argv) try
     std::vector<NetPimpl::training_label_type> labels;
 
     training_net.Initialize();
+    training_net.SetNetWidth(net_width_scaler, net_width_min_filter_count);
     training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
     training_net.BeVerbose();
     training_net.SetClassCount(anno_classes.size());
