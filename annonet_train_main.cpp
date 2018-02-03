@@ -70,7 +70,7 @@ struct crop
 };
 
 #ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-void add_random_noise(dlib::matrix<uint8_t>& image, double noise_level, dlib::rand& rnd)
+void add_random_noise(NetPimpl::input_type& image, double noise_level, dlib::rand& rnd)
 {
     const long nr = image.nr();
     const long nc = image.nc();
