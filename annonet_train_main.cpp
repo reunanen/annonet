@@ -225,6 +225,7 @@ int main(int argc, char** argv) try
         ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
+        ("input-dimension-multiplier", "Size of input patches, relative to minimum required", cxxopts::value<double>()->default_value("3.0"))
         ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
         ("learning-rate-shrink-factor", "Set learning rate shrink factor", cxxopts::value<double>()->default_value("0.1"))
         ("min-learning-rate", "Set minimum learning rate", cxxopts::value<double>()->default_value("1e-6"))
@@ -264,6 +265,7 @@ int main(int argc, char** argv) try
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
+    const auto input_dimension_multiplier = options["input-dimension-multiplier"].as<double>();
     const auto initial_learning_rate = options["initial-learning-rate"].as<double>();
     const auto learning_rate_shrink_factor = options["learning-rate-shrink-factor"].as<double>();
     const auto min_learning_rate = options["min-learning-rate"].as<double>();
@@ -293,6 +295,12 @@ int main(int argc, char** argv) try
 
     const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
     std::cout << "Required input dimension = " << required_input_dimension << std::endl;
+
+    const int requested_input_dimension = static_cast<int>(std::round(input_dimension_multiplier * required_input_dimension));
+    std::cout << "Requested input dimension = " << requested_input_dimension << std::endl;
+
+    const int actual_input_dimension = NetPimpl::RuntimeNet::GetRecommendedInputDimension(requested_input_dimension);
+    std::cout << "Actual input dimension = " << actual_input_dimension << std::endl;
 
     const auto anno_classes_json = read_anno_classes_file(options["input-directory"].as<std::string>());
     const auto anno_classes = parse_anno_classes(anno_classes_json);
@@ -425,7 +433,7 @@ int main(int argc, char** argv) try
     // thread for this kind of data preparation helps us do that.  Each thread puts the
     // crops into the data queue.
     dlib::pipe<crop> data(2 * minibatch_size);
-    auto pull_crops = [&data, &full_images_cache, &image_files, required_input_dimension, &options](time_t seed)
+    auto pull_crops = [&data, &full_images_cache, &image_files, actual_input_dimension, &options](time_t seed)
     {
         dlib::rand rnd(time(0)+seed);
         NetPimpl::input_type input_image;
@@ -448,7 +456,7 @@ int main(int argc, char** argv) try
                 crop.warning = "Warning: no labeled points in " + ground_truth_sample->image_filenames.label_filename;
             }
             else {
-                randomly_crop_image(required_input_dimension, *ground_truth_sample, crop, rnd, options, temp);
+                randomly_crop_image(actual_input_dimension, *ground_truth_sample, crop, rnd, options, temp);
             }
             data.enqueue(crop);
         }
