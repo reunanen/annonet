@@ -179,7 +179,7 @@ double annonet_infer(
                             }
                         }
 
-                        const double p = exp(confidence_multiplier * best_label_output) / (exp(confidence_multiplier * best_label_output) + exp(confidence_multiplier * clean_output));
+                        const double p = exp(confidence_multiplier * best_label_output) / (exp(confidence_multiplier * best_label_output) + exp(confidence_multiplier_background * clean_output));
                         max_p = std::max(p, max_p);
                     }
                 }
