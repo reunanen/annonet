@@ -89,9 +89,7 @@ double annonet_infer(
 
     result_image.set_size(input_image.nr(), input_image.nc());
 
-    if (use_detection_level) {
-        temp.detection_seeds.clear();
-    }
+    temp.detection_seeds.clear();
 
     const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
 
