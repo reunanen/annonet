@@ -160,14 +160,26 @@ double annonet_infer(
             for (long y = 0, valid_tile_height = actual_tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
                 for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
                     const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);                    
+                    const float clean_output = out_data[tensor_index(output_tensor, 0, 0, valid_top_in_tile + y, valid_left_in_tile + x)];
                     if (label > 0) {
-                        const float clean_output = out_data[tensor_index(output_tensor, 0, 0, valid_top_in_tile + y, valid_left_in_tile + x)];
                         const float label_output = out_data[tensor_index(output_tensor, 0, label, valid_top_in_tile + y, valid_left_in_tile + x)];
                         if (label_output - clean_output > detection_levels[label] - detection_levels[0]) {
                             temp.detection_seeds.emplace_back(valid_left_in_image + x, valid_top_in_image + y);
                         }
+                    }
 
-                        const double p = exp(confidence_multiplier * label_output) / (exp(confidence_multiplier * label_output) + exp(confidence_multiplier_background * clean_output));
+                    {
+                        long best_k = 0;
+                        float best_label_output = -std::numeric_limits<double>::max();
+                        for (long k = 1; k < output_tensor.k(); ++k) {
+                            const float label_output = out_data[tensor_index(output_tensor, 0, k, valid_top_in_tile + y, valid_left_in_tile + x)];
+                            if (label_output > best_label_output) {
+                                best_k = k;
+                                best_label_output = label_output;
+                            }
+                        }
+
+                        const double p = exp(confidence_multiplier * best_label_output) / (exp(confidence_multiplier * best_label_output) + exp(confidence_multiplier * clean_output));
                         max_p = std::max(p, max_p);
                     }
                 }
