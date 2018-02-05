@@ -217,25 +217,20 @@ void update_confusion_matrix_per_region(
     const unsigned long ground_truth_blob_count = dlib::label_connected_blobs(ground_truth_label_image, zero_pixels_are_background(), neighbors_8(), connected_if_equal(), temp.ground_truth_blobs);
     const unsigned long result_blob_count       = dlib::label_connected_blobs(result_label_image,       zero_pixels_are_background(), neighbors_8(), connected_if_equal(), temp.result_blobs);
 
-    const auto vote_blob_class = [&](int blob_number, const dlib::matrix<int>& blobs) {
+    const auto vote_blob_class = [&](const std::deque<dlib::point>& points) {
         std::unordered_map<uint16_t, size_t> votes_ground_truth;
         std::unordered_map<uint16_t, size_t> votes_predicted;
 
-        for (const auto i : labeled_points_by_class) {
-            const auto ground_truth = i.first;
-            for (const dlib::point& point : i.second) {
-                const auto x = point.x();
-                const auto y = point.y();
-                if (blobs(y, x) == blob_number) {
-                    assert(ground_truth_label_image(y, x) == ground_truth);
-                    if (ground_truth > 0) {
-                        ++votes_ground_truth[ground_truth];
-                    }
-                    const auto predicted = result_label_image(y, x);
-                    if (predicted > 0) {
-                        ++votes_predicted[predicted];
-                    }
-                }
+        for (const dlib::point& point : points) {
+            const auto x = point.x();
+            const auto y = point.y();
+            const auto ground_truth = ground_truth_label_image(y, x);
+            if (ground_truth > 0) {
+                ++votes_ground_truth[ground_truth];
+            }
+            const auto predicted = result_label_image(y, x);
+            if (predicted > 0) {
+                ++votes_predicted[predicted];
             }
         }
 
@@ -254,13 +249,27 @@ void update_confusion_matrix_per_region(
         return std::make_pair(find_class_with_most_votes(votes_ground_truth), find_class_with_most_votes(votes_predicted));
     };
 
+    std::unordered_map<int, std::deque<dlib::point>> ground_truth_blob_number_to_points;
+    std::unordered_map<int, std::deque<dlib::point>> result_blob_number_to_points;
+
+    for (const auto i : labeled_points_by_class) {
+        for (const dlib::point& point : i.second) {
+            const auto x = point.x();
+            const auto y = point.y();
+            const auto ground_truth_blob_number = temp.ground_truth_blobs(y, x);
+            const auto result_blob_number = temp.result_blobs(y, x);
+            ground_truth_blob_number_to_points[ground_truth_blob_number].push_back(point);
+            result_blob_number_to_points[result_blob_number].push_back(point);
+        }
+    }
+
     for (unsigned long blob = 0; blob < ground_truth_blob_count; ++blob) {
-        const auto v = vote_blob_class(blob, temp.ground_truth_blobs);
+        const auto v = vote_blob_class(ground_truth_blob_number_to_points[blob]);
         ++confusion_matrix_per_region[v.first][v.second];
     }
 
     for (unsigned long blob = 0; blob < result_blob_count; ++blob) {
-        const auto v = vote_blob_class(blob, temp.result_blobs);
+        const auto v = vote_blob_class(result_blob_number_to_points[blob]);
         ++confusion_matrix_per_region[v.first][v.second];
     }
 }
