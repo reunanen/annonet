@@ -102,8 +102,8 @@ void annonet_infer(
         const int recommended_tile_left = tile_center.x() - recommended_tile_width / 2;
         const int recommended_tile_top = tile_center.y() - recommended_tile_height / 2;
 
-        assert(recommended_tile_width >= tile.full_rect.width());
-        assert(recommended_tile_height >= tile.full_rect.height());
+        assert(static_cast<unsigned long>(recommended_tile_width) >= tile.full_rect.width());
+        assert(static_cast<unsigned long>(recommended_tile_height) >= tile.full_rect.height());
 
         tiling::dlib_tile actual_tile;
         actual_tile.full_rect = dlib::rectangle(recommended_tile_left, recommended_tile_top, recommended_tile_left + recommended_tile_width - 1, recommended_tile_top + recommended_tile_height - 1);
