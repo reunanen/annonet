@@ -38,10 +38,6 @@ struct zero_and_ignored_pixels_are_background
 
 // ----------------------------------------------------------------------------------------
 
-namespace {
-    dlib::rgb_alpha_pixel rgba_ignore_label(0, 0, 0, 0);
-}
-
 struct image_filenames
 {
     std::string image_filename;

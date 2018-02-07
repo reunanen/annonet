@@ -3,6 +3,15 @@
   <ItemGroup>
     <ClInclude Include="annonet.h" />
     <ClInclude Include="..\annonet_train.h" />
+    <ClInclude Include="..\dlib-dnn-pimpl-wrapper\NetDimensions.h">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dlib-dnn-pimpl-wrapper\NetPimpl.h">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\dlib-dnn-pimpl-wrapper\NetStructure.h">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -10,6 +19,15 @@
     </Filter>
     <Filter Include="dlib\threads">
       <UniqueIdentifier>{00f334aa-b6a8-456e-8258-2b96dc6daa46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib-dnn-pimpl-wrapper">
+      <UniqueIdentifier>{3b62d4e2-174c-4e27-b4d9-5394da71e6f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\dnn">
+      <UniqueIdentifier>{9531b7a6-99e4-4377-b468-e333c3c85851}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\dir_nav">
+      <UniqueIdentifier>{b29a2b65-00ba-4c8c-8d1c-e8c1414c2e93}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -35,5 +53,26 @@
       <Filter>dlib\threads</Filter>
     </ClCompile>
     <ClCompile Include="annonet_test.cpp" />
+    <ClCompile Include="..\dlib-dnn-pimpl-wrapper\NetDimensions.cpp">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib-dnn-pimpl-wrapper\NetPimpl.cpp">
+      <Filter>dlib-dnn-pimpl-wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\cpu_dlib.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dnn\tensor_tools.cpp">
+      <Filter>dlib\dnn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_extensions.cpp">
+      <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_1.cpp">
+      <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_2.cpp">
+      <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
