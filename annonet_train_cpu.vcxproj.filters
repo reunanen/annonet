@@ -285,6 +285,7 @@
     </ClCompile>
     <ClCompile Include="annonet_train_main.cpp" />
     <ClCompile Include="annonet.cpp" />
+    <ClCompile Include="annonet_parse_anno_classes.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -341,5 +342,6 @@
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetDimensions.h">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClInclude>
+    <ClInclude Include="annonet_parse_anno_classes.h" />
   </ItemGroup>
 </Project>

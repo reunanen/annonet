@@ -19,10 +19,7 @@
 #include <dlib/dnn.h>
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
 #include <unordered_map>
-
-// ----------------------------------------------------------------------------------------
-
-inline bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b);
+#include "annonet_parse_anno_classes.h"
 
 // ----------------------------------------------------------------------------------------
 
@@ -41,21 +38,9 @@ struct zero_and_ignored_pixels_are_background
 
 // ----------------------------------------------------------------------------------------
 
-struct AnnoClass {
-    AnnoClass(uint16_t index, const dlib::rgb_alpha_pixel& rgba_label, const std::string& classlabel)
-        : index(index), rgba_label(rgba_label), classlabel(classlabel)
-    {}
-
-    const uint16_t index = 0;
-    const dlib::rgb_alpha_pixel rgba_label;
-    const std::string classlabel;
-};
-
 namespace {
     dlib::rgb_alpha_pixel rgba_ignore_label(0, 0, 0, 0);
 }
-
-std::vector<AnnoClass> parse_anno_classes(const std::string& json);
 
 struct image_filenames
 {

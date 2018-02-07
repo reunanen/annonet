@@ -223,6 +223,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="annonet.cpp" />
+    <ClCompile Include="annonet_parse_anno_classes.cpp" />
     <ClCompile Include="annonet_train_main.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetDimensions.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp" />
@@ -551,6 +552,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="annonet.h" />
+    <ClInclude Include="annonet_parse_anno_classes.h" />
     <ClInclude Include="cpp-read-file-in-memory\read-file-in-memory.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetDimensions.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetPimpl.h" />

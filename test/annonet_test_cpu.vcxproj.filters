@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="annonet.h" />
+    <ClInclude Include="..\annonet_train.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -33,5 +34,6 @@
     <ClCompile Include="..\dlib\dlib\threads\threaded_object_extension.cpp">
       <Filter>dlib\threads</Filter>
     </ClCompile>
+    <ClCompile Include="annonet_test.cpp" />
   </ItemGroup>
 </Project>
