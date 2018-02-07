@@ -18,7 +18,7 @@
 
 // ----------------------------------------------------------------------------------------
 
-inline bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
+bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
 {
     return a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha;
 }
