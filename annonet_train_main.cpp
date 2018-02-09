@@ -314,6 +314,18 @@ int main(int argc, char** argv) try
         std::cout << std::endl;
     }
 
+    const int level_count = NetPimpl::TrainingNet::GetLevelCount();
+    std::cout << "Level count = " << level_count << std::endl;
+
+    const int level_depth = NetPimpl::TrainingNet::GetLevelDepth();
+    std::cout << "Level depth = " << level_depth << std::endl;
+
+    const int first_filter_size = NetPimpl::TrainingNet::GetFirstFilterSize();
+    std::cout << "First filter size = " << first_filter_size << std::endl;
+
+    const int first_filter_padding = NetPimpl::TrainingNet::GetFirstFilterPadding();
+    std::cout << "First filter padding = " << first_filter_padding << std::endl;
+
     const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
     std::cout << "Required input dimension = " << required_input_dimension << std::endl;
 
