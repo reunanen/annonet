@@ -235,9 +235,10 @@ int main(int argc, char** argv) try
         ("c,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
-        ("ignore-large-nonzero-regions-by-area", "Ignore large non-zero regions by area", cxxopts::value<double>())
-        ("ignore-large-nonzero-regions-by-width", "Ignore large non-zero regions by width", cxxopts::value<double>())
-        ("ignore-large-nonzero-regions-by-height", "Ignore large non-zero regions by height", cxxopts::value<double>())
+        ("ignore-small-nonzero-regions-by-area", "Ignore small non-zero regions by area (unit: pixels after initial downscaling)", cxxopts::value<double>()->default_value("0.0"))
+        ("ignore-large-nonzero-regions-by-area", "Ignore large non-zero regions by area (unit: receptive field)", cxxopts::value<double>())
+        ("ignore-large-nonzero-regions-by-width", "Ignore large non-zero regions by width (unit: receptive field)", cxxopts::value<double>())
+        ("ignore-large-nonzero-regions-by-height", "Ignore large non-zero regions by height (unit: receptive field)", cxxopts::value<double>())
         ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
@@ -277,6 +278,7 @@ int main(int argc, char** argv) try
 
     const double initial_downscaling_factor = options["initial-downscaling-factor"].as<double>();
     const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
+    const double ignore_small_nonzero_regions_by_area = options["ignore-small-nonzero-regions-by-area"].as<double>();
     const double ignore_large_nonzero_regions_by_area = options.count("ignore-large-nonzero-regions-by-area") ? options["ignore-large-nonzero-regions-by-area"].as<double>() : std::numeric_limits<double>::infinity();
     const double ignore_large_nonzero_regions_by_width = options.count("ignore-large-nonzero-regions-by-width") ? options["ignore-large-nonzero-regions-by-width"].as<double>() : std::numeric_limits<double>::infinity();
     const double ignore_large_nonzero_regions_by_height = options.count("ignore-large-nonzero-regions-by-height") ? options["ignore-large-nonzero-regions-by-height"].as<double>() : std::numeric_limits<double>::infinity();
@@ -380,7 +382,7 @@ int main(int argc, char** argv) try
         }
     };
 
-    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample& sample) {
+    const auto ignore_large_or_small_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height, ignore_small_nonzero_regions_by_area](sample& sample) {
         if (sample.labeled_points_by_class.empty()) {
             return; // no annotations
         }
@@ -392,7 +394,7 @@ int main(int argc, char** argv) try
         const double max_blob_point_count_to_keep = ignore_large_nonzero_regions_by_area * receptive_field_area;
         const double max_blob_width_to_keep = ignore_large_nonzero_regions_by_width * receptive_field_side;
         const double max_blob_height_to_keep = ignore_large_nonzero_regions_by_height * receptive_field_side;
-        if (max_blob_point_count_to_keep >= sample.label_image.nr() * sample.label_image.nc() && max_blob_width_to_keep >= sample.label_image.nc() && max_blob_height_to_keep >= sample.label_image.nr()) {
+        if (max_blob_point_count_to_keep >= sample.label_image.nr() * sample.label_image.nc() && max_blob_width_to_keep >= sample.label_image.nc() && max_blob_height_to_keep >= sample.label_image.nr() && ignore_small_nonzero_regions_by_area < 1.0) {
             return; // would keep everything in any case
         }
         dlib::matrix<unsigned long> blobs;
@@ -419,6 +421,9 @@ int main(int argc, char** argv) try
             }
             const auto ignore_blob_by_size = [&]() {
                 if (points.size() > max_blob_point_count_to_keep) {
+                    return true;
+                }
+                if (points.size() < ignore_small_nonzero_regions_by_area) {
                     return true;
                 }
                 const auto blob_width  = [&]() { return blob_minmax_x[blob_index].second - blob_minmax_x[blob_index].first + 1; };
@@ -455,7 +460,7 @@ int main(int argc, char** argv) try
             std::shared_ptr<sample> sample(new sample);
             *sample = read_sample(image_filenames, anno_classes, true, initial_downscaling_factor);
             ignore_classes_to_ignore(*sample);
-            ignore_large_nonzero_regions(*sample);
+            ignore_large_or_small_nonzero_regions(*sample);
             return sample;
         }, cached_image_count);
 
