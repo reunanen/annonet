@@ -3,7 +3,7 @@
     annotated in the "anno" program (see https://github.com/reunanen/anno).
 
     Instructions:
-    1. Use anno to label some data.
+    1. Use anno to label some data (use the "things" mode).
     2. Build the annonet_train program.
     3. Run:
        ./annonet_train /path/to/anno/data
@@ -21,6 +21,8 @@
 #include <dlib/data_io.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/image_saver/save_png.h>
+
+#include <rapidjson/prettywriter.h>
 
 using namespace std;
 using namespace dlib;
@@ -85,6 +87,7 @@ void index_label_image_to_rgba_label_image(const matrix<uint16_t>& index_label_i
     }
 }
 
+#if 0
 // ----------------------------------------------------------------------------------------
 
 // first index: ground truth, second index: predicted
@@ -272,6 +275,7 @@ void update_confusion_matrix_per_region(
         }
     }
 }
+#endif
 
 // ----------------------------------------------------------------------------------------
 
@@ -279,8 +283,83 @@ struct result_image_type {
     std::string filename;
     int original_width = 0;
     int original_height = 0;
-    matrix<uint16_t> label_image;
+    std::vector<dlib::mmod_rect> labels;
 };
+
+inline uint16_t classlabel_to_index_label(const std::string& classlabel, const std::vector<AnnoClass>& anno_classes)
+{
+    for (const AnnoClass& anno_class : anno_classes) {
+        if (anno_class.classlabel == classlabel) {
+            return anno_class.index;
+        }
+    }
+    throw std::runtime_error("Unknown class: '" + classlabel + "'");
+}
+
+void write_labels(const std::string& filename, const std::vector<dlib::mmod_rect>& labels, const std::vector<AnnoClass>& anno_classes)
+{
+    rapidjson::StringBuffer buffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+
+    writer.StartArray();
+
+    for (const auto& label : labels) {
+
+        const auto& index = classlabel_to_index_label(label.label, anno_classes);
+        const auto& anno_class = anno_classes[index];
+
+        writer.StartObject();
+        writer.String("color");
+        writer.StartObject();
+        {
+            writer.String("r"); writer.Int(anno_class.rgba_label.red);
+            writer.String("g"); writer.Int(anno_class.rgba_label.green);
+            writer.String("b"); writer.Int(anno_class.rgba_label.blue);
+            writer.String("a"); writer.Int(anno_class.rgba_label.alpha);
+        }
+        writer.EndObject();
+
+        writer.String("color_paths");
+        writer.StartArray();
+
+        {
+            writer.StartArray();
+            {
+                writer.StartObject();
+                writer.String("x"); writer.Int(label.rect.left());
+                writer.String("y"); writer.Int(label.rect.top());
+                writer.EndObject();
+            }
+            {
+                writer.StartObject();
+                writer.String("x"); writer.Int(label.rect.right());
+                writer.String("y"); writer.Int(label.rect.top());
+                writer.EndObject();
+            }
+            {
+                writer.StartObject();
+                writer.String("x"); writer.Int(label.rect.right());
+                writer.String("y"); writer.Int(label.rect.bottom());
+                writer.EndObject();
+            }
+            {
+                writer.StartObject();
+                writer.String("x"); writer.Int(label.rect.left());
+                writer.String("y"); writer.Int(label.rect.bottom());
+                writer.EndObject();
+            }
+            writer.EndArray();
+        }
+
+        writer.EndArray();
+        writer.EndObject();
+    }
+
+    writer.EndArray();
+
+    std::ofstream out(filename);
+    out << buffer.GetString();
+}
 
 int main(int argc, char** argv) try
 {
@@ -300,8 +379,8 @@ int main(int argc, char** argv) try
     hardware_concurrency << std::thread::hardware_concurrency();
 
 #ifdef DLIB_USE_CUDA
-    const std::string default_max_tile_width = "512";
-    const std::string default_max_tile_height = "512";
+    const std::string default_max_tile_width = "4096";
+    const std::string default_max_tile_height = "4096";
 #else
     // in CPU-only mode, we can handle larger tiles
     const std::string default_max_tile_width = "4096";
@@ -310,8 +389,8 @@ int main(int argc, char** argv) try
 
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
-        ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
-        ("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
+        //("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
+        //("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
@@ -347,9 +426,10 @@ int main(int argc, char** argv) try
 
     DLIB_CASSERT(anno_classes.size() >= 2);
 
-    const std::vector<double> gains = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
-    const std::vector<double> detection_levels = parse_class_specific_values(options["detection"].as<std::vector<std::string>>(), anno_classes.size());
+    const std::vector<double> gains; // = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
+    const std::vector<double> detection_levels; // = parse_class_specific_values(options["detection"].as<std::vector<std::string>>(), anno_classes.size());
 
+#if 0
     assert(gains.size() == anno_classes.size());
     assert(detection_levels.size() == anno_classes.size());
 
@@ -364,6 +444,7 @@ int main(int argc, char** argv) try
         std::cout << " " << class_index << ":" << detection_levels[class_index];
     }
     std::cout << std::endl;
+#endif
 
     set_low_priority();
 
@@ -401,17 +482,29 @@ int main(int argc, char** argv) try
     for (unsigned int i = 0; i < result_image_writer_count; ++i) {
         result_image_writers.push_back(std::thread([&]() {
             result_image_type result_image;
-            dlib::matrix<rgb_alpha_pixel> rgba_label_image;
             while (result_image_write_requests.dequeue(result_image)) {
-                resize_label_image(result_image.label_image, result_image.original_width, result_image.original_height);
-                index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
-                save_png(rgba_label_image, result_image.filename);
+                if (downscaling_factor != 1.0) {
+                    for (auto& label : result_image.labels) {
+                        const auto scale = [downscaling_factor](const long value) {
+                            return static_cast<long>(std::round(value * downscaling_factor));
+                        };
+                        label.rect.set_left  (scale(label.rect.left  ()));
+                        label.rect.set_right (scale(label.rect.right ()));
+                        label.rect.set_top   (scale(label.rect.top   ()));
+                        label.rect.set_bottom(scale(label.rect.bottom()));
+                    }
+                }
+                write_labels(result_image.filename, result_image.labels, anno_classes);
                 result_image_write_results.enqueue(true);
             }
         }));
     }
 
+#if 0
     const int min_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
+#else
+    const int min_input_dimension = 16;
+#endif
 
     tiling::parameters tiling_parameters;
     tiling_parameters.max_tile_width = options["tile-max-width"].as<int>();
@@ -422,15 +515,19 @@ int main(int argc, char** argv) try
     DLIB_CASSERT(tiling_parameters.max_tile_width >= min_input_dimension);
     DLIB_CASSERT(tiling_parameters.max_tile_height >= min_input_dimension);
 
+#if 0
     // first index: ground truth, second index: predicted
     confusion_matrix_type confusion_matrix_per_pixel, confusion_matrix_per_region;
     init_confusion_matrix(confusion_matrix_per_pixel, anno_classes.size());
     init_confusion_matrix(confusion_matrix_per_region, anno_classes.size());
     size_t ground_truth_count = 0;
+#endif
 
     const auto t0 = std::chrono::steady_clock::now();
 
+#if 0
     update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
+#endif
 
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
@@ -447,13 +544,13 @@ int main(int argc, char** argv) try
 
         const auto& input_image = sample.input_image;
 
-        result_image.filename = sample.image_filenames.image_filename + "_result.png";
-        result_image.label_image.set_size(input_image.nr(), input_image.nc());
+        result_image.filename = sample.image_filenames.image_filename + "_result_path.json";
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        annonet_infer(net, sample.input_image, result_image.labels, gains, detection_levels, tiling_parameters, temp);
 
+#if 0
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
             for (const dlib::point& point : labeled_points.second) {
@@ -464,6 +561,7 @@ int main(int argc, char** argv) try
         }
 
         update_confusion_matrix_per_region(confusion_matrix_per_region, sample.labeled_points_by_class, sample.label_image, result_image.label_image, update_confusion_matrix_per_region_temp);
+#endif
 
         result_image_write_requests.enqueue(result_image);
     }
@@ -490,6 +588,7 @@ int main(int argc, char** argv) try
         image_writer.join();
     }
 
+#if 0
     if (ground_truth_count) {
         std::cout << std::endl << "Confusion matrix per pixel:" << std::endl;
         print_confusion_matrix(confusion_matrix_per_pixel, anno_classes);
@@ -497,6 +596,7 @@ int main(int argc, char** argv) try
         std::cout << std::endl << "Confusion matrix per region (two-way):" << std::endl;
         print_confusion_matrix(confusion_matrix_per_region, anno_classes);
     }
+#endif
 }
 catch(std::exception& e)
 {

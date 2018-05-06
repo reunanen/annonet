@@ -3,7 +3,7 @@
     annotated in the "anno" program (see https://github.com/reunanen/anno).
 
     Instructions:
-    1. Use anno to label some data.
+    1. Use anno to label some data (use the "things" mode).
     2. Build the annonet_train program.
     3. Run:
        ./annonet_train /path/to/anno/data
@@ -23,25 +23,11 @@
 
 // ----------------------------------------------------------------------------------------
 
-struct zero_and_ignored_pixels_are_background
-{
-    template <typename image_type>
-    bool operator() (
-        const image_type& label_image,
-        const dlib::point& point
-    ) const
-    {
-        const uint16_t label = label_image[point.y()][point.x()];
-        return label == 0 || label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    }
-};
-
-// ----------------------------------------------------------------------------------------
-
 struct image_filenames
 {
     std::string image_filename;
     std::string label_filename;
+    std::vector<dlib::mmod_rect> labels;
 };
 
 typedef uint8_t input_pixel_type;
@@ -52,22 +38,18 @@ struct sample
     int original_height = 0;
     image_filenames image_filenames;
     NetPimpl::input_type input_image;
-    dlib::matrix<uint16_t> label_image;
-    std::unordered_map<uint16_t, std::deque<dlib::point>> labeled_points_by_class;
+    std::vector<dlib::mmod_rect> labels;
     std::string error;
 };
 
 inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes);
 
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes);
+std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::vector<AnnoClass>& anno_classes);
 
 std::vector<image_filenames> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 );
-
-template <typename image_type>
-void resize_label_image(image_type& label_image, int target_width, int target_height);
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 

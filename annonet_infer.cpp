@@ -3,7 +3,7 @@
     annotated in the "anno" program (see https://github.com/reunanen/anno).
 
     Instructions:
-    1. Use anno to label some data.
+    1. Use anno to label some data (use the "things" mode).
     2. Build the annonet_train program.
     3. Run:
        ./annonet_train /path/to/anno/data
@@ -72,7 +72,7 @@ void outpaint(
 void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
-    dlib::matrix<uint16_t>& result_image,
+    std::vector<dlib::mmod_rect>& results,
     const std::vector<double>& gains,
     const std::vector<double>& detection_levels,
     const tiling::parameters& tiling_parameters,
@@ -85,8 +85,6 @@ void annonet_infer(
             return value > 0.0;
         });
 
-    result_image.set_size(input_image.nr(), input_image.nc());
-
     if (use_detection_level) {
         temp.detection_seeds.clear();
     }
@@ -97,8 +95,12 @@ void annonet_infer(
 
         const dlib::point tile_center(tile.full_rect.left() + tile.full_rect.width() / 2, tile.full_rect.top() + tile.full_rect.height() / 2);
 
+#if 0
         const int recommended_tile_width = NetPimpl::RuntimeNet::GetRecommendedInputDimension(tile.full_rect.width());
         const int recommended_tile_height = NetPimpl::RuntimeNet::GetRecommendedInputDimension(tile.full_rect.height());
+#endif
+        const int recommended_tile_width = tile.full_rect.width();
+        const int recommended_tile_height = tile.full_rect.height();
         const int recommended_tile_left = tile_center.x() - recommended_tile_width / 2;
         const int recommended_tile_top = tile_center.y() - recommended_tile_height / 2;
 
@@ -123,22 +125,26 @@ void annonet_infer(
             outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_tile), inside);
         }
 
-        const dlib::matrix<uint16_t> index_label_tile = net(temp.input_tile, gains);
-
-        DLIB_CASSERT(index_label_tile.nr() == temp.input_tile.nr());
-        DLIB_CASSERT(index_label_tile.nc() == temp.input_tile.nc());
+        const auto tile_labels = net(temp.input_tile, gains);
 
         const long valid_left_in_image = actual_tile.non_overlapping_rect.left();
         const long valid_top_in_image = actual_tile.non_overlapping_rect.top();
         const long valid_left_in_tile = actual_tile.non_overlapping_rect.left() - actual_tile.full_rect.left();
         const long valid_top_in_tile = actual_tile.non_overlapping_rect.top() - actual_tile.full_rect.top();
-        for (long y = 0, valid_tile_height = actual_tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
-            for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
-                const uint16_t label = index_label_tile(valid_top_in_tile + y, valid_left_in_tile + x);
-                result_image(valid_top_in_image + y, valid_left_in_image + x) = label;
-            }
+
+        for (const auto& tile_label : tile_labels) {
+            auto image_label = tile_label;
+            const auto shift_to_image_coordinates = [](const auto tile_coordinate, const auto offset) {
+                return tile_coordinate + offset;
+            };
+            image_label.rect.set_left  (shift_to_image_coordinates(image_label.rect.left  (), valid_left_in_tile - valid_left_in_image));
+            image_label.rect.set_right (shift_to_image_coordinates(image_label.rect.right (), valid_left_in_tile - valid_left_in_image));
+            image_label.rect.set_top   (shift_to_image_coordinates(image_label.rect.top   (), valid_top_in_tile  - valid_top_in_image ));
+            image_label.rect.set_bottom(shift_to_image_coordinates(image_label.rect.bottom(), valid_top_in_tile  - valid_top_in_image ));
+            results.push_back(image_label);
         }
 
+#if 0
         if (use_detection_level) {
 
             const auto tensor_index = [](const dlib::tensor& t, long sample, long k, long row, long column)
@@ -167,8 +173,10 @@ void annonet_infer(
                 }
             }
         }
+#endif
     }
 
+#if 0
     if (use_detection_level) {
         const unsigned long connected_blob_count = dlib::label_connected_blobs(result_image, dlib::zero_pixels_are_background(), dlib::neighbors_8(), dlib::connected_if_equal(), temp.connected_blobs);
 
@@ -193,4 +201,5 @@ void annonet_infer(
             }
         }
     }
+#endif
 }

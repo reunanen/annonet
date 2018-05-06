@@ -3,7 +3,7 @@
     annotated in the "anno" program (see https://github.com/reunanen/anno).
 
     Instructions:
-    1. Use anno to label some data.
+    1. Use anno to label some data (use the "things" mode).
     2. Build the annonet_train program.
     3. Run:
        ./annonet_train /path/to/anno/data
@@ -33,7 +33,7 @@ struct annonet_infer_temp
 void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
-    dlib::matrix<uint16_t>& result_image,
+    std::vector<dlib::mmod_rect>& results,
     const std::vector<double>& gains = std::vector<double>(),
     const std::vector<double>& detection_levels = std::vector<double>(),
     const tiling::parameters& tiling_parameters = tiling::parameters(),

@@ -299,6 +299,9 @@
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet.cpp" />
     <ClCompile Include="annonet_parse_anno_classes.cpp" />
+    <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp">
+      <Filter>cpp-read-file-in-memory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -340,6 +343,9 @@
     <Filter Include="tiling">
       <UniqueIdentifier>{9a1c6b0b-b15d-4eee-b831-d14a229548e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cpp-read-file-in-memory">
+      <UniqueIdentifier>{55e5a3bf-325c-40d6-8817-cfb486f92af8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="dlib\dlib\dnn\cuda_dlib.cu">
@@ -376,5 +382,8 @@
     </ClInclude>
     <ClInclude Include="annonet_infer.h" />
     <ClInclude Include="annonet_parse_anno_classes.h" />
+    <ClInclude Include="cpp-read-file-in-memory\read-file-in-memory.h">
+      <Filter>cpp-read-file-in-memory</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -3,7 +3,7 @@
     annotated in the "anno" program (see https://github.com/reunanen/anno).
 
     Instructions:
-    1. Use anno to label some data.
+    1. Use anno to label some data (use the "things" mode).
     2. Build the annonet_train program.
     3. Run:
        ./annonet_train /path/to/anno/data
@@ -15,7 +15,10 @@
 
 #include "annonet.h"
 
+#include "cpp-read-file-in-memory/read-file-in-memory.h"
+
 #include <dlib/data_io.h>
+#include <rapidjson/document.h>
 
 // ----------------------------------------------------------------------------------------
 
@@ -36,25 +39,6 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
         << "b = " << static_cast<int>(rgba_label.blue) << ", "
         << "alpha = " << static_cast<int>(rgba_label.alpha);
     throw std::runtime_error(error.str());
-}
-
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes)
-{
-    const long nr = rgba_label_image.nr();
-    const long nc = rgba_label_image.nc();
-
-    ground_truth_sample.label_image.set_size(nr, nc);
-    ground_truth_sample.labeled_points_by_class.clear();
-
-    for (long r = 0; r < nr; ++r) {
-        for (long c = 0; c < nc; ++c) {
-            const uint16_t label = rgba_label_to_index_label(rgba_label_image(r, c), anno_classes);
-            if (label != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-                ground_truth_sample.labeled_points_by_class[label].push_back(dlib::point(c, r));
-            }
-            ground_truth_sample.label_image(r, c) = label;
-        }
-    }
 }
 
 std::vector<image_filenames> find_image_files(
@@ -98,7 +82,7 @@ std::vector<image_filenames> find_image_files(
         image_filenames image_filenames;
         image_filenames.image_filename = name;
 
-        const std::string label_filename = name.full_name() + "_mask.png";
+        const std::string label_filename = name.full_name() + "_annotation_paths.json";
         const bool label_file_exists = file_exists(label_filename);
 
         if (label_file_exists) {
@@ -128,17 +112,94 @@ std::vector<image_filenames> find_image_files(
     return results;
 }
 
-template <typename image_type>
-void resize_label_image(image_type& label_image, int target_width, int target_height)
+std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::vector<AnnoClass>& anno_classes)
 {
-    image_type temp;
-    dlib::set_image_size(temp, target_height, target_width);
-    dlib::resize_image(label_image, temp, dlib::interpolate_nearest_neighbor());
-    std::swap(label_image, temp);
-}
+    rapidjson::Document doc;
+    doc.Parse(json.c_str());
+    if (doc.HasParseError()) {
+        throw std::runtime_error("Error parsing json\n" + json);
+    }
 
-// explicit instantiation for dlib::matrix<uint16_t>
-template void resize_label_image<dlib::matrix<uint16_t>>(dlib::matrix<uint16_t>& label_image, int target_width, int target_height);
+    if (!doc.IsArray()) {
+        throw std::runtime_error("Unexpected annotation paths json content - the document should be an array");
+    }
+
+    std::vector<dlib::mmod_rect> mmod_rects;
+
+    for (rapidjson::SizeType i = 0, end = doc.Size(); i < end; ++i) {
+        const auto& path = doc[i];
+
+        const auto& color_member = path.FindMember("color");
+        if (color_member == path.MemberEnd()) {
+            throw std::runtime_error("Unexpected annotation paths json content - no color found");
+        }
+        const auto& color = color_member->value;
+        const auto alpha_member = color.FindMember("a");
+        const auto red_member   = color.FindMember("r");
+        const auto green_member = color.FindMember("g");
+        const auto blue_member  = color.FindMember("b");
+
+        if (alpha_member == color.MemberEnd() || red_member == color.MemberEnd() || green_member == color.MemberEnd() || blue_member == color.MemberEnd()) {
+            throw std::runtime_error("Unexpected annotation paths json content - missing color component");
+        }
+
+        dlib::rgb_alpha_pixel rgba_label;
+        rgba_label.alpha = alpha_member->value.GetInt();
+        rgba_label.red   = red_member  ->value.GetInt();
+        rgba_label.green = green_member->value.GetInt();
+        rgba_label.blue  = blue_member ->value.GetInt();
+
+        const size_t index_label = rgba_label_to_index_label(rgba_label, anno_classes);
+
+        const auto& color_paths_member = path.FindMember("color_paths");
+        if (color_paths_member == path.MemberEnd()) {
+            throw std::runtime_error("Unexpected annotation paths json content - no color_paths member found");
+        }
+        const auto& color_paths = color_paths_member->value;
+        if (!color_paths.IsArray() || color_paths.Size() != 1) {
+            throw std::runtime_error("Unexpected annotation paths json content - color_paths should be an array having a length of exactly 1");
+        }
+
+        double min_x =  std::numeric_limits<double>::max();
+        double max_x = -std::numeric_limits<double>::max();
+        double min_y =  std::numeric_limits<double>::max();
+        double max_y = -std::numeric_limits<double>::max();
+
+        const auto& color_path = color_paths[0];
+
+        if (!color_path.IsArray() || color_path.Size() == 0) {
+            throw std::runtime_error("Unexpected annotation paths json content - color_paths elements should not be empty");
+        }
+
+        for (rapidjson::SizeType j = 0, end = color_path.Size(); j < end; ++j) {
+            const auto& point = color_path[j];
+            const auto& x_member = point.FindMember("x");
+            const auto& y_member = point.FindMember("y");
+            if (x_member == point.MemberEnd() || y_member == point.MemberEnd()) {
+                throw std::runtime_error("Unexpected annotation paths json content - color_paths points must have x and y coordinates");
+            }
+            const double x = x_member->value.GetDouble();
+            const double y = y_member->value.GetDouble();
+            min_x = std::min(min_x, x);
+            max_x = std::max(max_x, x);
+            min_y = std::min(min_y, y);
+            max_y = std::max(max_y, y);
+        }
+
+        const long left   = static_cast<long>(std::round(min_x));
+        const long right  = static_cast<long>(std::round(max_x));
+        const long top    = static_cast<long>(std::round(min_y));
+        const long bottom = static_cast<long>(std::round(max_y));
+
+        dlib::mmod_rect mmod_rect;
+        mmod_rect.rect = dlib::rectangle(left, top, right, bottom);
+        mmod_rect.label = anno_classes[index_label].classlabel;
+
+        mmod_rects.push_back(mmod_rect);
+    }
+
+    return mmod_rects;
+}
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
@@ -153,15 +214,19 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
         dlib::resize_image(1.0 / downscaling_factor, sample.input_image);
 
         if (!image_filenames.label_filename.empty()) {
-            dlib::load_image(rgba_label_image, image_filenames.label_filename);
+            const std::string json = read_file_as_string(image_filenames.label_filename);
+            sample.labels = parse_labels(json, anno_classes);
 
-            if (rgba_label_image.nr() != sample.original_height || rgba_label_image.nc() != sample.original_width) {
-                sample.error = "Label image size mismatch";
-            }
-            else {
-                resize_label_image(rgba_label_image, sample.input_image.nc(), sample.input_image.nr());
-                assert(sample.input_image.nr() == rgba_label_image.nr() || sample.input_image.nc() == rgba_label_image.nc());
-                decode_rgba_label_image(rgba_label_image, sample, anno_classes);
+            if (downscaling_factor != 1.0) {
+                for (auto& label : sample.labels) {
+                    const auto scale = [downscaling_factor](const long value) {
+                        return static_cast<long>(std::round(value / downscaling_factor));
+                    };
+                    label.rect.set_left  (scale(label.rect.left  ()));
+                    label.rect.set_right (scale(label.rect.right ()));
+                    label.rect.set_top   (scale(label.rect.top   ()));
+                    label.rect.set_bottom(scale(label.rect.bottom()));
+                }
             }
         }
         else if (require_ground_truth) {
