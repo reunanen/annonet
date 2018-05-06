@@ -361,6 +361,21 @@ void write_labels(const std::string& filename, const std::vector<dlib::mmod_rect
     out << buffer.GetString();
 }
 
+std::vector<double> convert_gains_by_class_to_gains_by_detector_window(const std::vector<double>& gains_by_class, const std::vector<AnnoClass>& anno_classes, const dlib::mmod_options& mmod_options)
+{
+    DLIB_CASSERT(gains_by_class.size() == anno_classes.size());
+
+    std::vector<double> gains_by_detector_window(mmod_options.detector_windows.size());
+
+    for (size_t detector_window_index = 0, end = gains_by_detector_window.size(); detector_window_index < end; ++detector_window_index) {
+        const std::string& classlabel = mmod_options.detector_windows[detector_window_index].label;
+        const auto classlabel_index = classlabel_to_index_label(classlabel, anno_classes);
+        gains_by_detector_window[detector_window_index] = gains_by_class[classlabel_index];
+    }
+    
+    return gains_by_detector_window;
+}
+
 int main(int argc, char** argv) try
 {
     if (argc == 1)
@@ -389,8 +404,7 @@ int main(int argc, char** argv) try
 
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
-        //("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
-        //("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
+        ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
@@ -426,25 +440,21 @@ int main(int argc, char** argv) try
 
     DLIB_CASSERT(anno_classes.size() >= 2);
 
-    const std::vector<double> gains; // = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
-    const std::vector<double> detection_levels; // = parse_class_specific_values(options["detection"].as<std::vector<std::string>>(), anno_classes.size());
+    const auto get_gains_by_detector_window = [&options, &anno_classes, &net]() {
+        const std::vector<double> gains_by_class = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
 
-#if 0
-    assert(gains.size() == anno_classes.size());
-    assert(detection_levels.size() == anno_classes.size());
+        assert(gains_by_class.size() == anno_classes.size());
 
-    std::cout << "Using gains:";
-    for (size_t class_index = 0, end = gains.size(); class_index < end; ++class_index) {
-        std::cout << " " << class_index << ":" << gains[class_index];
-    }
-    std::cout << std::endl;
+        std::cout << "Using gains:" << std::endl;
+        for (size_t class_index = 0, end = gains_by_class.size(); class_index < end; ++class_index) {
+            std::cout << " - " << class_index << " (" << anno_classes[class_index].classlabel << "): " << gains_by_class[class_index] << std::endl;
+        }
+        std::cout << std::endl;
 
-    std::cout << "Using detection levels:";
-    for (size_t class_index = 0, end = detection_levels.size(); class_index < end; ++class_index) {
-        std::cout << " " << class_index << ":" << detection_levels[class_index];
-    }
-    std::cout << std::endl;
-#endif
+        return convert_gains_by_class_to_gains_by_detector_window(gains_by_class, anno_classes, net.GetOptions());
+    };
+
+    const std::vector<double> gains_by_detector_window = get_gains_by_detector_window();
 
     set_low_priority();
 
@@ -548,7 +558,7 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.labels, gains, detection_levels, tiling_parameters, temp);
+        annonet_infer(net, sample.input_image, result_image.labels, gains_by_detector_window, tiling_parameters, temp);
 
 #if 0
         for (const auto& labeled_points : sample.labeled_points_by_class) {
