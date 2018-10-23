@@ -23,8 +23,8 @@
     <Filter Include="dlib-dnn-pimpl-wrapper">
       <UniqueIdentifier>{3b62d4e2-174c-4e27-b4d9-5394da71e6f6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dlib\dnn">
-      <UniqueIdentifier>{9531b7a6-99e4-4377-b468-e333c3c85851}</UniqueIdentifier>
+    <Filter Include="dlib\cuda">
+      <UniqueIdentifier>{d30e5a8e-3d97-425f-8f0b-df80f7ab5312}</UniqueIdentifier>
     </Filter>
     <Filter Include="dlib\dir_nav">
       <UniqueIdentifier>{b29a2b65-00ba-4c8c-8d1c-e8c1414c2e93}</UniqueIdentifier>
@@ -59,11 +59,11 @@
     <ClCompile Include="..\dlib-dnn-pimpl-wrapper\NetPimpl.cpp">
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\cpu_dlib.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="..\dlib\dlib\cuda\cpu_dlib.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="..\dlib\dlib\dnn\tensor_tools.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="..\dlib\dlib\cuda\tensor_tools.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
     <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_extensions.cpp">
       <Filter>dlib\dir_nav</Filter>
@@ -73,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_2.cpp">
       <Filter>dlib\dir_nav</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dlib\dlib\test_for_odr_violations.cpp">
+      <Filter>dlib</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

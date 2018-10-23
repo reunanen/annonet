@@ -1,26 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="dlib\dlib\dnn\cpu_dlib.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\cpu_dlib.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\cublas_dlibapi.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\cublas_dlibapi.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\cuda_data_ptr.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\cuda_data_ptr.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\cudnn_dlibapi.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\cudnn_dlibapi.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\curand_dlibapi.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\curand_dlibapi.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\gpu_data.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\gpu_data.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\tensor_tools.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\tensor_tools.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp">
       <Filter>dlib\dir_nav</Filter>
@@ -301,13 +301,16 @@
     <ClCompile Include="annonet_train_main.cpp" />
     <ClCompile Include="annonet.cpp" />
     <ClCompile Include="annonet_parse_anno_classes.cpp" />
+    <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp">
+      <Filter>dlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
       <UniqueIdentifier>{ec628a95-6719-4899-b5ad-42ccf9190651}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dlib\dnn">
-      <UniqueIdentifier>{acea13f1-a84d-4bc0-8d01-100a56e4ca84}</UniqueIdentifier>
+    <Filter Include="dlib\cuda">
+      <UniqueIdentifier>{c095f2b3-0732-4e2e-a9dc-344a77390fab}</UniqueIdentifier>
     </Filter>
     <Filter Include="dlib\dir_nav">
       <UniqueIdentifier>{2140c942-5819-4bf9-b63d-80579ec23b8b}</UniqueIdentifier>
@@ -344,19 +347,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="dlib\dlib\dnn\cuda_dlib.cu">
-      <Filter>dlib\dnn</Filter>
+    <None Include="dlib\dlib\cuda\cuda_dlib.cu">
+      <Filter>dlib\cuda</Filter>
     </None>
-    <None Include="dlib\dlib\dnn\cusolver_dlibapi.cu">
-      <Filter>dlib\dnn</Filter>
+    <None Include="dlib\dlib\cuda\cusolver_dlibapi.cu">
+      <Filter>dlib\cuda</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="dlib\dlib\dnn\cuda_dlib.cu">
-      <Filter>dlib</Filter>
+    <CudaCompile Include="dlib\dlib\cuda\cuda_dlib.cu">
+      <Filter>dlib\cuda</Filter>
     </CudaCompile>
-    <CudaCompile Include="dlib\dlib\dnn\cusolver_dlibapi.cu">
-      <Filter>dlib</Filter>
+    <CudaCompile Include="dlib\dlib\cuda\cusolver_dlibapi.cu">
+      <Filter>dlib\cuda</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
