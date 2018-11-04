@@ -347,14 +347,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="dlib\dlib\cuda\cuda_dlib.cu">
-      <Filter>dlib\cuda</Filter>
-    </None>
-    <None Include="dlib\dlib\cuda\cusolver_dlibapi.cu">
-      <Filter>dlib\cuda</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="dlib\dlib\cuda\cuda_dlib.cu">
       <Filter>dlib\cuda</Filter>
     </CudaCompile>
