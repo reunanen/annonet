@@ -302,6 +302,9 @@
     <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp">
       <Filter>dlib</Filter>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\image_saver\save_jpeg.cpp">
+      <Filter>dlib\image_saver</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">

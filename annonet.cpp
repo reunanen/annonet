@@ -72,6 +72,9 @@ std::vector<image_filenames> find_image_files(
         if (dlib::match_ending("_result.png")(name)) {
             return false;
         }
+        if (dlib::match_ending("_probability_map.png")(name)) {
+            return false;
+        }
         return dlib::match_ending(".jpeg")(name)
             || dlib::match_ending(".jpg")(name)
             || dlib::match_ending(".JPG")(name)

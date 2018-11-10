@@ -26,16 +26,13 @@
 struct annonet_infer_temp
 {
     NetPimpl::input_type input_tile;
-    std::vector<dlib::point> detection_seeds;
-    dlib::matrix<unsigned int> connected_blobs;
 };
 
 void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
-    dlib::matrix<uint16_t>& result_image,
+    dlib::matrix<uint8_t>& result_image,
     const std::vector<double>& gains = std::vector<double>(),
-    const std::vector<double>& detection_levels = std::vector<double>(),
     const tiling::parameters& tiling_parameters = tiling::parameters(),
     annonet_infer_temp& temp = annonet_infer_temp()
 );
