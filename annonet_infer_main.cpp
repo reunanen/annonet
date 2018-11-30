@@ -1,18 +1,3 @@
-/*
-    This example shows how to train a semantic segmentation net using images
-    annotated in the "anno" program (see https://github.com/reunanen/anno).
-
-    Instructions:
-    1. Use anno to label some data.
-    2. Build the annonet_train program.
-    3. Run:
-       ./annonet_train /path/to/anno/data
-    4. Wait while the network is being trained.
-    5. Build the annonet_infer example program.
-    6. Run:
-       ./annonet_infer /path/to/anno/data
-*/
-
 #include "annonet.h"
 #include "annonet_infer.h"
 
@@ -27,71 +12,11 @@ using namespace dlib;
 
 // ----------------------------------------------------------------------------------------
 
-struct class_specific_value_type
-{
-    uint16_t class_index = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    double value = 0.0;
-};
-
-class_specific_value_type parse_class_specific_value(const std::string& string_from_command_line)
-{
-    const auto colon_pos = string_from_command_line.find(':');
-    if (colon_pos == std::string::npos || colon_pos < 1 || colon_pos >= string_from_command_line.length() - 1) {
-        throw std::runtime_error("The gains must be supplied in the format index:gain (e.g., 1:-0.5)");
-    }
-    class_specific_value_type class_specific_value;
-    class_specific_value.class_index = std::stoul(string_from_command_line.substr(0, colon_pos));
-    class_specific_value.value = std::stod(string_from_command_line.substr(colon_pos + 1));
-    return class_specific_value;
-}
-
-std::vector<double> parse_class_specific_values(const std::vector<std::string>& strings_from_command_line, uint16_t class_count)
-{
-    std::vector<double> class_specific_values(class_count, 0.0);
-
-    for (const auto string_from_command_line : strings_from_command_line) {
-        const auto class_specific_value = parse_class_specific_value(string_from_command_line);
-        if (class_specific_value.class_index >= class_count) {
-            std::ostringstream error;
-            error << "Can't define class-specific value for index " << class_specific_value.class_index << " when there are only " << class_count << " classes";
-            throw std::runtime_error(error.str());
-        }
-        class_specific_values[class_specific_value.class_index] = class_specific_value.value;
-    }
-
-    return class_specific_values;
-}
-
-// ----------------------------------------------------------------------------------------
-
-inline rgb_alpha_pixel index_label_to_rgba_label(uint16_t index_label, const std::vector<AnnoClass>& anno_classes)
-{
-    const AnnoClass& anno_class = anno_classes[index_label];
-    assert(anno_class.index == index_label);
-    return anno_class.rgba_label;
-}
-
-void index_label_image_to_rgba_label_image(const matrix<uint16_t>& index_label_image, matrix<rgb_alpha_pixel>& rgba_label_image, const std::vector<AnnoClass>& anno_classes)
-{
-    const long nr = index_label_image.nr();
-    const long nc = index_label_image.nc();
-
-    rgba_label_image.set_size(nr, nc);
-
-    for (long r = 0; r < nr; ++r) {
-        for (long c = 0; c < nc; ++c) {
-            rgba_label_image(r, c) = index_label_to_rgba_label(index_label_image(r, c), anno_classes);
-        }
-    }
-}
-
-// ----------------------------------------------------------------------------------------
-
 struct result_image_type {
     std::string filename;
     int original_width = 0;
     int original_height = 0;
-    matrix<uint8_t> probability_image;
+    matrix<uint8_t> predicted_key;
 };
 
 int main(int argc, char** argv) try
@@ -146,27 +71,12 @@ int main(int argc, char** argv) try
 
     double downscaling_factor = 1.0;
     std::string serialized_runtime_net;
-    std::string anno_classes_json;
-    deserialize("annonet.dnn") >> anno_classes_json >> downscaling_factor >> serialized_runtime_net;
+    deserialize("annonet.dnn") >> downscaling_factor >> serialized_runtime_net;
 
     std::cout << "Deserializing annonet, downscaling factor = " << downscaling_factor << std::endl;
 
     NetPimpl::RuntimeNet net;
     net.Deserialize(std::istringstream(serialized_runtime_net));
-
-    const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
-
-    DLIB_CASSERT(anno_classes.size() >= 2);
-
-    const std::vector<double> gains = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
-
-    assert(gains.size() == anno_classes.size());
-
-    std::cout << "Using gains:";
-    for (size_t class_index = 0, end = gains.size(); class_index < end; ++class_index) {
-        std::cout << " " << class_index << ":" << gains[class_index];
-    }
-    std::cout << std::endl;
 
     set_low_priority();
 
@@ -191,7 +101,7 @@ int main(int argc, char** argv) try
         full_image_readers.push_back(std::thread([&]() {
             image_filenames image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
-                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false, downscaling_factor));
+                full_image_read_results.enqueue(read_sample(image_filenames, false, downscaling_factor));
             }
         }));
     }
@@ -207,7 +117,7 @@ int main(int argc, char** argv) try
             dlib::matrix<uint8_t> resized_result_image;
             while (result_image_write_requests.dequeue(result_image)) {
                 resized_result_image.set_size(result_image.original_height, result_image.original_width);
-                dlib::resize_image(result_image.probability_image, resized_result_image);
+                dlib::resize_image(result_image.predicted_key, resized_result_image);
                 save_png(resized_result_image, result_image.filename);
                 result_image_write_results.enqueue(true);
             }
@@ -240,14 +150,15 @@ int main(int argc, char** argv) try
             throw std::runtime_error(sample.error);
         }
 
-        const auto& input_image = sample.input_image;
+        const std::string name = sample.image_filenames.input0_filename;
+        const std::string prefix = name.substr(0, name.length() - 6);
 
-        result_image.filename = sample.image_filenames.image_filename + "_probability_map.png";
-        result_image.probability_image.set_size(input_image.nr(), input_image.nc());
+        result_image.filename = prefix + "_prediction.png";
+        result_image.predicted_key.set_size(sample.input_image_stack[0].nr(), sample.input_image_stack[0].nc());
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.probability_image, gains, tiling_parameters, temp);
+        annonet_infer(net, sample.input_image_stack, result_image.predicted_key, tiling_parameters, temp);
 
         result_image_write_requests.enqueue(result_image);
     }

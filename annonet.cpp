@@ -1,61 +1,8 @@
-/*
-    This example shows how to train a semantic segmentation net using images
-    annotated in the "anno" program (see https://github.com/reunanen/anno).
-
-    Instructions:
-    1. Use anno to label some data.
-    2. Build the annonet_train program.
-    3. Run:
-       ./annonet_train /path/to/anno/data
-    4. Wait while the network is being trained.
-    5. Build the annonet_infer example program.
-    6. Run:
-       ./annonet_infer /path/to/anno/data
-*/
-
 #include "annonet.h"
 
 #include <dlib/data_io.h>
 
 // ----------------------------------------------------------------------------------------
-
-inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes)
-{
-    if (rgba_label == rgba_ignore_label) {
-        return dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    }
-    for (const AnnoClass& anno_class : anno_classes) {
-        if (anno_class.rgba_label == rgba_label) {
-            return anno_class.index;
-        }
-    }
-    std::ostringstream error;
-    error << "Unknown class: "
-        << "r = " << static_cast<int>(rgba_label.red) << ", "
-        << "g = " << static_cast<int>(rgba_label.green) << ", "
-        << "b = " << static_cast<int>(rgba_label.blue) << ", "
-        << "alpha = " << static_cast<int>(rgba_label.alpha);
-    throw std::runtime_error(error.str());
-}
-
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes)
-{
-    const long nr = rgba_label_image.nr();
-    const long nc = rgba_label_image.nc();
-
-    ground_truth_sample.label_image.set_size(nr, nc);
-    ground_truth_sample.labeled_points_by_class.clear();
-
-    for (long r = 0; r < nr; ++r) {
-        for (long c = 0; c < nc; ++c) {
-            const uint16_t label = rgba_label_to_index_label(rgba_label_image(r, c), anno_classes);
-            if (label != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-                ground_truth_sample.labeled_points_by_class[label].push_back(dlib::point(c, r));
-            }
-            ground_truth_sample.label_image(r, c) = label;
-        }
-    }
-}
 
 std::vector<image_filenames> find_image_files(
     const std::string& anno_data_folder,
@@ -64,23 +11,7 @@ std::vector<image_filenames> find_image_files(
 {
     std::cout << std::endl << "Scanning...";
 
-    const std::vector<dlib::file> files = dlib::get_files_in_directory_tree(anno_data_folder,
-        [](const dlib::file& name) {
-        if (dlib::match_ending("_mask.png")(name)) {
-            return false;
-        }
-        if (dlib::match_ending("_result.png")(name)) {
-            return false;
-        }
-        if (dlib::match_ending("_probability_map.png")(name)) {
-            return false;
-        }
-        return dlib::match_ending(".jpeg")(name)
-            || dlib::match_ending(".jpg")(name)
-            || dlib::match_ending(".JPG")(name)
-            || dlib::match_ending(".png")(name)
-            || dlib::match_ending(".PNG")(name);
-    });
+    const std::vector<dlib::file> files = dlib::get_files_in_directory_tree(anno_data_folder, dlib::match_ending("_0.png"));
 
     std::cout << " found " << files.size() << " candidates" << std::endl;
 
@@ -99,20 +30,32 @@ std::vector<image_filenames> find_image_files(
         const dlib::file& name = files[i];
 
         image_filenames image_filenames;
-        image_filenames.image_filename = name;
+        image_filenames.input0_filename = name;
 
-        const std::string label_filename = name.full_name() + "_mask.png";
-        const bool label_file_exists = file_exists(label_filename);
+        const std::string prefix = name.full_name().substr(0, name.full_name().length() - 6);
 
-        if (label_file_exists) {
-            image_filenames.label_filename = label_filename;
+        std::string input1_filename = prefix + "_1.png";
+        std::string ground_truth_filename = prefix + "_ground-truth.png";
+        
+        const bool input1_file_exists = file_exists(input1_filename);
+        const bool ground_truth_file_exists = file_exists(ground_truth_filename);
+
+        if (input1_file_exists) {
+            image_filenames.input1_filename = input1_filename;
+
+            if (ground_truth_file_exists) {
+                image_filenames.ground_truth_filename = ground_truth_filename;
+            }
+
+            if (ground_truth_file_exists || !require_ground_truth) {
+                results.push_back(image_filenames);
+                ++added;
+            }
+            else if (require_ground_truth) {
+                ++ignored;
+            }
         }
-
-        if (label_file_exists || !require_ground_truth) {
-            results.push_back(image_filenames);
-            ++added;
-        }
-        else if (require_ground_truth) {
+        else {
             ++ignored;
         }
 
@@ -131,40 +74,35 @@ std::vector<image_filenames> find_image_files(
     return results;
 }
 
-template <typename image_type>
-void resize_label_image(image_type& label_image, int target_width, int target_height)
-{
-    image_type temp;
-    dlib::set_image_size(temp, target_height, target_width);
-    dlib::resize_image(label_image, temp, dlib::interpolate_nearest_neighbor());
-    std::swap(label_image, temp);
-}
-
-// explicit instantiation for dlib::matrix<uint16_t>
-template void resize_label_image<dlib::matrix<uint16_t>>(dlib::matrix<uint16_t>& label_image, int target_width, int target_height);
-
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
+sample read_sample(const image_filenames& image_filenames, bool require_ground_truth, double downscaling_factor)
 {
     sample sample;
     sample.image_filenames = image_filenames;
 
+    sample.input_image_stack.resize(2);
+
     try {
         dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
-        dlib::load_image(sample.input_image, image_filenames.image_filename);
-        sample.original_width = sample.input_image.nc();
-        sample.original_height = sample.input_image.nr();
-        dlib::resize_image(1.0 / downscaling_factor, sample.input_image);
+        dlib::load_image(sample.input_image_stack[0], image_filenames.input0_filename);
+        dlib::load_image(sample.input_image_stack[1], image_filenames.input1_filename);
+        sample.original_width = sample.input_image_stack[0].nc();
+        sample.original_height = sample.input_image_stack[0].nr();
 
-        if (!image_filenames.label_filename.empty()) {
-            dlib::load_image(rgba_label_image, image_filenames.label_filename);
+        if (sample.input_image_stack[1].nr() != sample.original_height || sample.input_image_stack[1].nc() != sample.original_width) {
+            sample.error = "Input image size mismatch";
+        }
 
-            if (rgba_label_image.nr() != sample.original_height || rgba_label_image.nc() != sample.original_width) {
+        dlib::resize_image(1.0 / downscaling_factor, sample.input_image_stack[0]);
+        dlib::resize_image(1.0 / downscaling_factor, sample.input_image_stack[1]);
+
+        if (!image_filenames.ground_truth_filename.empty()) {
+            dlib::load_image(sample.target_image, image_filenames.ground_truth_filename);
+
+            if (sample.target_image.nr() != sample.original_height || sample.target_image.nc() != sample.original_width) {
                 sample.error = "Label image size mismatch";
             }
             else {
-                resize_label_image(rgba_label_image, sample.input_image.nc(), sample.input_image.nr());
-                assert(sample.input_image.nr() == rgba_label_image.nr() || sample.input_image.nc() == rgba_label_image.nc());
-                decode_rgba_label_image(rgba_label_image, sample, anno_classes);
+                dlib::resize_image(1.0 / downscaling_factor, sample.target_image);
             }
         }
         else if (require_ground_truth) {

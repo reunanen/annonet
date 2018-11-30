@@ -73,14 +73,13 @@ void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint8_t>& result_image,
-    const std::vector<double>& gains,
     const tiling::parameters& tiling_parameters,
     annonet_infer_temp& temp
 )
 {
-    result_image.set_size(input_image.nr(), input_image.nc());
+    result_image.set_size(input_image.front().nr(), input_image.front().nc());
 
-    const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
+    const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.front().nc(), input_image.front().nr(), tiling_parameters);
 
     for (const tiling::dlib_tile& tile : tiles) {
 
@@ -105,11 +104,16 @@ void annonet_infer(
         const int actual_tile_height = actual_tile.full_rect.height();
         const dlib::rectangle actual_tile_rect = dlib::centered_rect(tile_center, actual_tile_width, actual_tile_height);
         const dlib::chip_details chip_details(actual_tile_rect, dlib::chip_dims(actual_tile_height, actual_tile_width));
-        dlib::extract_image_chip(input_image, chip_details, temp.input_tile, dlib::interpolate_bilinear());
 
-        if (!dlib::rectangle(input_image.nc(), input_image.nr()).contains(chip_details.rect)) {
-            const dlib::rectangle inside(-chip_details.rect.tl_corner(), get_rect(input_image).br_corner() - chip_details.rect.tl_corner());
-            outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_tile), inside);
+        temp.input_tile.resize(input_image.size());
+
+        for (size_t i = 0, end = input_image.size(); i < end; ++i) {
+            dlib::extract_image_chip(input_image[i], chip_details, temp.input_tile[i], dlib::interpolate_bilinear());
+
+            if (!dlib::rectangle(input_image.front().nc(), input_image.front().nr()).contains(chip_details.rect)) {
+                const dlib::rectangle inside(-chip_details.rect.tl_corner(), get_rect(input_image[i]).br_corner() - chip_details.rect.tl_corner());
+                outpaint(dlib::image_view<NetPimpl::input_type::value_type>(temp.input_tile[i]), inside);
+            }
         }
 
         const long valid_left_in_image = actual_tile.non_overlapping_rect.left();
@@ -134,23 +138,8 @@ void annonet_infer(
 
         for (long y = 0, valid_tile_height = actual_tile.non_overlapping_rect.height(); y < valid_tile_height; ++y) {
             for (long x = 0, valid_tile_width = actual_tile.non_overlapping_rect.width(); x < valid_tile_width; ++x) {
-                const float clean_output = out_data[tensor_index(output_tensor, 0, 0, valid_top_in_tile + y, valid_left_in_tile + x)] + gains[0];
-
-                const auto get_highest_label_output = [&]() {
-                    float highest_label_output = -std::numeric_limits<float>::max();
-                    for (uint16_t label = 1; label < output_tensor.k(); ++label) {
-                        const float label_output = out_data[tensor_index(output_tensor, 0, label, valid_top_in_tile + y, valid_left_in_tile + x)] + gains[label];
-                        highest_label_output = std::max(label_output, highest_label_output);
-                    }
-                    return highest_label_output;
-                };
-
-                const float highest_label_output = get_highest_label_output();
-                const float exp_highest_label_output = exp(highest_label_output);
-                const float exp_total = exp(clean_output) + exp_highest_label_output;
-                const float softmax_output = exp_highest_label_output / exp_total;
-
-                result_image(valid_top_in_image + y, valid_left_in_image + x) = static_cast<uint8_t>(std::round(255 * std::max(0.f, std::min(1.f, softmax_output))));
+                const float output = out_data[tensor_index(output_tensor, 0, 0, valid_top_in_tile + y, valid_left_in_tile + x)];
+                result_image(valid_top_in_image + y, valid_left_in_image + x) = static_cast<uint8_t>(std::round(255 * std::max(0.f, std::min(1.f, output))));
             }
         }
     }

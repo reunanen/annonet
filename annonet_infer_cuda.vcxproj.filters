@@ -298,12 +298,8 @@
     <ClCompile Include="annonet_infer_main.cpp" />
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet.cpp" />
-    <ClCompile Include="annonet_parse_anno_classes.cpp" />
     <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp">
       <Filter>dlib</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\image_saver\save_jpeg.cpp">
-      <Filter>dlib\image_saver</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -373,6 +369,5 @@
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClInclude>
     <ClInclude Include="annonet_infer.h" />
-    <ClInclude Include="annonet_parse_anno_classes.h" />
   </ItemGroup>
 </Project>
