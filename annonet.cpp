@@ -74,15 +74,41 @@ std::vector<image_filenames> find_image_files(
     return results;
 }
 
+void calculate_diff(NetPimpl::input_type& input_image_stack)
+{
+    const auto& input0 = input_image_stack[0];
+    const auto& input1 = input_image_stack[1];
+    auto& diff = input_image_stack[2];
+    diff.set_size(input0.nr(), input0.nc());
+    for (long r = 0, nr = input0.nr(); r < nr; ++r) {
+        for (long c = 0, nc = input0.nc(); c < nc; ++c) {
+            const auto& i0 = input0(r, c);
+            const auto& i1 = input1(r, c);
+            auto& d = diff(r, c);
+            
+            const auto calc_diff = [](uint8_t a, uint8_t b) {
+                return static_cast<uint8_t>(
+                    std::max(0, std::min(255,
+                        128 + static_cast<int>(a) / 2 - static_cast<int>(b) / 2
+                    ))
+                );
+            };
+
+            d.red   = calc_diff(i0.red,   i1.red);
+            d.green = calc_diff(i0.green, i1.green);
+            d.blue  = calc_diff(i0.blue,  i1.blue);
+        }
+    }
+}
+
 sample read_sample(const image_filenames& image_filenames, bool require_ground_truth, double downscaling_factor)
 {
     sample sample;
     sample.image_filenames = image_filenames;
 
-    sample.input_image_stack.resize(2);
+    sample.input_image_stack.resize(3);
 
     try {
-        dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
         dlib::load_image(sample.input_image_stack[0], image_filenames.input0_filename);
         dlib::load_image(sample.input_image_stack[1], image_filenames.input1_filename);
         sample.original_width = sample.input_image_stack[0].nc();
@@ -94,6 +120,8 @@ sample read_sample(const image_filenames& image_filenames, bool require_ground_t
 
         dlib::resize_image(1.0 / downscaling_factor, sample.input_image_stack[0]);
         dlib::resize_image(1.0 / downscaling_factor, sample.input_image_stack[1]);
+
+        calculate_diff(sample.input_image_stack);
 
         if (!image_filenames.ground_truth_filename.empty()) {
             dlib::load_image(sample.target_image, image_filenames.ground_truth_filename);

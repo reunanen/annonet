@@ -119,21 +119,25 @@ void randomly_crop_image(
     if (further_downscaling_factor > 1.0) {
         temp.input_image_stack.resize(full_sample.input_image_stack.size());
 
-        extract_image_chip(full_sample.input_image_stack[0], chip_details, temp.input_image_stack[0]);
-        extract_image_chip(full_sample.input_image_stack[1], chip_details, temp.input_image_stack[1]);
+        for (size_t i = 0, end = full_sample.input_image_stack.size(); i < end; ++i) {
+            extract_image_chip(full_sample.input_image_stack[i], chip_details, temp.input_image_stack[i]);
+        }
         extract_image_chip(full_sample.target_image, chip_details, temp.target_image);
 
-        crop.input_image_stack[0].set_size(dim, dim);
-        crop.input_image_stack[1].set_size(dim, dim);
+        for (size_t i = 0, end = full_sample.input_image_stack.size(); i < end; ++i) {
+            crop.input_image_stack[i].set_size(dim, dim);
+        }
         crop.target_image.set_size(dim, dim);
 
-        dlib::resize_image(temp.input_image_stack[0], crop.input_image_stack[0]);
-        dlib::resize_image(temp.input_image_stack[1], crop.input_image_stack[1]);
+        for (size_t i = 0, end = full_sample.input_image_stack.size(); i < end; ++i) {
+            dlib::resize_image(temp.input_image_stack[i], crop.input_image_stack[i]);
+        }
         dlib::resize_image(temp.target_image, crop.target_image);
     }
     else {
-        extract_image_chip(full_sample.input_image_stack[0], chip_details, crop.input_image_stack[0]);
-        extract_image_chip(full_sample.input_image_stack[1], chip_details, crop.input_image_stack[1]);
+        for (size_t i = 0, end = full_sample.input_image_stack.size(); i < end; ++i) {
+            extract_image_chip(full_sample.input_image_stack[i], chip_details, crop.input_image_stack[i]);
+        }
         extract_image_chip(full_sample.target_image, chip_details, crop.target_image);
     }
 
@@ -141,19 +145,22 @@ void randomly_crop_image(
     const bool allow_flip_left_right = options.count("allow-flip-left-right") > 0;
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
     if (allow_flip_left_right && rnd.get_random_double() > 0.5) {
-        crop.input_image_stack[0] = fliplr(crop.input_image_stack[0]);
-        crop.input_image_stack[1] = fliplr(crop.input_image_stack[1]);
+        for (size_t i = 0, end = full_sample.input_image_stack.size(); i < end; ++i) {
+            crop.input_image_stack[i] = fliplr(crop.input_image_stack[i]);
+        }
         crop.target_image = fliplr(crop.target_image);
     }
     if (allow_flip_upside_down && rnd.get_random_double() > 0.5) {
-        crop.input_image_stack[0] = flipud(crop.input_image_stack[0]);
-        crop.input_image_stack[1] = flipud(crop.input_image_stack[1]);
+        for (size_t i = 0, end = full_sample.input_image_stack.size(); i < end; ++i) {
+            crop.input_image_stack[i] = flipud(crop.input_image_stack[i]);
+        }
         crop.target_image = flipud(crop.target_image);
     }
 
 #ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
     double grayscale_noise_level_stddev = options["grayscale-noise-level-stddev"].as<double>();
     if (grayscale_noise_level_stddev > 0.0) {
+        // TODO think this through
         double grayscale_noise_level = fabs(rnd.get_random_gaussian() * grayscale_noise_level_stddev);
         add_random_noise(crop.input_image_stack[0], grayscale_noise_level, rnd);
         add_random_noise(crop.input_image_stack[1], grayscale_noise_level, rnd);
@@ -161,6 +168,7 @@ void randomly_crop_image(
 #else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
     const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
     if (allow_random_color_offset) {
+        // TODO think this through
         apply_random_color_offset(crop.input_image_stack[0], rnd);
         apply_random_color_offset(crop.input_image_stack[1], rnd);
     }
