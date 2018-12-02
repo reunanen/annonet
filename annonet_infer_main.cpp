@@ -37,8 +37,8 @@ int main(int argc, char** argv) try
     hardware_concurrency << std::thread::hardware_concurrency();
 
 #ifdef DLIB_USE_CUDA
-    const std::string default_max_tile_width = "512";
-    const std::string default_max_tile_height = "512";
+    const std::string default_max_tile_width = "2048";
+    const std::string default_max_tile_height = "2048";
 #else
     // in CPU-only mode, we can handle larger tiles
     const std::string default_max_tile_width = "4096";
