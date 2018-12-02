@@ -18,8 +18,8 @@ std::vector<image_filenames> find_image_files(
     std::vector<image_filenames> results;
 
     const auto file_exists = [](const std::string& filename) {
-        std::ifstream label_file(filename, std::ios::binary);
-        return !!label_file;
+        std::ifstream f(filename, std::ios::binary);
+        return !!f;
     };
 
     std::chrono::steady_clock::time_point progress_last_printed = std::chrono::steady_clock::now();
@@ -131,6 +131,7 @@ sample read_sample(const image_filenames& image_filenames, bool require_ground_t
             }
             else {
                 dlib::resize_image(1.0 / downscaling_factor, sample.target_image);
+                sample.target_image /= 255.f;
             }
         }
         else if (require_ground_truth) {
