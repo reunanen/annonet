@@ -165,8 +165,10 @@ int main(int argc, char** argv) try
 
     const auto t1 = std::chrono::steady_clock::now();
 
-    std::cout << "\nAll " << files.size() << " images processed in "
-        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!" << std::endl;
+    const auto timeElapsed = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count() / 1000000.0;
+
+    std::cout << "\nAll " << files.size() << " images processed in " << timeElapsed << " seconds!";
+    std::cout << " (fps = " << std::fixed << std::setw(2) << files.size() / timeElapsed << ")" << std::endl;
 
     for (size_t i = 0, end = files.size(); i < end; ++i) {
         bool ok;
