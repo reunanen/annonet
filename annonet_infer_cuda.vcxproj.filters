@@ -348,19 +348,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="dlib\dlib\dnn\cuda_dlib.cu">
-      <Filter>dlib\dnn</Filter>
-    </None>
-    <None Include="dlib\dlib\dnn\cusolver_dlibapi.cu">
-      <Filter>dlib\dnn</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="dlib\dlib\dnn\cuda_dlib.cu">
-      <Filter>dlib</Filter>
+      <Filter>dlib\dnn</Filter>
     </CudaCompile>
     <CudaCompile Include="dlib\dlib\dnn\cusolver_dlibapi.cu">
-      <Filter>dlib</Filter>
+      <Filter>dlib\dnn</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
