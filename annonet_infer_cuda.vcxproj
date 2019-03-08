@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="dlib\dlib\dnn\cuda_dlib.cu" />
-    <CudaCompile Include="dlib\dlib\dnn\cusolver_dlibapi.cu" />
+    <CudaCompile Include="dlib\dlib\cuda\cuda_dlib.cu" />
+    <CudaCompile Include="dlib\dlib\cuda\cusolver_dlibapi.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{11A70020-D7EA-435D-93BB-303225BE4D2F}</ProjectGuid>
@@ -94,7 +94,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4530;4577</DisableSpecificWarnings>
@@ -113,7 +113,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cublas_device.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -131,7 +131,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4530;4577</DisableSpecificWarnings>
@@ -168,7 +168,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DisableSpecificWarnings>4530;4577</DisableSpecificWarnings>
@@ -204,7 +204,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DisableSpecificWarnings>4530;4577</DisableSpecificWarnings>
@@ -242,13 +242,13 @@
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_1.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_2.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\cpu_dlib.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\cublas_dlibapi.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\cuda_data_ptr.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\cudnn_dlibapi.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\curand_dlibapi.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\gpu_data.cpp" />
-    <ClCompile Include="dlib\dlib\dnn\tensor_tools.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\cpu_dlib.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\cublas_dlibapi.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\cuda_data_ptr.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\cudnn_dlibapi.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\curand_dlibapi.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\gpu_data.cpp" />
+    <ClCompile Include="dlib\dlib\cuda\tensor_tools.cpp" />
     <ClCompile Include="dlib\dlib\entropy_decoder\entropy_decoder_kernel_2.cpp" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jcapimin.cpp" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jcapistd.cpp" />
@@ -552,6 +552,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)dlib\dlib\external\libpng;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">$(ProjectDir)dlib\dlib\external\libpng;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp" />
     <ClCompile Include="dlib\dlib\threads\async.cpp" />
     <ClCompile Include="dlib\dlib\threads\multithreaded_object_extension.cpp" />
     <ClCompile Include="dlib\dlib\threads\threaded_object_extension.cpp" />
