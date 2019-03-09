@@ -337,8 +337,7 @@ int main(int argc, char** argv) try
 
     NetPimpl::TrainingNet training_net;
 
-    training_net.Initialize(mmod_options);
-    training_net.SetNetWidth(net_width_scaler, net_width_min_filter_count);
+    training_net.Initialize(mmod_options, NetPimpl::GetDefaultSolver(), net_width_scaler, net_width_min_filter_count);
     training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
     training_net.BeVerbose();
     training_net.SetLearningRate(initial_learning_rate);
