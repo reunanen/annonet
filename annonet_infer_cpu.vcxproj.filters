@@ -284,6 +284,9 @@
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet.cpp" />
     <ClCompile Include="annonet_parse_anno_classes.cpp" />
+    <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp">
+      <Filter>dlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">

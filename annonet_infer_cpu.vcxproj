@@ -537,6 +537,7 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)dlib\dlib\external\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">$(ProjectDir)dlib\dlib\external\libpng;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp" />
     <ClCompile Include="dlib\dlib\threads\async.cpp" />
     <ClCompile Include="dlib\dlib\threads\multithreaded_object_extension.cpp" />
     <ClCompile Include="dlib\dlib\threads\threaded_object_extension.cpp" />

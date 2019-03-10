@@ -74,5 +74,8 @@
     <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_2.cpp">
       <Filter>dlib\dir_nav</Filter>
     </ClCompile>
+    <ClCompile Include="..\dlib\dlib\test_for_odr_violations.cpp">
+      <Filter>dlib</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

@@ -255,6 +255,7 @@
     <ClCompile Include="..\dlib\dlib\dir_nav\dir_nav_kernel_2.cpp" />
     <ClCompile Include="..\dlib\dlib\cuda\cpu_dlib.cpp" />
     <ClCompile Include="..\dlib\dlib\cuda\tensor_tools.cpp" />
+    <ClCompile Include="..\dlib\dlib\test_for_odr_violations.cpp" />
     <ClCompile Include="..\dlib\dlib\threads\async.cpp" />
     <ClCompile Include="..\dlib\dlib\threads\multithreaded_object_extension.cpp" />
     <ClCompile Include="..\dlib\dlib\threads\threaded_object_extension.cpp" />
