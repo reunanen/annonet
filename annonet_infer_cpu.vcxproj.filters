@@ -287,6 +287,9 @@
     <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp">
       <Filter>dlib</Filter>
     </ClCompile>
+    <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp">
+      <Filter>cpp-read-file-in-memory</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -328,6 +331,9 @@
     <Filter Include="tiling">
       <UniqueIdentifier>{9a1c6b0b-b15d-4eee-b831-d14a229548e9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cpp-read-file-in-memory">
+      <UniqueIdentifier>{e44b5eeb-6923-4379-a5d8-4da5b8e4bce6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="annonet.h" />
@@ -348,5 +354,8 @@
     </ClInclude>
     <ClInclude Include="annonet_infer.h" />
     <ClInclude Include="annonet_parse_anno_classes.h" />
+    <ClInclude Include="cpp-read-file-in-memory\read-file-in-memory.h">
+      <Filter>cpp-read-file-in-memory</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
