@@ -300,6 +300,10 @@ int main(int argc, char** argv) try
     const auto anno_classes_json = read_anno_classes_file(options["input-directory"].as<std::string>());
     const auto anno_classes = parse_anno_classes(anno_classes_json);
 
+    if (anno_classes.size() > 0 && anno_classes[0].classlabel != "<<ignore>>") {
+        cout << "WARNING: the label of the first class is \'" << anno_classes[0].classlabel << "', and not '<<ignore>>' as expected" << std::endl;
+    }
+
     const unsigned long iterations_without_progress_threshold = static_cast<unsigned long>(std::round(relative_training_length * 2000));
     const unsigned long previous_loss_values_dump_amount = static_cast<unsigned long>(std::round(relative_training_length * 400));
     const unsigned long batch_normalization_running_stats_window_size = static_cast<unsigned long>(std::round(relative_training_length * 100));
