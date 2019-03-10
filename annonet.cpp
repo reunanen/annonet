@@ -194,6 +194,7 @@ std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::ve
         dlib::mmod_rect mmod_rect;
         mmod_rect.rect = dlib::rectangle(left, top, right, bottom);
         mmod_rect.label = anno_classes[index_label].classlabel;
+        mmod_rect.ignore = anno_classes[index_label].classlabel == "Ignore";
 
         mmod_rects.push_back(mmod_rect);
     }
