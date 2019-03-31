@@ -191,6 +191,121 @@ std::string read_anno_classes_file(const std::string& folder)
 
 // ----------------------------------------------------------------------------------------
 
+// adapted from: https://github.com/davisking/dlib/blob/master/examples/dnn_mmod_train_find_cars_ex.cpp
+
+size_t ignore_overlapped_boxes(
+    std::vector<mmod_rect>& boxes,
+    const test_box_overlap& overlaps
+)
+/*!
+    ensures
+        - Whenever two rectangles in boxes overlap, according to overlaps(), we set the
+          smallest box to ignore.
+        - returns the number of newly ignored boxes.
+!*/
+{
+    const size_t box_count = boxes.size();
+    size_t ignored_count = 0;
+
+    for (size_t i = 0; i < box_count; ++i) {
+        if (boxes[i].ignore) {
+            continue;
+        }
+        for (size_t j = i + 1; j < box_count; ++j) {
+            if (boxes[j].ignore) {
+                continue;
+            }
+            if (overlaps(boxes[i], boxes[j])) {
+                ++ignored_count;
+                if (boxes[i].rect.area() < boxes[j].rect.area()) {
+                    boxes[i].ignore = true;
+                }
+                else {
+                    boxes[j].ignore = true;
+                }
+            }
+        }
+    }
+
+    assert(ignored_count <= box_count);
+    return ignored_count;
+}
+
+struct ignore_statistics
+{
+    size_t overlapped_boxes_ignored = 0;
+    size_t small_boxes_ignored = 0;
+};
+
+ignore_statistics maybe_ignore_some_labels(std::vector<dlib::mmod_rect>& boxes, const dlib::test_box_overlap& overlaps, unsigned long min_size)
+{
+    ignore_statistics ignore_statistics;
+
+    ignore_statistics.overlapped_boxes_ignored += ignore_overlapped_boxes(boxes, overlaps);
+
+    for (auto& box : boxes) {
+        if (box.rect.width() < min_size && box.rect.height() < min_size) {
+            if (!box.ignore) {
+                box.ignore = true;
+                ++ignore_statistics.small_boxes_ignored;
+            }
+        }
+    }
+
+    return ignore_statistics;
+}
+
+void maybe_ignore_some_labels(std::vector<std::vector<dlib::mmod_rect>>& boxes, const dlib::test_box_overlap& overlaps, unsigned long min_size)
+{
+    const auto accumulate_over_boxes = [&boxes](auto function) {
+        return std::accumulate(
+            boxes.begin(), boxes.end(), static_cast<size_t>(0), function
+        );
+    };
+
+    const size_t total_boxes = accumulate_over_boxes(
+        [](size_t sum_so_far, const std::vector<dlib::mmod_rect>& bb) {
+            return sum_so_far + bb.size();
+        }
+    );
+
+    const size_t original_boxes_ignored = accumulate_over_boxes(
+        [](size_t sum_so_far, const std::vector<dlib::mmod_rect>& bb) {
+            return sum_so_far + std::count_if(
+                bb.begin(), bb.end(), [](const dlib::mmod_rect& b) { return b.ignore; }
+            );
+        }
+    );
+
+    size_t overlapped_boxes_ignored = 0;
+    size_t small_boxes_ignored = 0;
+
+    for (auto& bb : boxes) {
+        const auto ignore_statistics = maybe_ignore_some_labels(bb, overlaps, min_size);
+        
+        overlapped_boxes_ignored += ignore_statistics.overlapped_boxes_ignored;
+        small_boxes_ignored += ignore_statistics.small_boxes_ignored;
+    }
+
+    const size_t accepted_boxes = accumulate_over_boxes(
+        [](size_t sum_so_far, const std::vector<dlib::mmod_rect>& bb) {
+            return sum_so_far + std::count_if(
+                bb.begin(), bb.end(), [](const dlib::mmod_rect& b) { return !b.ignore; }
+            );
+        }
+    );
+
+    const int w = static_cast<int>(log10(total_boxes)) + 1;
+    cout << "Total labels:                 " << std::setw(w) << std::right << total_boxes << endl;
+    cout << "Original labels ignored:    - " << std::setw(w) << std::right << original_boxes_ignored << endl;
+    cout << "Overlapping labels ignored: - " << std::setw(w) << std::right << overlapped_boxes_ignored << endl;
+    cout << "Small labels ignored:       - " << std::setw(w) << std::right << small_boxes_ignored << endl;
+    cout << "Accepted labels:            = " << std::setw(w) << std::right << accepted_boxes << endl;
+    cout << std::endl;
+}
+
+// ----------------------------------------------------------------------------------------
+
 int main(int argc, char** argv) try
 {
     if (argc == 1)
@@ -233,6 +348,9 @@ int main(int argc, char** argv) try
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("no-empty-label-image-warning", "Do not warn about empty label images")
+        ("max-label-iou", "Maximum IoU for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.5"))
+        ("max-label-percent-covered", "Maximum percent covered for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.95"))
+        ("min-label-size", "Minimum size for ground-truth labels not to be ignored", cxxopts::value<unsigned long>()->default_value("35"))
         ;
 
     try {
@@ -328,6 +446,13 @@ int main(int argc, char** argv) try
         all_labels.push_back(parse_labels(json, anno_classes));        
     }
 
+    const auto overlaps_enough_to_be_ignored = test_box_overlap(
+        options["max-label-iou"].as<double>(),
+        options["max-label-percent-covered"].as<double>()
+    );
+    const auto min_label_size = options["min-label-size"].as<unsigned long>();
+    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
+
     dlib::mmod_options mmod_options(all_labels, 40, 40);
 
     std::cout << "Detector windows:" << std::endl;
@@ -368,6 +493,7 @@ int main(int argc, char** argv) try
         [&](const image_filenames& image_filenames) {
             std::shared_ptr<sample> sample(new sample);
             *sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
+            maybe_ignore_some_labels(sample->labels, overlaps_enough_to_be_ignored, min_label_size);
 #if 0
             ignore_classes_to_ignore(*sample);
 #endif
