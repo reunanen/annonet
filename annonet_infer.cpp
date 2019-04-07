@@ -126,10 +126,10 @@ void annonet_infer(
             const auto shift_to_image_coordinates = [](const auto tile_coordinate, const auto offset) {
                 return tile_coordinate + offset;
             };
-            image_label.rect.set_left  (shift_to_image_coordinates(image_label.rect.left  (), valid_left_in_tile - valid_left_in_image));
-            image_label.rect.set_right (shift_to_image_coordinates(image_label.rect.right (), valid_left_in_tile - valid_left_in_image));
-            image_label.rect.set_top   (shift_to_image_coordinates(image_label.rect.top   (), valid_top_in_tile  - valid_top_in_image ));
-            image_label.rect.set_bottom(shift_to_image_coordinates(image_label.rect.bottom(), valid_top_in_tile  - valid_top_in_image ));
+            image_label.rect.set_left  (shift_to_image_coordinates(image_label.rect.left  (), valid_left_in_image - valid_left_in_tile));
+            image_label.rect.set_right (shift_to_image_coordinates(image_label.rect.right (), valid_left_in_image - valid_left_in_tile));
+            image_label.rect.set_top   (shift_to_image_coordinates(image_label.rect.top   (), valid_top_in_image  - valid_top_in_tile ));
+            image_label.rect.set_bottom(shift_to_image_coordinates(image_label.rect.bottom(), valid_top_in_image  - valid_top_in_tile ));
             results.push_back(image_label);
         }
     }
