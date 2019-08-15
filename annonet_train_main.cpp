@@ -351,6 +351,7 @@ int main(int argc, char** argv) try
         ("max-label-iou", "Maximum IoU for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.5"))
         ("max-label-percent-covered", "Maximum percent covered for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.95"))
         ("min-label-size", "Minimum size for ground-truth labels not to be ignored", cxxopts::value<unsigned long>()->default_value("35"))
+        ("min-detector-window-overlap-iou", "Minimum detector window overlap IoU", cxxopts::value<double>()->default_value("0.75"))
         ;
 
     try {
@@ -391,6 +392,7 @@ int main(int argc, char** argv) try
     const auto cached_image_count = options["cached-image-count"].as<int>();
     const auto data_loader_thread_count = std::max(1U, options["data-loader-thread-count"].as<unsigned int>());
     const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
+    const auto min_detector_window_overlap_iou = options["min-detector-window-overlap-iou"].as<double>();
 
 #if 0
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
@@ -453,7 +455,7 @@ int main(int argc, char** argv) try
     const auto min_label_size = options["min-label-size"].as<unsigned long>();
     maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
 
-    dlib::mmod_options mmod_options(all_labels, 40, 40);
+    dlib::mmod_options mmod_options(all_labels, 40, 40, min_detector_window_overlap_iou);
 
     std::cout << "Detector windows:" << std::endl;
     for (const auto& detector_window : mmod_options.detector_windows) {
