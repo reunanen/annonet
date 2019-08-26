@@ -539,6 +539,8 @@ int main(int argc, char** argv) try
     update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
 #endif
 
+    std::unordered_map<std::string, size_t> hit_counts;
+
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
@@ -573,6 +575,10 @@ int main(int argc, char** argv) try
         update_confusion_matrix_per_region(confusion_matrix_per_region, sample.labeled_points_by_class, sample.label_image, result_image.label_image, update_confusion_matrix_per_region_temp);
 #endif
 
+        for (const auto& label : result_image.labels) {
+            ++hit_counts[label.label];
+        }
+
         result_image_write_requests.enqueue(result_image);
     }
 
@@ -580,6 +586,13 @@ int main(int argc, char** argv) try
 
     std::cout << "\nAll " << files.size() << " images processed in "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!" << std::endl;
+
+    std::cout << std::endl << "Hit counts:" << std::endl;
+    for (size_t i = 0, end = anno_classes.size(); i < end; ++i) {
+        const auto& classlabel = anno_classes[i].classlabel;
+        std::cout << " - " << i << " (" << classlabel << "): " << hit_counts[classlabel] << std::endl;
+    }
+    std::cout << std::endl;
 
     for (size_t i = 0, end = files.size(); i < end; ++i) {
         bool ok;
