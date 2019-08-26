@@ -447,7 +447,10 @@ int main(int argc, char** argv) try
 
         std::cout << "Using gains:" << std::endl;
         for (size_t class_index = 0, end = gains_by_class.size(); class_index < end; ++class_index) {
-            std::cout << " - " << class_index << " (" << anno_classes[class_index].classlabel << "): " << gains_by_class[class_index] << std::endl;
+            const auto& classlabel = anno_classes[class_index].classlabel;
+            if (classlabel != "<<ignore>>") {
+                std::cout << " - " << class_index << " (" << classlabel << "): " << gains_by_class[class_index] << std::endl;
+            }
         }
         std::cout << std::endl;
 
@@ -590,7 +593,9 @@ int main(int argc, char** argv) try
     std::cout << std::endl << "Hit counts:" << std::endl;
     for (size_t i = 0, end = anno_classes.size(); i < end; ++i) {
         const auto& classlabel = anno_classes[i].classlabel;
-        std::cout << " - " << i << " (" << classlabel << "): " << hit_counts[classlabel] << std::endl;
+        if (classlabel != "<<ignore>>") {
+            std::cout << " - " << i << " (" << classlabel << "): " << hit_counts[classlabel] << std::endl;
+        }
     }
     std::cout << std::endl;
 
