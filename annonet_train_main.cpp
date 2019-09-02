@@ -546,12 +546,13 @@ int main(int argc, char** argv) try
             if (!ground_truth_sample->error.empty()) {
                 crop.error = ground_truth_sample->error;
             }
-            else if (ground_truth_sample->labels.empty()) {
-                crop.warning = "Warning: no annotation paths in " + ground_truth_sample->image_filenames.label_filename;
-            }
             else {
+                if (ground_truth_sample->labels.empty()) {
+                    crop.warning = "Warning: no annotation paths in " + ground_truth_sample->image_filenames.label_filename;
+                }
+
                 cropper(1, images, labels, cropped_input_image, cropped_labels);
-                if (cropped_input_image.size() != 1 || cropped_labels.size() != 1) {
+                if (cropped_input_image.size() != 1 || cropped_labels.size() > 1) {
                     crop.warning = "Warning: unexpected cropping result";
                 }
                 else {
@@ -604,13 +605,14 @@ int main(int argc, char** argv) try
             if (!crop.error.empty()) {
                 throw std::runtime_error(crop.error);
             }
-            else if (!crop.warning.empty()) {
-                if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
-                    std::cout << crop.warning << std::endl;
-                    warnings_already_printed.insert(crop.warning);
-                }
-            }
             else {
+                if (!crop.warning.empty()) {
+                    if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                        std::cout << crop.warning << std::endl;
+                        warnings_already_printed.insert(crop.warning);
+                    }
+                }
+
                 samples.push_back(std::move(crop.input_image));
                 labels.push_back(std::move(crop.labels));
             }
