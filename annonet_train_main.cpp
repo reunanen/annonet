@@ -354,6 +354,7 @@ int main(int argc, char** argv) try
         ("min-detector-window-overlap-iou", "Minimum detector window overlap IoU", cxxopts::value<double>()->default_value("0.75"))
         ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
+        ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
         ;
 
     try {
@@ -470,6 +471,8 @@ int main(int argc, char** argv) try
 
     std::cout << "Overlap NMS IOU threshold:             " << mmod_options.overlaps_nms.get_iou_thresh() << std::endl;
     std::cout << "Overlap NMS percent covered threshold: " << mmod_options.overlaps_nms.get_percent_covered_thresh() << std::endl;
+
+    mmod_options.truth_match_iou_threshold = options["truth-match-iou-threshold"].as<double>();
 
     NetPimpl::TrainingNet training_net;
 
