@@ -352,6 +352,8 @@ int main(int argc, char** argv) try
         ("max-label-percent-covered", "Maximum percent covered for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.95"))
         ("min-label-size", "Minimum size for ground-truth labels not to be ignored", cxxopts::value<unsigned long>()->default_value("35"))
         ("min-detector-window-overlap-iou", "Minimum detector window overlap IoU", cxxopts::value<double>()->default_value("0.75"))
+        ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
+        ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
         ;
 
     try {
@@ -455,7 +457,10 @@ int main(int argc, char** argv) try
     const auto min_label_size = options["min-label-size"].as<unsigned long>();
     maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
 
-    dlib::mmod_options mmod_options(all_labels, 40, 40, min_detector_window_overlap_iou);
+    const auto target_size = options["target-size"].as<unsigned long>();
+    const auto min_target_size = options["min-target-size"].as<unsigned long>();
+
+    dlib::mmod_options mmod_options(all_labels, target_size, min_target_size, min_detector_window_overlap_iou);
 
     std::cout << "Detector windows:" << std::endl;
     for (const auto& detector_window : mmod_options.detector_windows) {
