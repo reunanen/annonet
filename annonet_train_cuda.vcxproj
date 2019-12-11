@@ -291,15 +291,12 @@
     <ClCompile Include="dlib\dlib\external\libjpeg\jidctint.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jmemansi.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jmemmgr.c" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jmemnobs.c" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jpegtran.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jquant1.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jquant2.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\jutils.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\rdbmp.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\rdcolmap.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\rdgif.c" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\rdjpgcom.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\rdppm.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\rdrle.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\rdswitch.c" />
@@ -307,7 +304,6 @@
     <ClCompile Include="dlib\dlib\external\libjpeg\transupp.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\wrbmp.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\wrgif.c" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\wrjpgcom.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\wrppm.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\wrrle.c" />
     <ClCompile Include="dlib\dlib\external\libjpeg\wrtarga.c" />
