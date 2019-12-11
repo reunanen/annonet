@@ -18,13 +18,6 @@
 
 // ----------------------------------------------------------------------------------------
 
-bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
-{
-    return a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha;
-}
-
-// ----------------------------------------------------------------------------------------
-
 std::vector<AnnoClass> parse_anno_classes(const std::string& json)
 {
     if (json.empty()) {

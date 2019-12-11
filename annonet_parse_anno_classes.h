@@ -20,10 +20,6 @@
 
 // ----------------------------------------------------------------------------------------
 
-bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b);
-
-// ----------------------------------------------------------------------------------------
-
 struct AnnoClass {
     AnnoClass(uint16_t index, const dlib::rgb_alpha_pixel& rgba_label, const std::string& classlabel)
         : index(index), rgba_label(rgba_label), classlabel(classlabel)

@@ -62,6 +62,8 @@ std::vector<image_filenames> find_image_files(
     bool require_ground_truth
 )
 {
+    std::cout << std::endl << "Scanning...";
+
     const std::vector<dlib::file> files = dlib::get_files_in_directory_tree(anno_data_folder,
         [](const dlib::file& name) {
         if (dlib::match_ending("_mask.png")(name)) {
@@ -77,6 +79,8 @@ std::vector<image_filenames> find_image_files(
             || dlib::match_ending(".PNG")(name);
     });
 
+    std::cout << " found " << files.size() << " candidates" << std::endl;
+
     std::vector<image_filenames> results;
 
     const auto file_exists = [](const std::string& filename) {
@@ -84,7 +88,13 @@ std::vector<image_filenames> find_image_files(
         return !!label_file;
     };
 
-    for (const dlib::file& name : files) {
+    std::chrono::steady_clock::time_point progress_last_printed = std::chrono::steady_clock::now();
+
+    size_t added = 0, ignored = 0;
+
+    for (size_t i = 0, total = files.size(); i < total; ++i) {
+        const dlib::file& name = files[i];
+
         image_filenames image_filenames;
         image_filenames.image_filename = name;
 
@@ -97,10 +107,19 @@ std::vector<image_filenames> find_image_files(
 
         if (label_file_exists || !require_ground_truth) {
             results.push_back(image_filenames);
-            std::cout << "\rFound " << results.size() << " files...";
+            ++added;
         }
         else if (require_ground_truth) {
-            std::cout << "Warning: unable to open " << label_filename << std::endl;
+            ++ignored;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        if (i == 0 || i == total - 1 || (now - progress_last_printed) > std::chrono::milliseconds(100)) {
+            std::cout
+                << "\rScanned " << std::fixed << std::setprecision(2)
+                << ((i + 1) * 100.0) / total << " % of " << total << " files: "
+                << added << " added, " << ignored << " ignored";
+            progress_last_printed = now;
         }
     }
 

@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="dlib\dlib\dnn\cpu_dlib.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\cpu_dlib.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\dnn\tensor_tools.cpp">
-      <Filter>dlib\dnn</Filter>
+    <ClCompile Include="dlib\dlib\cuda\tensor_tools.cpp">
+      <Filter>dlib\cuda</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp">
       <Filter>dlib\dir_nav</Filter>
@@ -284,13 +284,16 @@
     <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet.cpp" />
     <ClCompile Include="annonet_parse_anno_classes.cpp" />
+    <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp">
+      <Filter>dlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
       <UniqueIdentifier>{bdb11e9a-1388-4742-9ebc-f0d1305ed66b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dlib\dnn">
-      <UniqueIdentifier>{81d70b1e-3766-4eba-85d4-d90001891b2f}</UniqueIdentifier>
+    <Filter Include="dlib\cuda">
+      <UniqueIdentifier>{f81036f8-5aff-4e45-8b24-906d7a0d4b06}</UniqueIdentifier>
     </Filter>
     <Filter Include="dlib\dir_nav">
       <UniqueIdentifier>{405b3565-376e-4eb9-9d03-587476416313}</UniqueIdentifier>
