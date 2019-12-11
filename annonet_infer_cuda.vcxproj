@@ -53,7 +53,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.1.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -67,23 +67,23 @@
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(CUDA_PATH_V9_1)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH_V9_1)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+    <IncludePath>$(CUDA_PATH_V10_0)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(CUDA_PATH_V10_0)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'">
-    <IncludePath>$(CUDA_PATH_V9_1)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH_V9_1)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+    <IncludePath>$(CUDA_PATH_V10_0)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(CUDA_PATH_V10_0)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(CUDA_PATH_V9_1)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH_V9_1)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+    <IncludePath>$(CUDA_PATH_V10_0)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(CUDA_PATH_V10_0)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">
-    <IncludePath>$(CUDA_PATH_V9_1)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(CUDA_PATH_V9_1)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
+    <IncludePath>$(CUDA_PATH_V10_0)\include;C:\Program Files (x86)\IntelSWTools\compilers_and_libraries_2017.2.187\windows\mkl\lib\intel64_win;dlib;rapidjson/include;opencv-binaries-vs/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(CUDA_PATH_V10_0)\lib\$(Platform);opencv-binaries-vs/$(Platform)/lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -113,7 +113,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cublas_device.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -150,7 +150,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cublas_device.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -186,7 +186,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cublas_device.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -222,7 +222,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cublas_device.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -579,6 +579,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.1.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.0.targets" />
   </ImportGroup>
 </Project>
