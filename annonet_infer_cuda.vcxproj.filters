@@ -299,12 +299,6 @@
     <ClCompile Include="dlib\dlib\external\libjpeg\jmemmgr.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\jmemnobs.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\jpegtran.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\jquant1.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
@@ -321,9 +315,6 @@
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\rdgif.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\rdjpgcom.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\rdppm.c">
@@ -345,9 +336,6 @@
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\wrgif.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\wrjpgcom.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\wrppm.c">
@@ -382,9 +370,6 @@
     <Filter Include="dlib\external\libpng">
       <UniqueIdentifier>{48e590c8-f208-4aac-ab0d-9feeea77a592}</UniqueIdentifier>
     </Filter>
-    <Filter Include="dlib\external\libjpeg">
-      <UniqueIdentifier>{89e4bde6-d3d5-452d-a7ca-0cb80f0a72a6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="dlib\external\zlib">
       <UniqueIdentifier>{f2046731-ed58-4bf8-ab0e-1f2f19d433d1}</UniqueIdentifier>
     </Filter>
@@ -399,6 +384,9 @@
     </Filter>
     <Filter Include="tiling">
       <UniqueIdentifier>{9a1c6b0b-b15d-4eee-b831-d14a229548e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\external\libjpeg">
+      <UniqueIdentifier>{be79ba4c-0884-4750-aeda-913b53bd0851}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
