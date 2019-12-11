@@ -301,12 +301,6 @@
     <ClCompile Include="dlib\dlib\external\libjpeg\jmemmgr.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\jmemnobs.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\jpegtran.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\jquant1.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
@@ -323,9 +317,6 @@
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\rdgif.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\rdjpgcom.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\rdppm.c">
@@ -347,9 +338,6 @@
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\wrgif.c">
-      <Filter>dlib\external\libjpeg</Filter>
-    </ClCompile>
-    <ClCompile Include="dlib\dlib\external\libjpeg\wrjpgcom.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
     <ClCompile Include="dlib\dlib\external\libjpeg\wrppm.c">
