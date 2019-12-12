@@ -161,7 +161,12 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
             else {
                 resize_label_image(rgba_label_image, sample.input_image.nc(), sample.input_image.nr());
                 assert(sample.input_image.nr() == rgba_label_image.nr() || sample.input_image.nc() == rgba_label_image.nc());
-                decode_rgba_label_image(rgba_label_image, sample, anno_classes);
+                try {
+                    decode_rgba_label_image(rgba_label_image, sample, anno_classes);
+                }
+                catch (std::exception& e) {
+                    throw std::runtime_error(std::string(e.what()) + " (" + sample.image_filenames.label_filename + ")");
+                }
             }
         }
         else if (require_ground_truth) {
