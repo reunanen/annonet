@@ -353,6 +353,7 @@ int main(int argc, char** argv) try
         ("min-learning-rate", "Set minimum learning rate", cxxopts::value<double>()->default_value("1e-6"))
         ("save-interval", "Save the resulting inference network every this many steps", cxxopts::value<size_t>()->default_value("1000"))
         ("t,relative-training-length", "Relative training length", cxxopts::value<double>()->default_value("2.0"))
+        ("max-total-steps", "Set the maximum total number of steps", cxxopts::value<size_t>())
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("no-empty-label-image-warning", "Do not warn about empty label images")
@@ -709,8 +710,18 @@ int main(int argc, char** argv) try
 
     std::set<std::string> warnings_already_printed;
 
+    const auto should_continue_training = [&]() {
+        if (training_net.GetLearningRate() < min_learning_rate) {
+            return false;
+        }
+        if (options.count("max-total-steps") > 0 && minibatch >= options["max-total-steps"].as<size_t>()) {
+            return false;
+        }
+        return true;
+    };
+
     // The main training loop.  Keep making mini-batches and giving them to the trainer.
-    while (training_net.GetLearningRate() >= min_learning_rate)
+    while (should_continue_training())
     {
         samples.clear();
         labels.clear();
