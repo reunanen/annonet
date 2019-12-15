@@ -566,10 +566,10 @@
     <ClCompile Include="dlib\dlib\threads\thread_pool_extension.cpp" />
     <ClCompile Include="cpp-read-file-in-memory\read-file-in-memory.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetPimpl.cpp">
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=2;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=6;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=5;DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'">DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=3;DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'">DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
