@@ -432,6 +432,8 @@ int main(int argc, char** argv) try
 
     update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
 
+    std::chrono::milliseconds time_spent_in_actual_inference(0);
+
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
@@ -452,7 +454,13 @@ int main(int argc, char** argv) try
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
+        const auto t0 = std::chrono::steady_clock::now();
+
         annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+
+        const auto t1 = std::chrono::steady_clock::now();
+
+        time_spent_in_actual_inference += std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0);
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
@@ -471,7 +479,10 @@ int main(int argc, char** argv) try
     const auto t1 = std::chrono::steady_clock::now();
 
     std::cout << "\nAll " << files.size() << " images processed in "
-        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!" << std::endl;
+        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!"
+        << " (actual inference: " << time_spent_in_actual_inference.count() / 1000.0 << " seconds, i.e. "
+        << time_spent_in_actual_inference.count() / static_cast<double>(files.size()) << " milliseconds per image)"
+        << std::endl;
 
     for (size_t i = 0, end = files.size(); i < end; ++i) {
         bool ok;
