@@ -236,6 +236,7 @@ int main(int argc, char** argv) try
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("no-empty-label-image-warning", "Do not warn about empty label images")
+        ("primary-cuda-device", "Set the primary CUDA device to use", cxxopts::value<int>())
         ;
 
     try {
@@ -313,6 +314,10 @@ int main(int argc, char** argv) try
     const unsigned long iterations_without_progress_threshold = static_cast<unsigned long>(std::round(relative_training_length * 2000));
     const unsigned long previous_loss_values_dump_amount = static_cast<unsigned long>(std::round(relative_training_length * 400));
     const unsigned long batch_normalization_running_stats_window_size = static_cast<unsigned long>(std::round(relative_training_length * 100));
+
+    if (options.count("primary-cuda-device") > 0) {
+        dlib::cuda::set_device(options["primary-cuda-device"].as<int>());
+    }
 
     NetPimpl::TrainingNet training_net;
 
