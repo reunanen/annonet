@@ -720,39 +720,47 @@ int main(int argc, char** argv) try
         return true;
     };
 
-    // The main training loop.  Keep making mini-batches and giving them to the trainer.
-    while (should_continue_training())
-    {
-        samples.clear();
-        labels.clear();
+    int return_value = 0;
 
-        // make a mini-batch
-        crop crop;
-        while (samples.size() < minibatch_size)
+    try {
+        // The main training loop.  Keep making mini-batches and giving them to the trainer.
+        while (should_continue_training())
         {
-            data.dequeue(crop);
+            samples.clear();
+            labels.clear();
 
-            if (!crop.error.empty()) {
-                throw std::runtime_error(crop.error);
-            }
-            else {
-                if (!crop.warning.empty()) {
-                    if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
-                        std::cout << crop.warning << std::endl;
-                        warnings_already_printed.insert(crop.warning);
-                    }
+            // make a mini-batch
+            crop crop;
+            while (samples.size() < minibatch_size)
+            {
+                data.dequeue(crop);
+
+                if (!crop.error.empty()) {
+                    throw std::runtime_error(crop.error);
                 }
+                else {
+                    if (!crop.warning.empty()) {
+                        if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                            std::cout << crop.warning << std::endl;
+                            warnings_already_printed.insert(crop.warning);
+                        }
+                    }
 
-                samples.push_back(std::move(crop.input_image));
-                labels.push_back(std::move(crop.labels));
+                    samples.push_back(std::move(crop.input_image));
+                    labels.push_back(std::move(crop.labels));
+                }
+            }
+
+            training_net.StartTraining(samples, labels);
+
+            if (minibatch++ % save_interval == 0) {
+                save_inference_net();
             }
         }
-
-        training_net.StartTraining(samples, labels);
-
-        if (minibatch++ % save_interval == 0) {
-            save_inference_net();
-        }
+    }
+    catch (std::exception& e) {
+        cout << e.what() << endl;
+        return_value = 2;
     }
 
     // Training done: tell threads to stop.
@@ -767,7 +775,11 @@ int main(int argc, char** argv) try
 
     join(data_loaders);
 
-    save_inference_net();
+    if (return_value == 0) {
+        save_inference_net();
+    }
+
+    return return_value;
 }
 catch(std::exception& e)
 {
