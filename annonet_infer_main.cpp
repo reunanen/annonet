@@ -433,6 +433,7 @@ int main(int argc, char** argv) try
     update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
 
     std::chrono::milliseconds time_spent_in_actual_inference(0);
+    std::chrono::milliseconds time_spent_in_actual_inference_excluding_first_image(0);
 
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
@@ -462,6 +463,10 @@ int main(int argc, char** argv) try
 
         time_spent_in_actual_inference += std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0);
 
+        if (i > 0) {
+            time_spent_in_actual_inference_excluding_first_image += std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0);
+        }
+
         for (const auto& labeled_points : sample.labeled_points_by_class) {
             const uint16_t ground_truth_value = labeled_points.first;
             for (const dlib::point& point : labeled_points.second) {
@@ -480,9 +485,14 @@ int main(int argc, char** argv) try
 
     std::cout << "\nAll " << files.size() << " images processed in "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!"
-        << " (actual inference: " << time_spent_in_actual_inference.count() / 1000.0 << " seconds, i.e. "
-        << time_spent_in_actual_inference.count() / static_cast<double>(files.size()) << " milliseconds per image)"
-        << std::endl;
+        << " (actual inference: " << time_spent_in_actual_inference.count() / 1000.0 << " seconds";
+
+    if (files.size() > 1) {
+        std::cout
+            << ", i.e. " << time_spent_in_actual_inference_excluding_first_image.count() / (files.size() - 1.0)
+            << " milliseconds per image excluding the first one";
+    }
+    std::cout << ")" << std::endl;
 
     for (size_t i = 0, end = files.size(); i < end; ++i) {
         bool ok;
