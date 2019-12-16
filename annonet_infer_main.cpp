@@ -432,8 +432,9 @@ int main(int argc, char** argv) try
 
     update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
 
-    std::chrono::milliseconds time_spent_in_actual_inference(0);
-    std::chrono::milliseconds time_spent_in_actual_inference_excluding_first_image(0);
+    std::chrono::microseconds total_time_spent_in_actual_inference(0);
+    std::chrono::microseconds total_time_spent_in_actual_inference_excluding_first_image(0);
+    std::chrono::microseconds max_time_spent_in_actual_inference_per_image_excluding_first_image(0);
 
     for (size_t i = 0, end = files.size(); i < end; ++i)
     {
@@ -461,10 +462,14 @@ int main(int argc, char** argv) try
 
         const auto t1 = std::chrono::steady_clock::now();
 
-        time_spent_in_actual_inference += std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0);
+        const auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0);
+        total_time_spent_in_actual_inference += duration_us;
 
         if (i > 0) {
-            time_spent_in_actual_inference_excluding_first_image += std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0);
+            total_time_spent_in_actual_inference_excluding_first_image += duration_us;
+            max_time_spent_in_actual_inference_per_image_excluding_first_image = std::max(
+                max_time_spent_in_actual_inference_per_image_excluding_first_image, duration_us
+            );
         }
 
         for (const auto& labeled_points : sample.labeled_points_by_class) {
@@ -485,14 +490,14 @@ int main(int argc, char** argv) try
 
     std::cout << "\nAll " << files.size() << " images processed in "
         << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count() / 1000.0 << " seconds!"
-        << " (actual inference: " << time_spent_in_actual_inference.count() / 1000.0 << " seconds";
+        << " (actual inference: " << total_time_spent_in_actual_inference.count() / 1000000.0 << " seconds)" << std::endl;
 
     if (files.size() > 1) {
         std::cout
-            << ", i.e. " << time_spent_in_actual_inference_excluding_first_image.count() / (files.size() - 1.0)
-            << " milliseconds per image excluding the first one";
+            << "Processing time excluding the first image: "
+            << "average = " << total_time_spent_in_actual_inference_excluding_first_image.count() / 1000.0 / (files.size() - 1) << " ms, "
+            << "max = " << max_time_spent_in_actual_inference_per_image_excluding_first_image.count() / 1000.0 << " ms" << std::endl;
     }
-    std::cout << ")" << std::endl;
 
     for (size_t i = 0, end = files.size(); i < end; ++i) {
         bool ok;
