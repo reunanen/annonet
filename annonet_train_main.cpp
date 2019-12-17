@@ -69,23 +69,31 @@ struct crop
     std::string error;
 };
 
-#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
 void add_random_noise(NetPimpl::input_type& image, double noise_level, dlib::rand& rnd)
 {
     const long nr = image.nr();
     const long nc = image.nc();
 
+    const auto add_noise = [&rnd, noise_level](unsigned char old_value) {
+        int noise = static_cast<int>(rnd.get_random_gaussian() * noise_level); // this ought to truncate toward zero
+        int new_value = static_cast<int>(old_value) + noise;
+        int new_value_clamped = std::max(0, std::min(new_value, static_cast<int>(std::numeric_limits<uint8_t>::max())));
+        return new_value_clamped;
+    };
+
     for (long r = 0; r < nr; ++r) {
         for (long c = 0; c < nc; ++c) {
-            int old_value = image(r, c);
-            int noise = static_cast<int>(std::round(rnd.get_random_gaussian() * noise_level));
-            int new_value = old_value + noise;
-            int new_value_clamped = std::max(0, std::min(new_value, static_cast<int>(std::numeric_limits<uint8_t>::max())));
-            image(r, c) = new_value_clamped;
+#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+            image(r, c) = add_noise(image(r, c));
+#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+            auto& pixel = image(r, c);
+            pixel.red   = add_noise(pixel.red);
+            pixel.green = add_noise(pixel.green);
+            pixel.blue  = add_noise(pixel.blue);
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         }
     }
 }
-#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
 
 struct randomly_crop_image_temp {
     NetPimpl::input_type input_image;
@@ -151,13 +159,13 @@ void randomly_crop_image(
         crop.label_image = flipud(crop.label_image);
     }
 
-#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-    double grayscale_noise_level_stddev = options["grayscale-noise-level-stddev"].as<double>();
-    if (grayscale_noise_level_stddev > 0.0) {
-        double grayscale_noise_level = fabs(rnd.get_random_gaussian() * grayscale_noise_level_stddev);
-        add_random_noise(crop.input_image, grayscale_noise_level, rnd);
+    double noise_level_stddev = options["noise-level-stddev"].as<double>();
+    if (noise_level_stddev > 0.0) {
+        double noise_level = fabs(rnd.get_random_gaussian() * noise_level_stddev);
+        add_random_noise(crop.input_image, noise_level, rnd);
     }
-#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+
+#ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
     const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
     if (allow_random_color_offset) {
         apply_random_color_offset(crop.input_image, rnd);
@@ -213,9 +221,8 @@ int main(int argc, char** argv) try
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("l,allow-flip-left-right", "Randomly flip input images horizontally")
-#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-        ("n,grayscale-noise-level-stddev", "Set the standard deviation of the level of grayscale noise to add", cxxopts::value<double>()->default_value("0.0"))
-#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+        ("n,noise-level-stddev", "Set the standard deviation of the noise to add", cxxopts::value<double>()->default_value("0.0"))
+#ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("o,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
