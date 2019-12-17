@@ -71,15 +71,21 @@ struct crop
 
 void add_random_noise(NetPimpl::input_type& image, double noise_level, dlib::rand& rnd)
 {
-    const long nr = image.nr();
-    const long nc = image.nc();
+    const long long rounded_noise_level = static_cast<long long>(std::round(noise_level));
 
-    const auto add_noise = [&rnd, noise_level](unsigned char old_value) {
-        int noise = static_cast<int>(rnd.get_random_gaussian() * noise_level); // this ought to truncate toward zero
+    if (rounded_noise_level == 0) {
+        return;
+    }
+
+    const auto add_noise = [&rnd, rounded_noise_level](unsigned char old_value) {
+        int noise = static_cast<int>(rnd.get_integer_in_range(-rounded_noise_level, rounded_noise_level));
         int new_value = static_cast<int>(old_value) + noise;
         int new_value_clamped = std::max(0, std::min(new_value, static_cast<int>(std::numeric_limits<uint8_t>::max())));
         return new_value_clamped;
     };
+
+    const long nr = image.nr();
+    const long nc = image.nc();
 
     for (long r = 0; r < nr; ++r) {
         for (long c = 0; c < nc; ++c) {
