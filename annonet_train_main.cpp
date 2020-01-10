@@ -337,6 +337,7 @@ int main(int argc, char** argv) try
 #if 0
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
 #endif
+        ("max-rotation-degrees", "Set maximum rotation in degrees", cxxopts::value<double>()->default_value("10"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
         ("net-width-scaler", "Scaler of net width", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-min-filter-count", "Minimum net width filter count", cxxopts::value<int>()->default_value("1"))
@@ -401,6 +402,7 @@ int main(int argc, char** argv) try
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
 #endif
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
+    std::cout << "Max rotation = " << options["max-rotation-degrees"].as<double>() << " degrees" << std::endl;
     std::cout << "Net width scaler = " << net_width_scaler << ", min filter count = " << net_width_min_filter_count << std::endl;
     std::cout << "Initial learning rate = " << initial_learning_rate << std::endl;
     std::cout << "Learning rate shrink factor = " << learning_rate_shrink_factor << std::endl;
@@ -527,7 +529,7 @@ int main(int argc, char** argv) try
         cropper.set_seed(timed_seed);
         cropper.set_chip_dims(200, 200);
         cropper.set_min_object_size(40, 40);
-        cropper.set_max_rotation_degrees(10);
+        cropper.set_max_rotation_degrees(options["max-rotation-degrees"].as<double>());
 
         dlib::rand rnd(timed_seed);
 
