@@ -18,6 +18,7 @@
 
 #include <dlib/dnn.h>
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
+#include "dlib-dnn-pimpl-wrapper-for-segmentation/NetPimpl.h"
 #include <unordered_map>
 #include "annonet_parse_anno_classes.h"
 
@@ -27,6 +28,7 @@ struct image_filenames
 {
     std::string image_filename;
     std::string label_filename;
+    std::string segmentation_label_filename;
     std::vector<dlib::mmod_rect> labels;
 };
 
@@ -39,6 +41,8 @@ struct sample
     image_filenames image_filenames;
     NetPimpl::input_type input_image;
     std::vector<dlib::mmod_rect> labels;
+    SegmentationNetPimpl::training_label_type segmentation_labels;
+    dlib::matrix<uint32_t> connected_label_components;
     std::string error;
 };
 
@@ -46,12 +50,16 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
 
 std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::vector<AnnoClass>& anno_classes);
 
+std::vector<dlib::mmod_rect> downscale_labels(const std::vector<dlib::mmod_rect>& labels, double downscaling_factor);
+
 std::vector<image_filenames> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 );
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
+
+dlib::rectangle get_cropping_rect(const dlib::rectangle& rectangle);
 
 void set_low_priority();
 

@@ -14,6 +14,7 @@
 */
 
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
+#include "dlib-dnn-pimpl-wrapper-for-segmentation/NetPimpl.h"
 #include <unordered_map>
 #include <numeric>
 

@@ -20,6 +20,7 @@
 #define ANNONET_INFER_H
 
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
+#include "dlib-dnn-pimpl-wrapper-for-segmentation/NetPimpl.h"
 #include "tiling/tiling.h"
 
 // Can be supplied to avoid unnecessary memory re-allocations
@@ -28,10 +29,18 @@ struct annonet_infer_temp
     NetPimpl::input_type input_tile;
 };
 
+struct instance_segmentation_result
+{
+    dlib::mmod_rect mmod_rect;
+    dlib::matrix<uint8_t> segmentation_mask;
+};
+
 void annonet_infer(
     NetPimpl::RuntimeNet& net,
+    std::unordered_map<std::string, SegmentationNetPimpl::RuntimeNet>& segmentation_nets_by_classlabel,
+    int segmentation_target_size,
     const NetPimpl::input_type& input_image,
-    std::vector<dlib::mmod_rect>& results,
+    std::vector<instance_segmentation_result>& results,
     const std::vector<double>& gains = std::vector<double>(),
     const tiling::parameters& tiling_parameters = tiling::parameters(),
     annonet_infer_temp& temp = annonet_infer_temp()

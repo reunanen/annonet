@@ -306,6 +306,56 @@ void maybe_ignore_some_labels(std::vector<std::vector<dlib::mmod_rect>>& boxes, 
 
 // ----------------------------------------------------------------------------------------
 
+matrix<uint16_t> keep_only_current_instance(const matrix<rgb_alpha_pixel>& rgba_label_image, const matrix<uint32_t>& connected_blobs, const uint32_t blob_index)
+{
+    const auto nr = rgba_label_image.nr();
+    const auto nc = rgba_label_image.nc();
+
+    matrix<uint16_t> result(nr, nc);
+
+    for (long r = 0; r < nr; ++r)
+    {
+        for (long c = 0; c < nc; ++c)
+        {
+            const auto& index = connected_blobs(r, c);
+            if (index == blob_index)
+            {
+                result(r, c) = 1;
+            }
+            else if (index > 0)
+            {
+                result(r, c) = 0;
+            }
+            else
+            {
+                const auto& rgba_label = rgba_label_image(r, c);
+                if (rgba_label.red == 0 && rgba_label.green == 0 && rgba_label.blue == 0)
+                {
+                    result(r, c) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+                }
+                else
+                {
+                    // Guessing this shouldn't happen a lot...
+                    result(r, c) = 0;
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+struct segmentation_crop
+{
+    SegmentationNetPimpl::input_type input_image;
+    SegmentationNetPimpl::training_label_type label_image;
+
+    std::string warning;
+    std::string error;
+};
+
+// ----------------------------------------------------------------------------------------
+
 int main(int argc, char** argv) try
 {
     if (argc == 1)
@@ -338,7 +388,8 @@ int main(int argc, char** argv) try
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
 #endif
         ("max-rotation-degrees", "Set maximum rotation in degrees", cxxopts::value<double>()->default_value("10"))
-        ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
+        ("b,minibatch-size", "Set object detection minibatch size", cxxopts::value<size_t>()->default_value("100"))
+        ("s,segmentation-minibatch-size", "Set segmentation minibatch size", cxxopts::value<size_t>()->default_value("1600"))
         ("net-width-scaler", "Scaler of net width", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-min-filter-count", "Minimum net width filter count", cxxopts::value<int>()->default_value("1"))
         ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
@@ -356,6 +407,7 @@ int main(int argc, char** argv) try
         ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
+        ("segmentation-target-size", "Set segmentation target size in pixels", cxxopts::value<int>()->default_value(std::to_string(SegmentationNetPimpl::TrainingNet::GetRequiredInputDimension())))
         ;
 
     try {
@@ -386,6 +438,8 @@ int main(int argc, char** argv) try
     const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
 #endif
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
+    const auto segmentation_minibatch_size = options["segmentation-minibatch-size"].as<size_t>();
+    const auto segmentation_target_size = options["segmentation-target-size"].as<int>();
     const auto net_width_scaler = options["net-width-scaler"].as<double>();
     const auto net_width_min_filter_count = options["net-width-min-filter-count"].as<int>();
     const auto initial_learning_rate = options["initial-learning-rate"].as<double>();
@@ -401,7 +455,9 @@ int main(int argc, char** argv) try
 #if 0
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
 #endif
-    std::cout << "Minibatch size = " << minibatch_size << std::endl;
+    std::cout << "Object detection minibatch size = " << minibatch_size << std::endl;
+    std::cout << "Object segmentation minibatch size = " << segmentation_minibatch_size << std::endl;
+    std::cout << "Segmentation target size = " << segmentation_target_size << std::endl;
     std::cout << "Max rotation = " << options["max-rotation-degrees"].as<double>() << " degrees" << std::endl;
     std::cout << "Net width scaler = " << net_width_scaler << ", min filter count = " << net_width_min_filter_count << std::endl;
     std::cout << "Initial learning rate = " << initial_learning_rate << std::endl;
@@ -448,9 +504,18 @@ int main(int argc, char** argv) try
     std::vector<std::vector<dlib::mmod_rect>> all_labels;
     all_labels.reserve(image_files.size());
 
+
+    std::map<std::string, std::deque<std::pair<size_t, size_t>>> objects_by_classlabel;
+
     for (const auto& image_filenames : image_files) {
         const std::string json = read_file_as_string(image_filenames.label_filename);
-        all_labels.push_back(parse_labels(json, anno_classes));        
+        all_labels.push_back(downscale_labels(parse_labels(json, anno_classes), downscaling_factor));
+
+        const size_t image_index = all_labels.size() - 1;
+        size_t object_index = 0;
+        for (const auto label : all_labels.back()) {
+            objects_by_classlabel[label.label].push_back(std::make_pair(image_index, object_index++));
+        }
     }
 
     const auto overlaps_enough_to_be_ignored = test_box_overlap(
@@ -460,32 +525,9 @@ int main(int argc, char** argv) try
     const auto min_label_size = options["min-label-size"].as<unsigned long>();
     maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
 
-    const auto target_size = options["target-size"].as<unsigned long>();
-    const auto min_target_size = options["min-target-size"].as<unsigned long>();
 
-    dlib::mmod_options mmod_options(all_labels, target_size, min_target_size, min_detector_window_overlap_iou);
-
-    std::cout << "Detector windows:" << std::endl;
-    for (const auto& detector_window : mmod_options.detector_windows) {
-        std::cout << " - " << detector_window.label << ": " << detector_window.width << " x " << detector_window.height << std::endl;
-    }
-    std::cout << std::endl;
-
-    std::cout << "Overlap NMS IOU threshold:             " << mmod_options.overlaps_nms.get_iou_thresh() << std::endl;
-    std::cout << "Overlap NMS percent covered threshold: " << mmod_options.overlaps_nms.get_percent_covered_thresh() << std::endl;
-
-    mmod_options.truth_match_iou_threshold = options["truth-match-iou-threshold"].as<double>();
-
-    NetPimpl::TrainingNet training_net;
-
-    training_net.Initialize(mmod_options, NetPimpl::GetDefaultSolver(), net_width_scaler, net_width_min_filter_count);
-    training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
-    training_net.BeVerbose();
-    training_net.SetLearningRate(initial_learning_rate);
-    training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
-    training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
-    training_net.SetPreviousLossValuesDumpAmount(previous_loss_values_dump_amount);
-    training_net.SetAllBatchNormalizationRunningStatsWindowSizes(batch_normalization_running_stats_window_size);
+    std::string serialized_object_detector_net;
+    std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
 
 #if 0
     const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
@@ -516,136 +558,432 @@ int main(int argc, char** argv) try
    
     set_low_priority();
 
-    // Start a bunch of threads that read images from disk and pull out random crops.  It's
-    // important to be sure to feed the GPU fast enough to keep it busy.  Using multiple
-    // thread for this kind of data preparation helps us do that.  Each thread puts the
-    // crops into the data queue.
-    dlib::pipe<crop> data(2 * minibatch_size);
-    auto pull_crops = [&data, &full_images_cache, &image_files, &options](time_t seed)
+    const auto save_inference_net = [&]() {
+        cout << "saving network" << endl;
+
+        auto ser = serialize("annonet.dnn");
+        ser << anno_classes_json << downscaling_factor << segmentation_target_size;
+        ser << serialized_object_detector_net;
+
+        ser << serialized_segmentation_nets_by_classlabel.size();
+        for (const auto& i : serialized_segmentation_nets_by_classlabel) {
+            ser << i.first << i.second;
+        }
+    };
+
     {
-        const auto timed_seed = time(0) + seed;
+        // 1. train object detector
 
-        dlib::random_cropper cropper;
-        cropper.set_seed(timed_seed);
-        cropper.set_chip_dims(200, 200);
-        cropper.set_min_object_size(40, 40);
-        cropper.set_max_rotation_degrees(options["max-rotation-degrees"].as<double>());
+        NetPimpl::TrainingNet training_net;
 
-        dlib::rand rnd(timed_seed);
+        const auto target_size = options["target-size"].as<unsigned long>();
+        const auto min_target_size = options["min-target-size"].as<unsigned long>();
 
-        const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
+        dlib::mmod_options mmod_options(all_labels, target_size, min_target_size, min_detector_window_overlap_iou);
 
-        NetPimpl::input_type input_image;
-        crop crop;
+        std::cout << "Detector windows:" << std::endl;
+        for (const auto& detector_window : mmod_options.detector_windows) {
+            std::cout << " - " << detector_window.label << ": " << detector_window.width << " x " << detector_window.height << std::endl;
+        }
+        std::cout << std::endl;
 
-        std::vector<NetPimpl::input_type> cropped_input_image;
-        std::vector<NetPimpl::training_label_type> cropped_labels;
+        std::cout << "Overlap NMS IOU threshold:             " << mmod_options.overlaps_nms.get_iou_thresh() << std::endl;
+        std::cout << "Overlap NMS percent covered threshold: " << mmod_options.overlaps_nms.get_percent_covered_thresh() << std::endl;
 
-        while (data.is_enabled())
+        mmod_options.truth_match_iou_threshold = options["truth-match-iou-threshold"].as<double>();
+
+        training_net.Initialize(mmod_options, NetPimpl::GetDefaultSolver(), net_width_scaler, net_width_min_filter_count);
+        training_net.SetSynchronizationFile("annonet_trainer_state_file.dat", std::chrono::seconds(10 * 60));
+        training_net.BeVerbose();
+        training_net.SetLearningRate(initial_learning_rate);
+        training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
+        training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
+        training_net.SetPreviousLossValuesDumpAmount(previous_loss_values_dump_amount);
+        training_net.SetAllBatchNormalizationRunningStatsWindowSizes(batch_normalization_running_stats_window_size);
+
+        const auto save_intermediate = [&]() {
+            const NetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
+
+            std::ostringstream serialized;
+            runtime_net.Serialize(serialized);
+
+            serialized_object_detector_net = serialized.str();
+
+            save_inference_net();
+        };
+
+        // Start a bunch of threads that read images from disk and pull out random crops.  It's
+        // important to be sure to feed the GPU fast enough to keep it busy.  Using multiple
+        // thread for this kind of data preparation helps us do that.  Each thread puts the
+        // crops into the data queue.
+        dlib::pipe<crop> data(2 * minibatch_size);
+        auto pull_crops = [&data, &full_images_cache, &image_files, &options](time_t seed)
         {
-            crop.error.clear();
-            crop.warning.clear();
+            const auto timed_seed = time(0) + seed;
 
-            const size_t index = rnd.get_random_32bit_number() % image_files.size();
-            const image_filenames& image_filenames = image_files[index];
-            const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
+            dlib::random_cropper cropper;
+            cropper.set_seed(timed_seed);
+            cropper.set_chip_dims(200, 200);
+            cropper.set_min_object_size(40, 40);
+            cropper.set_max_rotation_degrees(options["max-rotation-degrees"].as<double>());
 
-            const std::vector<NetPimpl::input_type> images = { ground_truth_sample->input_image };
-            const std::vector<std::vector<dlib::mmod_rect>> labels = { ground_truth_sample->labels };
+            dlib::rand rnd(timed_seed);
 
-            if (!ground_truth_sample->error.empty()) {
-                crop.error = ground_truth_sample->error;
-            }
-            else {
-                if (ground_truth_sample->labels.empty()) {
-                    crop.warning = "Warning: no annotation paths in " + ground_truth_sample->image_filenames.label_filename;
-                }
+            const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
 
-                cropper(1, images, labels, cropped_input_image, cropped_labels);
-                if (cropped_input_image.size() != 1 || cropped_labels.size() > 1) {
-                    crop.warning = "Warning: unexpected cropping result";
+            NetPimpl::input_type input_image;
+            crop crop;
+
+            std::vector<NetPimpl::input_type> cropped_input_image;
+            std::vector<NetPimpl::training_label_type> cropped_labels;
+
+            while (data.is_enabled())
+            {
+                crop.error.clear();
+                crop.warning.clear();
+
+                const size_t index = rnd.get_random_32bit_number() % image_files.size();
+                const image_filenames& image_filenames = image_files[index];
+                const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
+
+                const std::vector<NetPimpl::input_type> images = { ground_truth_sample->input_image };
+                const std::vector<std::vector<dlib::mmod_rect>> labels = { ground_truth_sample->labels };
+
+                if (!ground_truth_sample->error.empty()) {
+                    crop.error = ground_truth_sample->error;
                 }
                 else {
-                    crop.input_image = cropped_input_image.front();
-                    crop.labels = cropped_labels.front();
+                    if (ground_truth_sample->labels.empty()) {
+                        crop.warning = "Warning: no annotation paths in " + ground_truth_sample->image_filenames.label_filename;
+                    }
 
-                    if (allow_random_color_offset) {
-                        apply_random_color_offset(crop.input_image, rnd);
+                    cropper(1, images, labels, cropped_input_image, cropped_labels);
+                    if (cropped_input_image.size() != 1 || cropped_labels.size() > 1) {
+                        crop.warning = "Warning: unexpected cropping result";
+                    }
+                    else {
+                        crop.input_image = cropped_input_image.front();
+                        crop.labels = cropped_labels.front();
+
+                        if (allow_random_color_offset) {
+                            apply_random_color_offset(crop.input_image, rnd);
+                        }
                     }
                 }
+                data.enqueue(crop);
             }
-            data.enqueue(crop);
+        };
+
+        std::vector<std::thread> data_loaders;
+        for (unsigned int i = 0; i < data_loader_thread_count; ++i) {
+            data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
         }
-    };
 
-    std::vector<std::thread> data_loaders;
-    for (unsigned int i = 0; i < data_loader_thread_count; ++i) {
-        data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
-    }
-    
-    size_t minibatch = 0;
+        size_t minibatch = 0;
 
-    const auto save_inference_net = [&]() {
-        const NetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
-        
-        std::ostringstream serialized;
-        runtime_net.Serialize(serialized);
+        std::vector<NetPimpl::input_type> samples;
+        std::vector<NetPimpl::training_label_type> labels;
 
-        cout << "saving network" << endl;
-        serialize("annonet.dnn") << anno_classes_json << downscaling_factor << serialized.str();
-    };
+        std::set<std::string> warnings_already_printed;
 
-    std::vector<NetPimpl::input_type> samples;
-    std::vector<NetPimpl::training_label_type> labels;
-
-    std::set<std::string> warnings_already_printed;
-
-    // The main training loop.  Keep making mini-batches and giving them to the trainer.
-    while (training_net.GetLearningRate() >= min_learning_rate)
-    {
-        samples.clear();
-        labels.clear();
-
-        // make a mini-batch
-        crop crop;
-        while (samples.size() < minibatch_size)
+        // The main training loop.  Keep making mini-batches and giving them to the trainer.
+        while (training_net.GetLearningRate() >= min_learning_rate)
         {
-            data.dequeue(crop);
+            samples.clear();
+            labels.clear();
 
-            if (!crop.error.empty()) {
-                throw std::runtime_error(crop.error);
+            // make a mini-batch
+            crop crop;
+            while (samples.size() < minibatch_size)
+            {
+                data.dequeue(crop);
+
+                if (!crop.error.empty()) {
+                    throw std::runtime_error(crop.error);
+                }
+                else {
+                    if (!crop.warning.empty()) {
+                        if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                            std::cout << crop.warning << std::endl;
+                            warnings_already_printed.insert(crop.warning);
+                        }
+                    }
+
+                    samples.push_back(std::move(crop.input_image));
+                    labels.push_back(std::move(crop.labels));
+                }
             }
-            else {
-                if (!crop.warning.empty()) {
-                    if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
-                        std::cout << crop.warning << std::endl;
-                        warnings_already_printed.insert(crop.warning);
+
+            training_net.StartTraining(samples, labels);
+
+            if (minibatch++ % save_interval == 0) {
+                save_intermediate();
+            }
+        }
+
+        // Training done: tell threads to stop.
+        data.disable();
+
+        const auto join = [](std::vector<thread>& threads)
+        {
+            for (std::thread& thread : threads) {
+                thread.join();
+            }
+        };
+
+        join(data_loaders);
+
+        save_intermediate();
+    }
+
+    // 2. train (instance) segmentation networks
+
+    for (auto& i : objects_by_classlabel)
+    {
+        const std::string& classlabel = i.first;
+        auto& indexes = i.second;
+        std::mutex indexes_mutex;
+
+        std::cout << std::endl << "Now seeing if we can train instance segmentation for class " << classlabel << "..." << std::endl;
+
+        const auto i = std::find_if(
+            anno_classes.begin(),
+            anno_classes.end(),
+            [&classlabel](const AnnoClass& anno_class) { return anno_class.classlabel == classlabel; }
+        );
+
+        if (i == anno_classes.end())
+        {
+            throw std::runtime_error("Unexpected anno class: " + classlabel);
+        }
+
+        const auto& anno_class = *i;
+
+        // sanitize for filename purposes; make sure there's no clash in case some classes have very similar names
+        auto sanitized_classlabel = classlabel;
+        bool need_to_make_unique = true;
+        for (auto& c : sanitized_classlabel)
+        {
+            if (!isalnum(c))
+            {
+                if (c != ' ')
+                {
+                    need_to_make_unique = true;
+                }
+                c = '_';
+            }
+        }
+        if (need_to_make_unique)
+        {
+            sanitized_classlabel +=
+                + "_r" + std::to_string(anno_class.rgba_label.red)
+                + "_g" + std::to_string(anno_class.rgba_label.green)
+                + "_b" + std::to_string(anno_class.rgba_label.blue)
+                + "_a" + std::to_string(anno_class.rgba_label.alpha);
+        }
+
+        SegmentationNetPimpl::TrainingNet training_net;
+        training_net.Initialize(NetPimpl::GetDefaultSolver()/*, net_width_scaler, net_width_min_filter_count*/);
+        training_net.SetSynchronizationFile("annonet_trainer_state_file_" + sanitized_classlabel + ".dat", std::chrono::seconds(10 * 60));
+        training_net.BeVerbose();
+        training_net.SetLearningRate(initial_learning_rate);
+        training_net.SetLearningRateShrinkFactor(learning_rate_shrink_factor);
+        training_net.SetIterationsWithoutProgressThreshold(iterations_without_progress_threshold);
+        training_net.SetPreviousLossValuesDumpAmount(previous_loss_values_dump_amount);
+        training_net.SetAllBatchNormalizationRunningStatsWindowSizes(batch_normalization_running_stats_window_size);
+
+        const auto save_intermediate = [&]() {
+            const SegmentationNetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
+
+            std::ostringstream serialized;
+            runtime_net.Serialize(serialized);
+
+            serialized_segmentation_nets_by_classlabel[classlabel] = serialized.str();
+
+            save_inference_net();
+        };
+
+        // Optimistically assume that everything will work fine. (https://twitter.com/demarit/status/867631162755350528)
+        bool training_ok = true;
+
+        dlib::pipe<segmentation_crop> data(2 * segmentation_minibatch_size);
+        auto pull_crops = [&data, &full_images_cache, &image_files, &indexes, &indexes_mutex, &all_labels, &anno_class, &training_ok, &options](time_t seed)
+        {
+            const auto timed_seed = time(0) + seed;
+            dlib::rand rnd(timed_seed);
+
+            const double max_rotation_degrees = options["max-rotation-degrees"].as<double>();
+            const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
+            const auto segmentation_target_size = options["segmentation-target-size"].as<int>();
+
+            while (data.is_enabled())
+            {
+                std::shared_ptr<sample> ground_truth_sample;
+                dlib::rectangle truth_rect;
+                uint32_t blob_index = -1;
+
+                {
+                    std::lock_guard<std::mutex> lock(indexes_mutex);
+
+                    if (indexes.empty()) {
+                        if (training_ok) {
+                            std::cout << "No instance segmentation targets for this class - moving on..." << std::endl;
+                        }
+                        training_ok = false;
+                        data.disable();
+                        break;
+                    }
+
+                    const size_t index = rnd.get_random_32bit_number() % indexes.size();
+                    const auto& i = indexes[index];
+                    const size_t image_index = i.first;
+                    const size_t object_index = i.second;
+                    const auto& image_filenames = image_files[image_index];
+                    ground_truth_sample = full_images_cache(image_filenames);
+
+                    if (ground_truth_sample->connected_label_components.size() == 0) {
+                        // No instance segmentation labels - skip this index for good
+                        indexes.erase(indexes.begin() + index);
+                        continue;
+                    }
+
+                    const dlib::mmod_rect label = all_labels[image_index][object_index];
+                    truth_rect = label.rect;
+
+                    // Note - this is very important:
+                    // We assume that the center of the rect signifies the instance!
+                    // TODO: maybe check that also the majority vote inside the truth rect
+                    //       matches this assumption (optionally perhaps?)
+                    const auto center = dlib::center(truth_rect);
+                    blob_index = ground_truth_sample->connected_label_components(center.y(), center.x());
+
+                    if (blob_index == 0)
+                    {
+                        // TODO: do something smarter here -- e.g., find the nearest blob.
+                        // TODO: also check that the class matches!
+                        indexes.erase(indexes.begin() + index);
+                        continue;
                     }
                 }
 
-                samples.push_back(std::move(crop.input_image));
-                labels.push_back(std::move(crop.labels));
+                const auto cropping_rect = get_cropping_rect(truth_rect);
+
+                // Pick a random crop around the instance.
+                const auto max_x_translate_amount = static_cast<long>(truth_rect.width() / 10.0);
+                const auto max_y_translate_amount = static_cast<long>(truth_rect.height() / 10.0);
+
+                const auto random_translate = point(
+                    rnd.get_integer_in_range(-max_x_translate_amount, max_x_translate_amount + 1),
+                    rnd.get_integer_in_range(-max_y_translate_amount, max_y_translate_amount + 1)
+                );
+
+                const rectangle random_rect(
+                    cropping_rect.left()   + random_translate.x(),
+                    cropping_rect.top()    + random_translate.y(),
+                    cropping_rect.right()  + random_translate.x(),
+                    cropping_rect.bottom() + random_translate.y()
+                );
+
+                constexpr double PI = 3.1415926535897932384626433832795028841971694;
+                const double angle = rnd.get_double_in_range(0, 2 * PI);
+
+                const chip_details chip_details(random_rect, chip_dims(segmentation_target_size, segmentation_target_size), angle);
+
+                segmentation_crop crop;
+
+                // Crop the input image.
+                extract_image_chip(ground_truth_sample->input_image, chip_details, crop.input_image, interpolate_bilinear());
+
+                if (allow_random_color_offset) {
+                    disturb_colors(crop.input_image, rnd);
+                }
+
+                // Crop the labels correspondingly. However, note that here bilinear
+                // interpolation would make absolutely no sense - you wouldn't say that
+                // a bicycle is half-way between an aeroplane and a bird, would you?
+                dlib::matrix<rgb_alpha_pixel> temp;
+                extract_image_chip(ground_truth_sample->segmentation_labels, chip_details, temp, interpolate_nearest_neighbor());
+
+                dlib::matrix<uint32_t> temp2;
+                extract_image_chip(ground_truth_sample->connected_label_components, chip_details, temp2, interpolate_nearest_neighbor());
+
+                // Clear pixels not related to the current instance. - TODO this needs to be implemented properly
+                crop.label_image = keep_only_current_instance(temp, temp2, blob_index);
+
+                // TODO: add error handling
+                data.enqueue(crop);
+            }
+        };
+
+        std::vector<std::thread> data_loaders;
+        for (unsigned int i = 0; i < data_loader_thread_count; ++i) {
+            data_loaders.push_back(std::thread([pull_crops, i]() { pull_crops(i); }));
+        }
+
+        size_t minibatch = 0;
+
+        std::vector<SegmentationNetPimpl::input_type> samples;
+        std::vector<SegmentationNetPimpl::training_label_type> labels;
+
+        std::set<std::string> warnings_already_printed;
+
+        // The main training loop.  Keep making mini-batches and giving them to the trainer.
+        while (training_net.GetLearningRate() >= min_learning_rate && data.is_enabled())
+        {
+            samples.clear();
+            labels.clear();
+
+            // make a mini-batch
+            segmentation_crop crop;
+            while (samples.size() < segmentation_minibatch_size && data.is_enabled())
+            {
+                data.dequeue(crop);
+
+                if (!crop.error.empty()) {
+                    throw std::runtime_error(crop.error);
+                }
+                else {
+                    if (!crop.warning.empty()) {
+                        if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                            std::cout << crop.warning << std::endl;
+                            warnings_already_printed.insert(crop.warning);
+                        }
+                    }
+
+                    samples.push_back(std::move(crop.input_image));
+                    labels.push_back(std::move(crop.label_image));
+                }
+            }
+
+            if (data.is_enabled())
+            {
+                training_net.StartTraining(samples, labels);
+
+                if (minibatch++ % save_interval == 0) {
+                    save_intermediate();
+                }
             }
         }
 
-        training_net.StartTraining(samples, labels);
+        // Training done: tell threads to stop.
+        data.disable();
 
-        if (minibatch++ % save_interval == 0) {
-            save_inference_net();
+        const auto join = [](std::vector<thread>& threads)
+        {
+            for (std::thread& thread : threads) {
+                thread.join();
+            }
+        };
+
+        join(data_loaders);
+
+        if (!training_ok)
+        {
+            serialized_segmentation_nets_by_classlabel.erase(classlabel);
         }
+
+        save_intermediate();
     }
-
-    // Training done: tell threads to stop.
-    data.disable();
-
-    const auto join = [](std::vector<thread>& threads)
-    {
-        for (std::thread& thread : threads) {
-            thread.join();
-        }
-    };
-
-    join(data_loaders);
 
     save_inference_net();
 }

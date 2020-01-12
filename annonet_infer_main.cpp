@@ -281,9 +281,10 @@ void update_confusion_matrix_per_region(
 
 struct result_image_type {
     std::string filename;
+    std::string segmentation_result_filename;
     int original_width = 0;
     int original_height = 0;
-    std::vector<dlib::mmod_rect> labels;
+    std::vector<instance_segmentation_result> results;
 };
 
 inline uint16_t classlabel_to_index_label(const std::string& classlabel, const std::vector<AnnoClass>& anno_classes)
@@ -296,15 +297,18 @@ inline uint16_t classlabel_to_index_label(const std::string& classlabel, const s
     throw std::runtime_error("Unknown class: '" + classlabel + "'");
 }
 
-void write_labels(const std::string& filename, const std::vector<dlib::mmod_rect>& labels, const std::vector<AnnoClass>& anno_classes)
+void write_labels(const std::string& filename, const std::string& segmentation_result_filename, const std::vector<instance_segmentation_result>& results, const std::vector<AnnoClass>& anno_classes, int original_width, int original_height)
 {
     rapidjson::StringBuffer buffer;
     rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
 
     writer.StartArray();
 
-    for (const auto& label : labels) {
+    dlib::matrix<dlib::rgb_alpha_pixel> segmentation_result_image;
+    std::unique_ptr<dlib::rand> rnd;
 
+    for (const auto& result : results) {
+        const auto& label = result.mmod_rect;
         const auto& index = classlabel_to_index_label(label.label, anno_classes);
         const auto& anno_class = anno_classes[index];
 
@@ -353,12 +357,49 @@ void write_labels(const std::string& filename, const std::vector<dlib::mmod_rect
 
         writer.EndArray();
         writer.EndObject();
+
+        if (result.segmentation_mask.size() > 0 && !segmentation_result_filename.empty()) {
+            if (segmentation_result_image.size() == 0) {
+                segmentation_result_image.set_size(result.segmentation_mask.nr(), result.segmentation_mask.nc());
+                segmentation_result_image = rgb_alpha_pixel(0, 255, 0, 64);
+            }
+
+            DLIB_CASSERT(segmentation_result_image.nr() == result.segmentation_mask.nr());
+            DLIB_CASSERT(segmentation_result_image.nc() == result.segmentation_mask.nc());
+                
+            if (rnd.get() == nullptr) {
+                rnd = std::make_unique<dlib::rand>();
+            }
+
+            const rgb_alpha_pixel random_color(
+                rnd->get_random_8bit_number(),
+                rnd->get_random_8bit_number(),
+                rnd->get_random_8bit_number(),
+                255
+            );
+
+            for (int y = 0; y < segmentation_result_image.nr(); ++y) {
+                for (int x = 0; x < segmentation_result_image.nc(); ++x) {
+                    const auto output = result.segmentation_mask(y, x);
+                    if (output) {
+                        segmentation_result_image(y, x) = random_color;
+                    }
+                }
+            }
+        }
     }
 
     writer.EndArray();
 
     std::ofstream out(filename);
     out << buffer.GetString();
+
+    if (segmentation_result_image.size() > 0) {
+        dlib::matrix<dlib::rgb_alpha_pixel> resized_image;
+        resized_image.set_size(original_height, original_width);
+        dlib::resize_image(segmentation_result_image, resized_image, dlib::interpolate_nearest_neighbor());
+        dlib::save_png(resized_image, segmentation_result_filename);
+    }
 }
 
 std::vector<double> convert_gains_by_class_to_gains_by_detector_window(const std::vector<double>& gains_by_class, const std::vector<AnnoClass>& anno_classes, const dlib::mmod_options& mmod_options)
@@ -388,7 +429,7 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    cxxopts::Options options("annonet_infer", "Do inference using trained semantic-segmentation networks");
+    cxxopts::Options options("annonet_infer", "Do inference using trained instance-segmentation networks");
 
     std::ostringstream hardware_concurrency;
     hardware_concurrency << std::thread::hardware_concurrency();
@@ -427,14 +468,39 @@ int main(int argc, char** argv) try
     }
 
     double downscaling_factor = 1.0;
+    int segmentation_target_size = -1;
     std::string serialized_runtime_net;
     std::string anno_classes_json;
-    deserialize("annonet.dnn") >> anno_classes_json >> downscaling_factor >> serialized_runtime_net;
+    auto deser = deserialize("annonet.dnn");
+    deser >> anno_classes_json >> downscaling_factor >> segmentation_target_size;
+    deser >> serialized_runtime_net;
 
     std::cout << "Deserializing annonet, downscaling factor = " << downscaling_factor << std::endl;
 
     NetPimpl::RuntimeNet net;
     net.Deserialize(std::istringstream(serialized_runtime_net));
+
+    size_t segmentation_net_count = 0;
+    deser >> segmentation_net_count;
+
+    std::unordered_map<std::string, SegmentationNetPimpl::RuntimeNet> segmentation_nets_by_classlabel;
+
+    std::cout << "Deserializing " << segmentation_net_count << " segmentation nets" << std::endl;
+    for (size_t i = 0; i < segmentation_net_count; ++i)
+    {
+        std::string classlabel;
+        deser >> classlabel;
+
+        std::cout << "Deserializing net for class: " << classlabel;
+
+        serialized_runtime_net.clear(); // not sure if really necessary
+        deser >> serialized_runtime_net;
+        
+        SegmentationNetPimpl::RuntimeNet& net = segmentation_nets_by_classlabel[classlabel];
+        net.Deserialize(std::istringstream(serialized_runtime_net));
+
+        std::cout << " - done!" << std::endl;
+    }
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
@@ -497,7 +563,8 @@ int main(int argc, char** argv) try
             result_image_type result_image;
             while (result_image_write_requests.dequeue(result_image)) {
                 if (downscaling_factor != 1.0) {
-                    for (auto& label : result_image.labels) {
+                    for (auto& result : result_image.results) {
+                        auto& label = result.mmod_rect;
                         const auto scale = [downscaling_factor](const long value) {
                             return static_cast<long>(std::round(value * downscaling_factor));
                         };
@@ -507,7 +574,7 @@ int main(int argc, char** argv) try
                         label.rect.set_bottom(scale(label.rect.bottom()));
                     }
                 }
-                write_labels(result_image.filename, result_image.labels, anno_classes);
+                write_labels(result_image.filename, result_image.segmentation_result_filename, result_image.results, anno_classes, result_image.original_width, result_image.original_height);
                 result_image_write_results.enqueue(true);
             }
         }));
@@ -560,10 +627,15 @@ int main(int argc, char** argv) try
         const auto& input_image = sample.input_image;
 
         result_image.filename = sample.image_filenames.image_filename + "_result_path.json";
+        result_image.segmentation_result_filename = sample.image_filenames.image_filename + "_result.png";
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
-        annonet_infer(net, sample.input_image, result_image.labels, gains_by_detector_window, tiling_parameters, temp);
+        annonet_infer(
+            net, segmentation_nets_by_classlabel, segmentation_target_size,
+            sample.input_image, result_image.results, gains_by_detector_window,
+            tiling_parameters, temp
+        );
 
 #if 0
         for (const auto& labeled_points : sample.labeled_points_by_class) {
@@ -578,8 +650,8 @@ int main(int argc, char** argv) try
         update_confusion_matrix_per_region(confusion_matrix_per_region, sample.labeled_points_by_class, sample.label_image, result_image.label_image, update_confusion_matrix_per_region_temp);
 #endif
 
-        for (const auto& label : result_image.labels) {
-            ++hit_counts[label.label];
+        for (const auto& result : result_image.results) {
+            ++hit_counts[result.mmod_rect.label];
         }
 
         result_image_write_requests.enqueue(result_image);

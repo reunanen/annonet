@@ -22,13 +22,21 @@
 
 // ----------------------------------------------------------------------------------------
 
+bool equal_ignoring_alpha(const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
+{
+    return a.red == b.red && a.green == b.green && a.blue == b.blue;
+}
+
 inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes)
 {
     if (rgba_label == rgba_ignore_label) {
         return dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
     }
+    if (rgba_label == dlib::rgb_alpha_pixel(0, 255, 0, 64)) {
+        return 0; // clean
+    }
     for (const AnnoClass& anno_class : anno_classes) {
-        if (anno_class.rgba_label == rgba_label) {
+        if (equal_ignoring_alpha(anno_class.rgba_label, rgba_label)) {
             return anno_class.index;
         }
     }
@@ -87,6 +95,13 @@ std::vector<image_filenames> find_image_files(
 
         if (label_file_exists) {
             image_filenames.label_filename = label_filename;
+        }
+
+        const std::string segmentation_label_filename = name.full_name() + "_mask.png";
+        const bool segmentation_label_file_exists = file_exists(segmentation_label_filename);
+
+        if (segmentation_label_file_exists) {
+            image_filenames.segmentation_label_filename = segmentation_label_filename;
         }
 
         if (label_file_exists || !require_ground_truth) {
@@ -202,6 +217,40 @@ std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::ve
     return mmod_rects;
 }
 
+std::vector<dlib::mmod_rect> downscale_labels(const std::vector<dlib::mmod_rect>& labels, double downscaling_factor)
+{
+    auto result = labels;
+
+    if (downscaling_factor != 1.0) {
+        for (auto& label : result) {
+            const auto scale = [downscaling_factor](const long value) {
+                return static_cast<long>(std::round(value / downscaling_factor));
+            };
+            label.rect.set_left(scale(label.rect.left()));
+            label.rect.set_right(scale(label.rect.right()));
+            label.rect.set_top(scale(label.rect.top()));
+            label.rect.set_bottom(scale(label.rect.bottom()));
+        }
+    }
+
+    return result;
+}
+
+void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, dlib::matrix<uint16_t>& indexed_label_image, const std::vector<AnnoClass>& anno_classes)
+{
+    const long nr = rgba_label_image.nr();
+    const long nc = rgba_label_image.nc();
+
+    indexed_label_image.set_size(nr, nc);
+
+    for (long r = 0; r < nr; ++r) {
+        for (long c = 0; c < nc; ++c) {
+            const uint16_t label = rgba_label_to_index_label(rgba_label_image(r, c), anno_classes);
+            indexed_label_image(r, c) = label;
+        }
+    }
+}
+
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
     sample sample;
@@ -216,22 +265,25 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
 
         if (!image_filenames.label_filename.empty()) {
             const std::string json = read_file_as_string(image_filenames.label_filename);
-            sample.labels = parse_labels(json, anno_classes);
-
-            if (downscaling_factor != 1.0) {
-                for (auto& label : sample.labels) {
-                    const auto scale = [downscaling_factor](const long value) {
-                        return static_cast<long>(std::round(value / downscaling_factor));
-                    };
-                    label.rect.set_left  (scale(label.rect.left  ()));
-                    label.rect.set_right (scale(label.rect.right ()));
-                    label.rect.set_top   (scale(label.rect.top   ()));
-                    label.rect.set_bottom(scale(label.rect.bottom()));
-                }
-            }
+            sample.labels = downscale_labels(parse_labels(json, anno_classes), downscaling_factor);
         }
         else if (require_ground_truth) {
             sample.error = "No ground truth available";
+        }
+
+        if (!image_filenames.segmentation_label_filename.empty()) {
+            // TODO: optimize by avoiding unnecessary memory re-allocations for the temp matrixes?
+            dlib::matrix<dlib::rgb_alpha_pixel> temp1;
+            dlib::load_image(temp1, image_filenames.segmentation_label_filename);
+            dlib::matrix<uint16_t> temp2;
+            decode_rgba_label_image(temp1, temp2, anno_classes);
+            sample.segmentation_labels.set_size(sample.input_image.nr(), sample.input_image.nc());
+            dlib::resize_image(temp2, sample.segmentation_labels, dlib::interpolate_nearest_neighbor());
+
+            dlib::matrix<uint32_t> temp3;
+            dlib::label_connected_blobs(temp2, dlib::zero_pixels_are_background(), dlib::neighbors_8(), dlib::connected_if_equal(), temp3);
+            sample.connected_label_components.set_size(sample.input_image.nr(), sample.input_image.nc());
+            dlib::resize_image(temp3, sample.connected_label_components, dlib::interpolate_nearest_neighbor());
         }
     }
     catch (std::exception& e) {
@@ -240,6 +292,22 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
 
     return sample;
 };
+
+dlib::rectangle get_cropping_rect(const dlib::rectangle& rectangle)
+{
+    DLIB_ASSERT(!rectangle.is_empty());
+
+    const auto center_point = dlib::center(rectangle);
+    const auto max_dim = std::max(rectangle.width(), rectangle.height());
+    const auto d = static_cast<long>(std::round(max_dim / 2.0 * 1.5)); // add +50%
+
+    return dlib::rectangle(
+        center_point.x() - d,
+        center_point.y() - d,
+        center_point.x() + d,
+        center_point.y() + d
+    );
+}
 
 void set_low_priority()
 {

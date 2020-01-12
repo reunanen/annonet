@@ -22,3 +22,6 @@
 [submodule "test/picotest"]
 	path = test/picotest
 	url = https://github.com/reunanen/picotest/
+[submodule "dlib-dnn-pimpl-wrapper-for-segmentation"]
+	path = dlib-dnn-pimpl-wrapper-for-segmentation
+	url = https://github.com/reunanen/dlib-dnn-pimpl-wrapper
