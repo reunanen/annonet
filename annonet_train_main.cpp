@@ -529,6 +529,8 @@ int main(int argc, char** argv) try
     std::string serialized_object_detector_net;
     std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
 
+    // TODO: init the _serialized_ segmentation nets from disk, if possible
+
 #if 0
     const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
         for (const auto class_to_ignore : classes_to_ignore) {
