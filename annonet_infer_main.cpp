@@ -305,6 +305,7 @@ void write_labels(const std::string& filename, const std::string& segmentation_r
     writer.StartArray();
 
     dlib::matrix<dlib::rgb_alpha_pixel> segmentation_result_image;
+    dlib::matrix<float> segmentation_result_output_intensity;
     std::unique_ptr<dlib::rand> rnd;
 
     for (const auto& result : results) {
@@ -362,11 +363,17 @@ void write_labels(const std::string& filename, const std::string& segmentation_r
             if (segmentation_result_image.size() == 0) {
                 segmentation_result_image.set_size(result.segmentation_mask.nr(), result.segmentation_mask.nc());
                 segmentation_result_image = rgb_alpha_pixel(0, 255, 0, 64);
+
+                DLIB_CASSERT(segmentation_result_output_intensity.size() == 0);
+                segmentation_result_output_intensity.set_size(result.segmentation_mask.nr(), result.segmentation_mask.nc());
+                segmentation_result_output_intensity = 0.f;
             }
 
             DLIB_CASSERT(segmentation_result_image.nr() == result.segmentation_mask.nr());
             DLIB_CASSERT(segmentation_result_image.nc() == result.segmentation_mask.nc());
-                
+            DLIB_CASSERT(segmentation_result_output_intensity.nr() == result.segmentation_mask.nr());
+            DLIB_CASSERT(segmentation_result_output_intensity.nc() == result.segmentation_mask.nc());
+
             if (rnd.get() == nullptr) {
                 rnd = std::make_unique<dlib::rand>();
             }
@@ -380,9 +387,13 @@ void write_labels(const std::string& filename, const std::string& segmentation_r
 
             for (int y = 0; y < segmentation_result_image.nr(); ++y) {
                 for (int x = 0; x < segmentation_result_image.nc(); ++x) {
-                    const auto output = result.segmentation_mask(y, x);
-                    if (output) {
-                        segmentation_result_image(y, x) = random_color;
+                    const auto intensity = result.segmentation_mask(y, x);
+                    if (intensity > 0.f) {
+                        auto& previous_intensity = segmentation_result_output_intensity(y, x);
+                        if (intensity > previous_intensity) {
+                            segmentation_result_image(y, x) = random_color;
+                            previous_intensity = intensity;
+                        }
                     }
                 }
             }

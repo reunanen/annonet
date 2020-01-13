@@ -62,9 +62,6 @@ struct crop
     NetPimpl::input_type input_image;
     NetPimpl::training_label_type labels;
 
-    // prevent having to re-allocate memory constantly
-    dlib::matrix<uint16_t> temporary_unweighted_label_image;
-
     std::string warning;
     std::string error;
 };
@@ -306,12 +303,12 @@ void maybe_ignore_some_labels(std::vector<std::vector<dlib::mmod_rect>>& boxes, 
 
 // ----------------------------------------------------------------------------------------
 
-matrix<uint16_t> keep_only_current_instance(const matrix<rgb_alpha_pixel>& rgba_label_image, const matrix<uint32_t>& connected_blobs, const uint32_t blob_index)
+matrix<float> keep_only_current_instance(const matrix<rgb_alpha_pixel>& rgba_label_image, const matrix<uint32_t>& connected_blobs, const uint32_t blob_index)
 {
     const auto nr = rgba_label_image.nr();
     const auto nc = rgba_label_image.nc();
 
-    matrix<uint16_t> result(nr, nc);
+    matrix<float> result(nr, nc);
 
     for (long r = 0; r < nr; ++r)
     {
@@ -320,23 +317,23 @@ matrix<uint16_t> keep_only_current_instance(const matrix<rgb_alpha_pixel>& rgba_
             const auto& index = connected_blobs(r, c);
             if (index == blob_index)
             {
-                result(r, c) = 1;
+                result(r, c) = +1.f;
             }
             else if (index > 0)
             {
-                result(r, c) = 0;
+                result(r, c) = -1.f;
             }
             else
             {
                 const auto& rgba_label = rgba_label_image(r, c);
                 if (rgba_label.red == 0 && rgba_label.green == 0 && rgba_label.blue == 0)
                 {
-                    result(r, c) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+                    result(r, c) = 0.f;
                 }
                 else
                 {
                     // Guessing this shouldn't happen a lot...
-                    result(r, c) = 0;
+                    result(r, c) = -1.f;
                 }
             }
         }
@@ -926,7 +923,7 @@ int main(int argc, char** argv) try
                 dlib::matrix<uint32_t> temp2;
                 extract_image_chip(ground_truth_sample->connected_label_components, chip_details, temp2, interpolate_nearest_neighbor());
 
-                // Clear pixels not related to the current instance. - TODO this needs to be implemented properly
+                // Clear pixels not related to the current instance.
                 crop.label_image = keep_only_current_instance(temp, temp2, blob_index);
 
                 // TODO: add error handling
