@@ -525,11 +525,28 @@ int main(int argc, char** argv) try
     const auto min_label_size = options["min-label-size"].as<unsigned long>();
     maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
 
-
     std::string serialized_object_detector_net;
     std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
 
-    // TODO: init the _serialized_ segmentation nets from disk, if possible
+    // init the _serialized_ segmentation nets from disk, if possible
+    {
+        double deserialized_downscaling_factor = 0.0;
+        int deserialized_segmentation_target_size = 0;
+        std::string anno_classes_json;
+        auto deser = deserialize("annonet.dnn");
+        deser >> anno_classes_json >> deserialized_downscaling_factor >> deserialized_segmentation_target_size;
+        deser >> serialized_object_detector_net;
+
+        size_t segmentation_net_count = 0;
+        deser >> segmentation_net_count;
+
+        for (size_t i = 0; i < segmentation_net_count; ++i)
+        {
+            std::string classlabel;
+            deser >> classlabel;
+            deser >> serialized_segmentation_nets_by_classlabel[classlabel];
+        }
+    }
 
 #if 0
     const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
