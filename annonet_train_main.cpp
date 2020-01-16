@@ -526,7 +526,7 @@ int main(int argc, char** argv) try
     std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
 
     // init the _serialized_ segmentation nets from disk, if possible
-    {
+    if (dlib::file_exists("annonet.dnn")) {
         double deserialized_downscaling_factor = 0.0;
         int deserialized_segmentation_target_size = 0;
         std::string anno_classes_json;
@@ -777,7 +777,7 @@ int main(int argc, char** argv) try
 
         // sanitize for filename purposes; make sure there's no clash in case some classes have very similar names
         auto sanitized_classlabel = classlabel;
-        bool need_to_make_unique = true;
+        bool need_to_make_unique = false;
         for (auto& c : sanitized_classlabel)
         {
             if (!isalnum(c))
