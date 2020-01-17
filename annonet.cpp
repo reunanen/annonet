@@ -35,6 +35,9 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
     if (rgba_label == dlib::rgb_alpha_pixel(0, 255, 0, 64)) {
         return 0; // clean
     }
+    if (rgba_label == dlib::rgb_alpha_pixel(63, 63, 63, 255)) {
+        return 0; // ignore
+    }
     for (const AnnoClass& anno_class : anno_classes) {
         if (equal_ignoring_alpha(anno_class.rgba_label, rgba_label)) {
             return anno_class.index;
