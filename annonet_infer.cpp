@@ -125,7 +125,7 @@ void annonet_infer(
         const long valid_top_in_tile = actual_tile.non_overlapping_rect.top() - actual_tile.full_rect.top();
 
         NetPimpl::input_type instance_segmentation_input;
-        dlib::matrix<uint16_t> resized_instance_segmentation_output;
+        dlib::matrix<float> resized_instance_segmentation_output;
 
         for (const auto& tile_label : tile_labels) {
             auto image_label = tile_label;
@@ -162,7 +162,7 @@ void annonet_infer(
                     for (int c = 0; c < resized_instance_segmentation_output.nc(); ++c)
                     {
                         const auto output = resized_instance_segmentation_output(r, c);
-                        if (resized_instance_segmentation_output(r, c))
+                        if (resized_instance_segmentation_output(r, c) > 0)
                         {
                             const auto y = chip_details.rect.top() + r;
                             const auto x = chip_details.rect.left() + c;
