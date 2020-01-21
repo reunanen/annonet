@@ -511,7 +511,9 @@ int main(int argc, char** argv) try
         const size_t image_index = all_labels.size() - 1;
         size_t object_index = 0;
         for (const auto label : all_labels.back()) {
-            objects_by_classlabel[label.label].push_back(std::make_pair(image_index, object_index++));
+            if (!label.ignore) {
+                objects_by_classlabel[label.label].push_back(std::make_pair(image_index, object_index++));
+            }
         }
     }
 
