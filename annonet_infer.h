@@ -32,7 +32,7 @@ struct annonet_infer_temp
 struct instance_segmentation_result
 {
     dlib::mmod_rect mmod_rect;
-    dlib::matrix<uint8_t> segmentation_mask;
+    dlib::matrix<float> segmentation_mask;
 };
 
 void annonet_infer(

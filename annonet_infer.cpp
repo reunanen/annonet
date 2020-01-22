@@ -162,14 +162,13 @@ void annonet_infer(
                     for (int c = 0; c < resized_instance_segmentation_output.nc(); ++c)
                     {
                         const auto output = resized_instance_segmentation_output(r, c);
-                        if (resized_instance_segmentation_output(r, c) > 0)
+                        if (output > 0)
                         {
                             const auto y = chip_details.rect.top() + r;
                             const auto x = chip_details.rect.left() + c;
                             if (y >= 0 && y < result.segmentation_mask.nr() && x >= 0 && x < result.segmentation_mask.nc())
                             {
-                                // TODO: get the actual net output intensity ("confidence")
-                                result.segmentation_mask(y, x) = 255;
+                                result.segmentation_mask(y, x) = output;
                             }
                         }
                     }
