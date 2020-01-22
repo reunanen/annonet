@@ -41,7 +41,7 @@ struct sample
     image_filenames image_filenames;
     NetPimpl::input_type input_image;
     std::vector<dlib::mmod_rect> labels;
-    SegmentationNetPimpl::training_label_type segmentation_labels;
+    dlib::matrix<uint16_t> segmentation_labels;
     dlib::matrix<uint32_t> connected_label_components;
     std::string error;
 };

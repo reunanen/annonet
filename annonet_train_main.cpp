@@ -303,10 +303,10 @@ void maybe_ignore_some_labels(std::vector<std::vector<dlib::mmod_rect>>& boxes, 
 
 // ----------------------------------------------------------------------------------------
 
-matrix<float> keep_only_current_instance(const matrix<rgb_alpha_pixel>& rgba_label_image, const matrix<uint32_t>& connected_blobs, const uint32_t blob_index)
+matrix<float> keep_only_current_instance(const matrix<uint16_t>& label_image, const matrix<uint32_t>& connected_blobs, const uint32_t blob_index)
 {
-    const auto nr = rgba_label_image.nr();
-    const auto nc = rgba_label_image.nc();
+    const auto nr = label_image.nr();
+    const auto nc = label_image.nc();
 
     matrix<float> result(nr, nc);
 
@@ -325,8 +325,8 @@ matrix<float> keep_only_current_instance(const matrix<rgb_alpha_pixel>& rgba_lab
             }
             else
             {
-                const auto& rgba_label = rgba_label_image(r, c);
-                if (rgba_label.red == 0 && rgba_label.green == 0 && rgba_label.blue == 0)
+                const auto& label = label_image(r, c);
+                if (label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore)
                 {
                     result(r, c) = 0.f;
                 }
@@ -919,7 +919,7 @@ int main(int argc, char** argv) try
                 // Crop the labels correspondingly. However, note that here bilinear
                 // interpolation would make absolutely no sense - you wouldn't say that
                 // a bicycle is half-way between an aeroplane and a bird, would you?
-                dlib::matrix<rgb_alpha_pixel> temp;
+                dlib::matrix<uint16_t> temp;
                 extract_image_chip(ground_truth_sample->segmentation_labels, chip_details, temp, interpolate_nearest_neighbor());
 
                 dlib::matrix<uint32_t> temp2;
