@@ -254,6 +254,19 @@ void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_lab
     }
 }
 
+struct ignore_pixels_are_background
+{
+    template <typename image_type>
+    bool operator() (
+        const image_type& img,
+        const dlib::point& p
+    ) const
+    {
+        const auto& value = img[p.y()][p.x()];
+        return value == dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+    }
+};
+
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
     sample sample;
@@ -284,7 +297,7 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
             dlib::resize_image(temp2, sample.segmentation_labels, dlib::interpolate_nearest_neighbor());
 
             dlib::matrix<uint32_t> temp3;
-            dlib::label_connected_blobs(temp2, dlib::zero_pixels_are_background(), dlib::neighbors_8(), dlib::connected_if_equal(), temp3);
+            dlib::label_connected_blobs(temp2, ignore_pixels_are_background(), dlib::neighbors_8(), dlib::connected_if_equal(), temp3);
             sample.connected_label_components.set_size(sample.input_image.nr(), sample.input_image.nc());
             dlib::resize_image(temp3, sample.connected_label_components, dlib::interpolate_nearest_neighbor());
         }

@@ -332,8 +332,8 @@ matrix<float> keep_only_current_instance(const matrix<uint16_t>& label_image, co
                 }
                 else
                 {
-                    // Guessing this shouldn't happen a lot...
-                    result(r, c) = -1.f;
+                    // Guessing this should happen only if the input image was cropped partially from outside the image
+                    result(r, c) = 0.f;
                 }
             }
         }
