@@ -59,7 +59,7 @@ std::vector<image_filenames> find_image_files(
 
 sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 
-dlib::rectangle get_cropping_rect(const dlib::rectangle& rectangle);
+dlib::rectangle get_cropping_rect(const dlib::rectangle& rectangle, double max_relative_instance_size);
 
 void set_low_priority();
 

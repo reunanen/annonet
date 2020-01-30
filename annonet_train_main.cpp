@@ -404,6 +404,7 @@ int main(int argc, char** argv) try
         ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
+        ("max-relative-instance-size", "Max instance size relative to object size", cxxopts::value<double>()->default_value("1.5"))
         ("segmentation-target-size", "Set segmentation target size in pixels", cxxopts::value<int>()->default_value(std::to_string(SegmentationNetPimpl::TrainingNet::GetRequiredInputDimension())))
         ;
 
@@ -527,6 +528,8 @@ int main(int argc, char** argv) try
     std::string serialized_object_detector_net;
     std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
 
+    const auto max_relative_instance_size = options["max-relative-instance-size"].as<double>();
+
     // init the _serialized_ segmentation nets from disk, if possible
     if (dlib::file_exists("annonet.dnn")) {
         double deserialized_downscaling_factor = 0.0;
@@ -544,6 +547,14 @@ int main(int argc, char** argv) try
             std::string classlabel;
             deser >> classlabel;
             deser >> serialized_segmentation_nets_by_classlabel[classlabel];
+        }
+
+        try {
+            double max_relative_instance_size_dummy_value = std::numeric_limits<double>::quiet_NaN();
+            deser >> max_relative_instance_size_dummy_value;
+        }
+        catch (std::exception& e) {
+            ; // old version...
         }
     }
 
@@ -587,6 +598,8 @@ int main(int argc, char** argv) try
         for (const auto& i : serialized_segmentation_nets_by_classlabel) {
             ser << i.first << i.second;
         }
+
+        ser << max_relative_instance_size;
     };
 
     {
@@ -825,7 +838,7 @@ int main(int argc, char** argv) try
         bool training_ok = true;
 
         dlib::pipe<segmentation_crop> data(2 * segmentation_minibatch_size);
-        auto pull_crops = [&data, &full_images_cache, &image_files, &indexes, &indexes_mutex, &all_labels, &anno_class, &training_ok, &options](time_t seed)
+        auto pull_crops = [&data, &full_images_cache, &image_files, &indexes, &indexes_mutex, &all_labels, &anno_class, &training_ok, &options, &max_relative_instance_size](time_t seed)
         {
             const auto timed_seed = time(0) + seed;
             dlib::rand rnd(timed_seed);
@@ -884,7 +897,7 @@ int main(int argc, char** argv) try
                     }
                 }
 
-                const auto cropping_rect = get_cropping_rect(truth_rect);
+                const auto cropping_rect = get_cropping_rect(truth_rect, max_relative_instance_size);
 
                 // Pick a random crop around the instance.
                 const auto max_x_translate_amount = static_cast<long>(truth_rect.width() / 10.0);

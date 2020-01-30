@@ -309,13 +309,13 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
     return sample;
 };
 
-dlib::rectangle get_cropping_rect(const dlib::rectangle& rectangle)
+dlib::rectangle get_cropping_rect(const dlib::rectangle& rectangle, double max_relative_instance_size)
 {
     DLIB_ASSERT(!rectangle.is_empty());
 
     const auto center_point = dlib::center(rectangle);
     const auto max_dim = std::max(rectangle.width(), rectangle.height());
-    const auto d = static_cast<long>(std::round(max_dim / 2.0 * 1.5)); // add +50%
+    const auto d = static_cast<long>(std::round(max_dim / 2.0 * max_relative_instance_size));
 
     return dlib::rectangle(
         center_point.x() - d,

@@ -74,6 +74,7 @@ void annonet_infer(
     NetPimpl::RuntimeNet& net,
     std::unordered_map<std::string, SegmentationNetPimpl::RuntimeNet>& segmentation_nets_by_classlabel,
     int segmentation_target_size,
+    double max_relative_instance_size,
     const NetPimpl::input_type& input_image,
     std::vector<instance_segmentation_result>& results,
     const std::vector<double>& gains,
@@ -143,7 +144,7 @@ void annonet_infer(
             const auto i = segmentation_nets_by_classlabel.find(image_label.label);
             if (i != segmentation_nets_by_classlabel.end()) {
                 // do instance segmentation
-                const auto cropping_rect = get_cropping_rect(result.mmod_rect.rect);
+                const auto cropping_rect = get_cropping_rect(result.mmod_rect.rect, max_relative_instance_size);
                 const dlib::chip_details chip_details(cropping_rect, dlib::chip_dims(segmentation_target_size, segmentation_target_size));
                 extract_image_chip(input_image, chip_details, instance_segmentation_input, dlib::interpolate_bilinear());
                 const auto instance_segmentation_output = i->second(instance_segmentation_input/*, gains*/);
