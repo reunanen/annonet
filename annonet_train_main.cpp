@@ -903,7 +903,8 @@ int main(int argc, char** argv) try
                 );
 
                 constexpr double PI = 3.1415926535897932384626433832795028841971694;
-                const double angle = rnd.get_double_in_range(0, 2 * PI);
+                const double max_rotation_radians = max_rotation_degrees * PI / 180;
+                const double angle = rnd.get_double_in_range(-max_rotation_radians, max_rotation_radians);
 
                 const chip_details chip_details(random_rect, chip_dims(segmentation_target_size, segmentation_target_size), angle);
 
