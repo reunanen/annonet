@@ -10,11 +10,11 @@ Train and apply instance-segmentation neural networks based on annotations gener
         (note that this might cause issues if your objects are strongly non-convex, e.g. horseshoe-shaped)
         (this is a limitation of the current version, however it is possible to improve the training code in this regard)
       - Even annotate at least some background where no instance exists (recommendation: do this mainly close to annotated things)
-2. Train an annonet as normal:
+2. Train an annonet as normal:\
    `annonet_train_cuda <path-to-images> <other-command-line-switches>`
-3. Run inference as usual:
+3. Run inference as usual:\
    `annonet_infer_cuda <path-to-images>`
 4. Use [this program](https://github.com/reunanen/convert-result-images-to-anno-paths) to convert the produced result mask image files to
-   json paths that Anno can readily display:
+   json paths that Anno can readily display:\
    `convert-result-images-to-anno-paths <path-to-images>`
 5. Look at the inference results in Anno
