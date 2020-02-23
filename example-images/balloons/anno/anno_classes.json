@@ -1,0 +1,22 @@
+{
+    "anno_classes": [
+        {
+            "color": {
+                "alpha": 64,
+                "blue": 0,
+                "green": 255,
+                "red": 0
+            },
+            "name": "Background"
+        },
+        {
+            "color": {
+                "alpha": 128,
+                "blue": 0,
+                "green": 0,
+                "red": 255
+            },
+            "name": "Balloon"
+        }
+    ]
+}
