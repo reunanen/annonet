@@ -18,7 +18,7 @@ Train and apply instance-segmentation neural networks based on annotations gener
    `annonet_infer_cuda <path-to-images>`
 4. Use [this program](https://github.com/reunanen/convert-result-images-to-anno-paths) to convert the produced result mask image files to
    json paths that Anno can readily display:\
-   `convert-result-images-to-anno-paths <path-to-images>`
+   `convert-result-images-to-anno-paths <path-to-images> --append`
 5. Look at the inference results in Anno:\
    ![Example of eventual inference results](example-images/creatures/creatures-3.jpg)
    
