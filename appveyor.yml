@@ -5,3 +5,5 @@ install:
   - git submodule update --init --recursive
 build_script:
   - msbuild annonet_cpu.sln /p:Configuration=Release /p:Platform=x64
+  - x64\Release\annonet_test_cpu.exe
+  
