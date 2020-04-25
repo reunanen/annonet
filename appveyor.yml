@@ -16,3 +16,11 @@ build_script:
   - msbuild annonet_cpu.sln /t:test\annonet_test_cpu:rebuild /p:DefineConstants=DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=2 /p:Platform=x64 /p:Configuration=ReleaseGrayscaleInput
   - x64\Release\annonet_test_cpu.exe
   - x64\ReleaseGrayscaleInput\annonet_test_cpu.exe
+  - msbuild annonet_cpu.sln /t:test\annonet_test_cpu:rebuild /p:DefineConstants=DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=3 /p:Platform=x64 /p:Configuration=Release
+  - msbuild annonet_cpu.sln /t:test\annonet_test_cpu:rebuild /p:DefineConstants=DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=3 /p:Platform=x64 /p:Configuration=ReleaseGrayscaleInput
+  - x64\Release\annonet_test_cpu.exe
+  - x64\ReleaseGrayscaleInput\annonet_test_cpu.exe
+  - msbuild annonet_cpu.sln /t:test\annonet_test_cpu:rebuild /p:DefineConstants=DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=4 /p:Platform=x64 /p:Configuration=Release
+  - msbuild annonet_cpu.sln /t:test\annonet_test_cpu:rebuild /p:DefineConstants=DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=4 /p:Platform=x64 /p:Configuration=ReleaseGrayscaleInput
+  - x64\Release\annonet_test_cpu.exe
+  - x64\ReleaseGrayscaleInput\annonet_test_cpu.exe
