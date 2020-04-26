@@ -120,9 +120,8 @@ void annonet_infer(
             outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_tile), inside);
         }
 
-        const dlib::matrix<uint16_t> index_label_tile = net(temp.input_tile, gains);
+        const auto& output_tensor = net.Forward(temp.input_tile);
 
-        const auto& output_tensor = net.GetOutput();
         if (first_tile) {
             temp.blended_output_tensor.set_size(1, output_tensor.k(), input_image.nr(), input_image.nc());
             std::fill(temp.blended_output_tensor.begin(), temp.blended_output_tensor.end(), 0.f);
