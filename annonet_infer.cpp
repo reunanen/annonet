@@ -185,10 +185,9 @@ void annonet_infer(
                         const auto th = get_t(blended_x, tile.full_rect.left(), tile.unique_rect.left(), tile.unique_rect.right(), tile.full_rect.right());
                         const auto tv = get_t(blended_y, tile.full_rect.top(), tile.unique_rect.top(), tile.unique_rect.bottom(), tile.full_rect.bottom());
                         assert(th < 1.0 || tv < 1.0);
-                        const auto t1 = tuc::lerp(0.0, th, tv);
-                        const auto t2 = tuc::lerp(0.0, tv, th);
-                        assert(fabs(t1 - t2) < 1e-10);
-                        const auto t = t1; // arbitrary choice
+                        const auto t = th * tv;
+                        assert(fabs(tuc::lerp(0.0, th, tv) - t) < 1e-10);
+                        assert(fabs(tuc::lerp(0.0, tv, th) - t) < 1e-10);
                         out[out_index] += t * in[in_index];
                     }
                     else {
