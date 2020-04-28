@@ -132,13 +132,35 @@ void randomly_crop_image(
     const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
     const int dim_before_downscaling = std::round(dim * further_downscaling_factor);
 
-    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling, dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
+    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling);
 
     const chip_details chip_details(rect, chip_dims(dim_before_downscaling, dim_before_downscaling));
+
+    const dlib::rectangle valid_rect_in_full_image = rect.intersect(dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
+
+    const dlib::rectangle valid_rect_in_crop_image(
+        valid_rect_in_full_image.left() - rect.left(),
+        valid_rect_in_full_image.top() - rect.top(),
+        valid_rect_in_full_image.left() - rect.left() + valid_rect_in_full_image.width() - 1,
+        valid_rect_in_full_image.top() - rect.top() + valid_rect_in_full_image.height() - 1
+    );
+
+    const auto set_to_unknown_outside = [](dlib::matrix<uint16_t>& label_image, const rectangle& inside) {
+        for (long r = 0, nr = label_image.nr(); r < nr; ++r) {
+            for (long c = 0, nc = label_image.nc(); c < nc; ++c) {
+                if (!inside.contains(c, r)) {
+                    label_image(r, c) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+                }
+            }
+        }
+    };
 
     if (further_downscaling_factor > 1.0) {
         extract_image_chip(full_sample.input_image, chip_details, temp.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, temp.label_image, interpolate_nearest_neighbor());
+
+        outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_image), valid_rect_in_crop_image);
+        set_to_unknown_outside(temp.label_image, valid_rect_in_crop_image);
 
         crop.input_image.set_size(dim, dim);
         crop.temporary_unweighted_label_image.set_size(dim, dim);
@@ -149,6 +171,9 @@ void randomly_crop_image(
     else {
         extract_image_chip(full_sample.input_image, chip_details, crop.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
+
+        outpaint(dlib::image_view<NetPimpl::input_type>(crop.input_image), valid_rect_in_crop_image);
+        set_to_unknown_outside(crop.temporary_unweighted_label_image, valid_rect_in_crop_image);
     }
 
     set_weights(crop.temporary_unweighted_label_image, crop.label_image, options["class-weight"].as<double>(), options["image-weight"].as<double>());

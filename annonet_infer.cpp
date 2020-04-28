@@ -17,58 +17,11 @@
 */
 
 #include "annonet_infer.h"
+#include "annonet.h"
 #include <dlib/dnn.h>
 #include "tiling/dlib-wrapper.h"
 #include "tuc/include/tuc/numeric.hpp"
 #include <unordered_set>
-
-template <
-    typename image_type
->
-void outpaint(
-    dlib::image_view<image_type>& img,
-    dlib::rectangle inside
-)
-{
-    inside = inside.intersect(get_rect(img));
-    if (inside.is_empty())
-    {
-        return;
-    }
-
-    for (long r = 0; r < inside.top(); ++r) {
-        for (long c = 0; c < inside.left(); ++c) {
-            img[r][c] = img[inside.top()][inside.left()];
-        }
-        for (long c = inside.left(); c <= inside.right(); ++c) {
-            img[r][c] = img[inside.top()][c];
-        }
-        for (long c = inside.right() + 1; c < img.nc(); ++c) {
-            img[r][c] = img[inside.top()][inside.right()];
-        }
-    }
-    for (long r = inside.top(); r <= inside.bottom(); ++r) {
-        for (long c = 0; c < inside.left(); ++c) {
-            img[r][c] = img[r][inside.left()];
-        }
-        for (long c = inside.right() + 1; c < img.nc(); ++c) {
-            img[r][c] = img[r][inside.right()];
-        }
-    }
-    for (long r = inside.bottom() + 1; r < img.nr(); ++r) {
-        for (long c = 0; c < inside.left(); ++c) {
-            img[r][c] = img[inside.bottom()][inside.left()];
-        }
-        for (long c = inside.left(); c <= inside.right(); ++c) {
-            img[r][c] = img[inside.bottom()][c];
-        }
-        for (long c = inside.right() + 1; c < img.nc(); ++c) {
-            img[r][c] = img[inside.bottom()][inside.right()];
-        }
-    }
-
-    // TODO: even blur from outside
-}
 
 size_t tensor_index(const dlib::tensor& t, long sample, long k, long row, long column)
 {
