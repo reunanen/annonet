@@ -122,12 +122,10 @@ namespace {
     TEST_F(TrainTest, GeneratesRandomRectContainingPoint) {
         dlib::rand rnd;
         dlib::point point(50, 50);
-        dlib::rectangle limits(20, 20, 80, 80);
         const long width = 10, height = 10;
-        dlib::rectangle rect = random_rect_containing_point(rnd, point, width, height, limits);
+        dlib::rectangle rect = random_rect_containing_point(rnd, point, width, height);
         EXPECT_EQ(rect.width(), width);
         EXPECT_EQ(rect.height(), height);
-        EXPECT_TRUE(limits.contains(rect));
         EXPECT_TRUE(rect.contains(point));
     }
 
