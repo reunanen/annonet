@@ -318,6 +318,7 @@ int main(int argc, char** argv) try
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ("just-visualize-rects", "Visualize the processing rectangles for debugging purposes (don't run actual inference)")
+        ("write-confidence-maps", "Write confidence maps to disk")
         ;
 
     try {
@@ -473,6 +474,31 @@ int main(int argc, char** argv) try
         }
         else {
             annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+
+            const auto write_confidence_maps = options.count("write-confidence-maps") > 0;
+
+            if (write_confidence_maps) {
+                dlib::matrix<uint8_t> image(temp.blended_output_tensor.nr(), temp.blended_output_tensor.nc());
+
+                const auto tensor_index = [](const dlib::tensor& t, long sample, long k, long row, long column) {
+                    // See: https://github.com/davisking/dlib/blob/4dfeb7e186dd1bf6ac91273509f687293bd4230a/dlib/dnn/tensor_abstract.h#L38
+                    return ((sample * t.k() + k) * t.nr() + row) * t.nc() + column;
+                };
+
+                const auto data = temp.blended_output_tensor.host();
+
+                for (int k = 0; k < temp.blended_output_tensor.k(); ++k) {
+                    for (int r = 0; r < temp.blended_output_tensor.nr(); ++r) {
+                        for (int c = 0; c < temp.blended_output_tensor.nc(); ++c) {
+                            const float raw_value = data[tensor_index(temp.blended_output_tensor, 0, k, r, c)];
+                            const int converted_value = std::max(0, std::min(255, static_cast<int>(std::round(((raw_value + 1.f) / 2.f * 255)))));
+                            image(r, c) = static_cast<int>(converted_value);
+                        }
+                    }
+
+                    save_png(image, sample.image_filenames.image_filename + "_k" + std::to_string(k) + ".png");
+                }
+            }
         }
 
         const auto t1 = std::chrono::steady_clock::now();
