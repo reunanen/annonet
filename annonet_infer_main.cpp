@@ -21,6 +21,7 @@
 #include <dlib/data_io.h>
 #include <dlib/gui_widgets.h>
 #include <dlib/image_saver/save_png.h>
+#include "tiling/dlib-wrapper.h"
 
 using namespace std;
 using namespace dlib;
@@ -316,6 +317,7 @@ int main(int argc, char** argv) try
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
+        ("just-visualize-rects", "Visualize the processing rectangles for debugging purposes (don't run actual inference)")
         ;
 
     try {
@@ -458,7 +460,20 @@ int main(int argc, char** argv) try
 
         const auto t0 = std::chrono::steady_clock::now();
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        const auto just_visualize_rects = options.count("just-visualize-rects") > 0;
+
+        if (just_visualize_rects) {
+            std::fill(result_image.label_image.begin(), result_image.label_image.end(), 0);
+            const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(sample.input_image.nc(), sample.input_image.nr(), tiling_parameters);
+            for (const auto& tile : tiles) {
+                dlib::draw_rectangle(result_image.label_image, tile.full_rect, std::min(1ull, anno_classes.size() - 1), 1);
+                dlib::draw_rectangle(result_image.label_image, tile.non_overlapping_rect, std::min(2ull, anno_classes.size() - 1), 1);
+                dlib::draw_rectangle(result_image.label_image, tile.unique_rect, std::min(3ull, anno_classes.size() - 1), 1);
+            }
+        }
+        else {
+            annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        }
 
         const auto t1 = std::chrono::steady_clock::now();
 
