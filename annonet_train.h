@@ -34,7 +34,7 @@ void set_weights (
         }
     };
 
-    std::vector<uint16_t> label_counts;
+    std::vector<size_t> label_counts;
 
     for (int r = 0; r < nr; ++r) {
         for (int c = 0; c < nc; ++c) {
