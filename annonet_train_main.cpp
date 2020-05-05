@@ -761,6 +761,7 @@ int main(int argc, char** argv) try
     catch (std::exception& e) {
         cout << e.what() << endl;
         return_value = 2;
+        exit(return_value);
     }
 
     // Training done: tell threads to stop.
