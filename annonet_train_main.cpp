@@ -69,23 +69,37 @@ struct crop
     std::string error;
 };
 
-#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
 void add_random_noise(NetPimpl::input_type& image, double noise_level, dlib::rand& rnd)
 {
+    const long long rounded_noise_level = static_cast<long long>(std::round(noise_level));
+
+    if (rounded_noise_level == 0) {
+        return;
+    }
+
+    const auto add_noise = [&rnd, rounded_noise_level](unsigned char old_value) {
+        int noise = static_cast<int>(rnd.get_integer_in_range(-rounded_noise_level, rounded_noise_level));
+        int new_value = static_cast<int>(old_value) + noise;
+        int new_value_clamped = std::max(0, std::min(new_value, static_cast<int>(std::numeric_limits<uint8_t>::max())));
+        return new_value_clamped;
+    };
+
     const long nr = image.nr();
     const long nc = image.nc();
 
     for (long r = 0; r < nr; ++r) {
         for (long c = 0; c < nc; ++c) {
-            int old_value = image(r, c);
-            int noise = static_cast<int>(std::round(rnd.get_random_gaussian() * noise_level));
-            int new_value = old_value + noise;
-            int new_value_clamped = std::max(0, std::min(new_value, static_cast<int>(std::numeric_limits<uint8_t>::max())));
-            image(r, c) = new_value_clamped;
+#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+            image(r, c) = add_noise(image(r, c));
+#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+            auto& pixel = image(r, c);
+            pixel.red   = add_noise(pixel.red);
+            pixel.green = add_noise(pixel.green);
+            pixel.blue  = add_noise(pixel.blue);
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         }
     }
 }
-#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
 
 struct randomly_crop_image_temp {
     NetPimpl::input_type input_image;
@@ -118,13 +132,35 @@ void randomly_crop_image(
     const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
     const int dim_before_downscaling = std::round(dim * further_downscaling_factor);
 
-    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling, dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
+    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling);
 
     const chip_details chip_details(rect, chip_dims(dim_before_downscaling, dim_before_downscaling));
+
+    const dlib::rectangle valid_rect_in_full_image = rect.intersect(dlib::rectangle(0, 0, full_sample.input_image.nc() - 1, full_sample.input_image.nr() - 1));
+
+    const dlib::rectangle valid_rect_in_crop_image(
+        valid_rect_in_full_image.left() - rect.left(),
+        valid_rect_in_full_image.top() - rect.top(),
+        valid_rect_in_full_image.left() - rect.left() + valid_rect_in_full_image.width() - 1,
+        valid_rect_in_full_image.top() - rect.top() + valid_rect_in_full_image.height() - 1
+    );
+
+    const auto set_to_unknown_outside = [](dlib::matrix<uint16_t>& label_image, const rectangle& inside) {
+        for (long r = 0, nr = label_image.nr(); r < nr; ++r) {
+            for (long c = 0, nc = label_image.nc(); c < nc; ++c) {
+                if (!inside.contains(c, r)) {
+                    label_image(r, c) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
+                }
+            }
+        }
+    };
 
     if (further_downscaling_factor > 1.0) {
         extract_image_chip(full_sample.input_image, chip_details, temp.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, temp.label_image, interpolate_nearest_neighbor());
+
+        outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_image), valid_rect_in_crop_image);
+        set_to_unknown_outside(temp.label_image, valid_rect_in_crop_image);
 
         crop.input_image.set_size(dim, dim);
         crop.temporary_unweighted_label_image.set_size(dim, dim);
@@ -135,6 +171,9 @@ void randomly_crop_image(
     else {
         extract_image_chip(full_sample.input_image, chip_details, crop.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
+
+        outpaint(dlib::image_view<NetPimpl::input_type>(crop.input_image), valid_rect_in_crop_image);
+        set_to_unknown_outside(crop.temporary_unweighted_label_image, valid_rect_in_crop_image);
     }
 
     set_weights(crop.temporary_unweighted_label_image, crop.label_image, options["class-weight"].as<double>(), options["image-weight"].as<double>());
@@ -151,13 +190,13 @@ void randomly_crop_image(
         crop.label_image = flipud(crop.label_image);
     }
 
-#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-    double grayscale_noise_level_stddev = options["grayscale-noise-level-stddev"].as<double>();
-    if (grayscale_noise_level_stddev > 0.0) {
-        double grayscale_noise_level = fabs(rnd.get_random_gaussian() * grayscale_noise_level_stddev);
-        add_random_noise(crop.input_image, grayscale_noise_level, rnd);
+    double noise_level_stddev = options["noise-level-stddev"].as<double>();
+    if (noise_level_stddev > 0.0) {
+        double noise_level = fabs(rnd.get_random_gaussian() * noise_level_stddev);
+        add_random_noise(crop.input_image, noise_level, rnd);
     }
-#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+
+#ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
     const bool allow_random_color_offset = options.count("allow-random-color-offset") > 0;
     if (allow_random_color_offset) {
         apply_random_color_offset(crop.input_image, rnd);
@@ -213,9 +252,8 @@ int main(int argc, char** argv) try
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("l,allow-flip-left-right", "Randomly flip input images horizontally")
-#ifdef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-        ("n,grayscale-noise-level-stddev", "Set the standard deviation of the level of grayscale noise to add", cxxopts::value<double>()->default_value("0.0"))
-#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+        ("n,noise-level-stddev", "Set the standard deviation of the noise to add", cxxopts::value<double>()->default_value("0.0"))
+#ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("o,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
@@ -543,6 +581,7 @@ int main(int argc, char** argv) try
     catch (std::exception& e) {
         cout << e.what() << endl;
         return_value = 2;
+        exit(return_value);
     }
 
     // Training done: tell threads to stop.

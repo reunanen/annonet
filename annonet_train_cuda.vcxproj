@@ -93,7 +93,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
@@ -129,7 +129,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <Optimization>Disabled</Optimization>
@@ -166,7 +166,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>
@@ -203,7 +203,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <OpenMPSupport>true</OpenMPSupport>

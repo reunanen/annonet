@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0A81CF58-E4DD-4294-834C-B8DA25380E01}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
     <Keyword>Win32Proj</Keyword>
     <Platform>x64</Platform>
     <ProjectName>annonet_infer_cpu</ProjectName>
@@ -30,25 +30,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <UseIntelMKL>Parallel</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <UseIntelMKL>Parallel</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <UseIntelMKL>Parallel</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>NotSet</CharacterSet>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <UseIntelMKL>Parallel</UseIntelMKL>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -91,7 +91,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4530;4577</DisableSpecificWarnings>
@@ -126,7 +126,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableSpecificWarnings>4530;4577</DisableSpecificWarnings>
@@ -161,7 +161,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_USE_FMATH;DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_USE_FMATH;DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -196,7 +196,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PreprocessorDefinitions>DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_USE_FMATH;DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(DefineConstants);DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_USE_FMATH;DLIB_JPEG_SUPPORT;DLIB_USE_BLAS;DLIB_USE_LAPACK;DLIB_HAVE_SSE2;DLIB_HAVE_SSE3;DLIB_HAVE_SSE41;DLIB_HAVE_AVX;DLIB_HAVE_AVX2;DLIB_PNG_SUPPORT;DLIB__CMAKE_GENERATED_A_CONFIG_H_FILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -235,50 +235,65 @@
     <ClCompile Include="dlib\dlib\cuda\cpu_dlib.cpp" />
     <ClCompile Include="dlib\dlib\cuda\tensor_tools.cpp" />
     <ClCompile Include="dlib\dlib\entropy_decoder\entropy_decoder_kernel_2.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcapimin.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcapistd.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jccoefct.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jccolor.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcdctmgr.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jchuff.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcinit.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcmainct.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcmarker.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcmaster.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcomapi.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcparam.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcphuff.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcprepct.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jcsample.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdapimin.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdapistd.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdatadst.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdatasrc.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdcoefct.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdcolor.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jddctmgr.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdhuff.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdinput.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdmainct.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdmarker.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdmaster.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdmerge.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdphuff.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdpostct.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jdsample.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jerror.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctflt.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctfst.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctint.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jidctflt.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jidctfst.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jidctint.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jidctred.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jmemmgr.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jmemnobs.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jquant1.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jquant2.cpp" />
-    <ClCompile Include="dlib\dlib\external\libjpeg\jutils.cpp" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jaricom.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcapimin.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcapistd.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcarith.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jccoefct.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jccolor.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcdctmgr.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jchuff.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcinit.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcmainct.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcmarker.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcmaster.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcomapi.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcparam.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcprepct.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jcsample.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jctrans.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdapimin.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdapistd.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdarith.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdatadst.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdatasrc.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdcoefct.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdcolor.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jddctmgr.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdhuff.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdinput.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmainct.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmarker.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmaster.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdmerge.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdpostct.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdsample.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jdtrans.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jerror.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctflt.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctfst.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jfdctint.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctflt.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctfst.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jidctint.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jmemansi.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jmemmgr.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jquant1.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jquant2.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\jutils.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdbmp.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdcolmap.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdgif.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdppm.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdrle.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdswitch.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\rdtarga.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\transupp.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\wrbmp.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\wrgif.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\wrppm.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\wrrle.c" />
+    <ClCompile Include="dlib\dlib\external\libjpeg\wrtarga.c" />
     <ClCompile Include="dlib\dlib\external\libpng\png.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'">$(ProjectDir)dlib\dlib\external\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
