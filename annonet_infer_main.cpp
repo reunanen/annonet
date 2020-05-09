@@ -193,93 +193,13 @@ void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const
     std::cout << total_correct * 100.0 / total << " %" << std::endl;
 }
 
-struct update_confusion_matrix_per_region_temp
-{
-    dlib::matrix<int> ground_truth_blobs;
-    dlib::matrix<int> result_blobs;
-};
-
-void update_confusion_matrix_per_region(
-    confusion_matrix_type& confusion_matrix_per_region,
-    const std::unordered_map<uint16_t, std::deque<dlib::point>>& labeled_points_by_class,
-    const dlib::matrix<uint16_t>& ground_truth_label_image,
-    const dlib::matrix<uint16_t>& result_label_image,
-    update_confusion_matrix_per_region_temp& temp = update_confusion_matrix_per_region_temp()
-)
-{
-    if (labeled_points_by_class.empty()) {
-        return;
-    }
-
-    DLIB_CASSERT(ground_truth_label_image.nr() == result_label_image.nr());
-    DLIB_CASSERT(ground_truth_label_image.nc() == result_label_image.nc());
-
-    const unsigned long ground_truth_blob_count = dlib::label_connected_blobs(ground_truth_label_image, zero_pixels_are_background(), neighbors_8(), connected_if_equal(), temp.ground_truth_blobs);
-    const unsigned long result_blob_count       = dlib::label_connected_blobs(result_label_image,       zero_pixels_are_background(), neighbors_8(), connected_if_equal(), temp.result_blobs);
-
-    const auto vote_blob_class = [&](int blob_number, const dlib::matrix<int>& blobs) {
-        std::unordered_map<uint16_t, size_t> votes_ground_truth;
-        std::unordered_map<uint16_t, size_t> votes_predicted;
-
-        const auto find_class_with_most_votes = [](const std::unordered_map<uint16_t, size_t>& votes) {
-            if (votes.empty()) {
-                return static_cast<uint16_t>(dlib::loss_multiclass_log_per_pixel_::label_to_ignore);
-            }
-            const auto max_vote = std::max_element(votes.begin(), votes.end(),
-                [](const pair<uint16_t, size_t>& vote1, const pair<uint16_t, size_t>& vote2) {
-                return vote1.second < vote2.second;
-            });
-            assert(max_vote != votes.end());
-            return max_vote->first;
-        };
-
-        for (const auto i : labeled_points_by_class) {
-            const auto ground_truth = i.first;
-            for (const dlib::point& point : i.second) {
-                const auto x = point.x();
-                const auto y = point.y();
-                if (blobs(y, x) == blob_number) {
-                    assert(ground_truth_label_image(y, x) == ground_truth);
-                    ++votes_ground_truth[ground_truth];
-                    const auto predicted = result_label_image(y, x);
-                    ++votes_predicted[predicted];
-                }
-            }
-
-            // If ground-truth is predominantly non-background, consider predictions to be background only if there are not any other votes.
-            // (Rationale: in our world, detections are important - we do not want to ignore any, even if they are small in terms of area.)
-            const bool ground_truth_predominantly_non_background = find_class_with_most_votes(votes_ground_truth) != 0;
-            const bool predicted_background_only = votes_predicted.size() == 1 && votes_predicted.find(0) != votes_predicted.end();
-            if (ground_truth_predominantly_non_background && !predicted_background_only) {
-                votes_predicted.erase(0);
-            }
-        }
-
-        return std::make_pair(find_class_with_most_votes(votes_ground_truth), find_class_with_most_votes(votes_predicted));
-    };
-
-    for (unsigned long blob = 0; blob < ground_truth_blob_count; ++blob) {
-        const auto v = vote_blob_class(blob, temp.ground_truth_blobs);
-        if (v.first != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-            ++confusion_matrix_per_region[v.first][v.second];
-        }
-    }
-
-    for (unsigned long blob = 0; blob < result_blob_count; ++blob) {
-        const auto v = vote_blob_class(blob, temp.result_blobs);
-        if (v.first != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-            ++confusion_matrix_per_region[v.first][v.second];
-        }
-    }
-}
-
 // ----------------------------------------------------------------------------------------
 
 struct result_image_type {
     std::string filename;
     int original_width = 0;
     int original_height = 0;
-    matrix<uint16_t> label_image;
+    unsigned long classlabel = std::numeric_limits<unsigned long>::max();
 };
 
 int main(int argc, char** argv) try
@@ -311,7 +231,6 @@ int main(int argc, char** argv) try
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
-        ("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
@@ -333,12 +252,12 @@ int main(int argc, char** argv) try
         return 2;
     }
 
-    double downscaling_factor = 1.0;
+    int input_dimension = -1;
     std::string serialized_runtime_net;
     std::string anno_classes_json;
-    deserialize("annonet.dnn") >> anno_classes_json >> downscaling_factor >> serialized_runtime_net;
+    deserialize("annonet.dnn") >> anno_classes_json >> input_dimension >> serialized_runtime_net;
 
-    std::cout << "Deserializing annonet, downscaling factor = " << downscaling_factor << std::endl;
+    std::cout << "Deserializing annonet, input dimension = " << input_dimension << std::endl;
 
     NetPimpl::RuntimeNet net;
     net.Deserialize(std::istringstream(serialized_runtime_net));
@@ -348,20 +267,12 @@ int main(int argc, char** argv) try
     DLIB_CASSERT(anno_classes.size() >= 2);
 
     const std::vector<double> gains = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
-    const std::vector<double> detection_levels = parse_class_specific_values(options["detection"].as<std::vector<std::string>>(), anno_classes.size());
 
     assert(gains.size() == anno_classes.size());
-    assert(detection_levels.size() == anno_classes.size());
 
     std::cout << "Using gains:";
     for (size_t class_index = 0, end = gains.size(); class_index < end; ++class_index) {
         std::cout << " " << class_index << ":" << gains[class_index];
-    }
-    std::cout << std::endl;
-
-    std::cout << "Using detection levels:";
-    for (size_t class_index = 0, end = detection_levels.size(); class_index < end; ++class_index) {
-        std::cout << " " << class_index << ":" << detection_levels[class_index];
     }
     std::cout << std::endl;
 
@@ -388,7 +299,7 @@ int main(int argc, char** argv) try
         full_image_readers.push_back(std::thread([&]() {
             image_filenames image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
-                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false, downscaling_factor));
+                full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false));
             }
         }));
     }
@@ -403,9 +314,10 @@ int main(int argc, char** argv) try
             result_image_type result_image;
             dlib::matrix<rgb_alpha_pixel> rgba_label_image;
             while (result_image_write_requests.dequeue(result_image)) {
-                resize_label_image(result_image.label_image, result_image.original_width, result_image.original_height);
-                index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
-                save_png(rgba_label_image, result_image.filename);
+                // TODO
+                //resize_label_image(result_image.label_image, result_image.original_width, result_image.original_height);
+                //index_label_image_to_rgba_label_image(result_image.label_image, rgba_label_image, anno_classes);
+                //save_png(rgba_label_image, result_image.filename);
                 result_image_write_results.enqueue(true);
             }
         }));
@@ -413,24 +325,12 @@ int main(int argc, char** argv) try
 
     const int min_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
 
-    tiling::parameters tiling_parameters;
-    tiling_parameters.max_tile_width = options["tile-max-width"].as<int>();
-    tiling_parameters.max_tile_height = options["tile-max-height"].as<int>();
-    tiling_parameters.overlap_x = min_input_dimension;
-    tiling_parameters.overlap_y = min_input_dimension;
-
-    DLIB_CASSERT(tiling_parameters.max_tile_width >= min_input_dimension);
-    DLIB_CASSERT(tiling_parameters.max_tile_height >= min_input_dimension);
-
     // first index: ground truth, second index: predicted
-    confusion_matrix_type confusion_matrix_per_pixel, confusion_matrix_per_region;
-    init_confusion_matrix(confusion_matrix_per_pixel, anno_classes.size());
-    init_confusion_matrix(confusion_matrix_per_region, anno_classes.size());
+    confusion_matrix_type confusion_matrix;
+    init_confusion_matrix(confusion_matrix, anno_classes.size());
     size_t ground_truth_count = 0;
 
     const auto t0 = std::chrono::steady_clock::now();
-
-    update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
 
     std::chrono::microseconds total_time_spent_in_actual_inference(0);
     std::chrono::microseconds total_time_spent_in_actual_inference_excluding_first_image(0);
@@ -452,13 +352,12 @@ int main(int argc, char** argv) try
         const auto& input_image = sample.input_image;
 
         result_image.filename = sample.image_filenames.image_filename + "_result.png";
-        result_image.label_image.set_size(input_image.nr(), input_image.nc());
         result_image.original_width = sample.original_width;
         result_image.original_height = sample.original_height;
 
         const auto t0 = std::chrono::steady_clock::now();
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        const auto result = annonet_infer(net, sample.input_image, input_dimension, gains, temp);
 
         const auto t1 = std::chrono::steady_clock::now();
 
@@ -472,16 +371,8 @@ int main(int argc, char** argv) try
             );
         }
 
-        for (const auto& labeled_points : sample.labeled_points_by_class) {
-            const uint16_t ground_truth_value = labeled_points.first;
-            for (const dlib::point& point : labeled_points.second) {
-                const uint16_t predicted_value = result_image.label_image(point.y(), point.x());
-                ++confusion_matrix_per_pixel[ground_truth_value][predicted_value];
-            }
-            ground_truth_count += labeled_points.second.size();
-        }
-
-        update_confusion_matrix_per_region(confusion_matrix_per_region, sample.labeled_points_by_class, sample.label_image, result_image.label_image, update_confusion_matrix_per_region_temp);
+        ++ground_truth_count;
+        ++confusion_matrix[sample.classlabel][result];
 
         result_image_write_requests.enqueue(result_image);
     }
@@ -517,11 +408,8 @@ int main(int argc, char** argv) try
     }
 
     if (ground_truth_count) {
-        std::cout << std::endl << "Confusion matrix per pixel:" << std::endl;
-        print_confusion_matrix(confusion_matrix_per_pixel, anno_classes);
-
-        std::cout << std::endl << "Confusion matrix per region (two-way):" << std::endl;
-        print_confusion_matrix(confusion_matrix_per_region, anno_classes);
+        std::cout << std::endl << "Confusion matrix:" << std::endl;
+        print_confusion_matrix(confusion_matrix, anno_classes);
     }
 }
 catch(std::exception& e)

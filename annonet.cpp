@@ -19,44 +19,6 @@
 
 // ----------------------------------------------------------------------------------------
 
-inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes)
-{
-    if (rgba_label == rgba_ignore_label) {
-        return dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    }
-    for (const AnnoClass& anno_class : anno_classes) {
-        if (anno_class.rgba_label == rgba_label) {
-            return anno_class.index;
-        }
-    }
-    std::ostringstream error;
-    error << "Unknown class: "
-        << "r = " << static_cast<int>(rgba_label.red) << ", "
-        << "g = " << static_cast<int>(rgba_label.green) << ", "
-        << "b = " << static_cast<int>(rgba_label.blue) << ", "
-        << "alpha = " << static_cast<int>(rgba_label.alpha);
-    throw std::runtime_error(error.str());
-}
-
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes)
-{
-    const long nr = rgba_label_image.nr();
-    const long nc = rgba_label_image.nc();
-
-    ground_truth_sample.label_image.set_size(nr, nc);
-    ground_truth_sample.labeled_points_by_class.clear();
-
-    for (long r = 0; r < nr; ++r) {
-        for (long c = 0; c < nc; ++c) {
-            const uint16_t label = rgba_label_to_index_label(rgba_label_image(r, c), anno_classes);
-            if (label != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-                ground_truth_sample.labeled_points_by_class[label].push_back(dlib::point(c, r));
-            }
-            ground_truth_sample.label_image(r, c) = label;
-        }
-    }
-}
-
 std::vector<image_filenames> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
@@ -83,34 +45,33 @@ std::vector<image_filenames> find_image_files(
 
     std::vector<image_filenames> results;
 
-    const auto file_exists = [](const std::string& filename) {
-        std::ifstream label_file(filename, std::ios::binary);
-        return !!label_file;
-    };
-
     std::chrono::steady_clock::time_point progress_last_printed = std::chrono::steady_clock::now();
 
     size_t added = 0, ignored = 0;
+
+    const auto extract_classlabel = [](const dlib::file& file) {
+        const auto path_length = file.full_name().length() - file.name().length();
+        const auto path = file.full_name().substr(0, path_length - 1);
+        const auto prev_slash_pos = path.find_last_of("/\\");
+        if (prev_slash_pos != std::string::npos) {
+            return path.substr(prev_slash_pos + 1);
+        }
+        return std::string();
+    };
 
     for (size_t i = 0, total = files.size(); i < total; ++i) {
         const dlib::file& name = files[i];
 
         image_filenames image_filenames;
         image_filenames.image_filename = name;
+        image_filenames.classlabel = extract_classlabel(name);
 
-        const std::string label_filename = name.full_name() + "_mask.png";
-        const bool label_file_exists = file_exists(label_filename);
-
-        if (label_file_exists) {
-            image_filenames.label_filename = label_filename;
-        }
-
-        if (label_file_exists || !require_ground_truth) {
-            results.push_back(image_filenames);
-            ++added;
-        }
-        else if (require_ground_truth) {
+        if (image_filenames.classlabel.empty()) {
             ++ignored;
+        }
+        else {
+            ++added;
+            results.push_back(image_filenames);
         }
 
         const auto now = std::chrono::steady_clock::now();
@@ -128,52 +89,70 @@ std::vector<image_filenames> find_image_files(
     return results;
 }
 
-template <typename image_type>
-void resize_label_image(image_type& label_image, int target_width, int target_height)
-{
-    image_type temp;
-    dlib::set_image_size(temp, target_height, target_width);
-    dlib::resize_image(label_image, temp, dlib::interpolate_nearest_neighbor());
-    std::swap(label_image, temp);
-}
-
-// explicit instantiation for dlib::matrix<uint16_t>
-template void resize_label_image<dlib::matrix<uint16_t>>(dlib::matrix<uint16_t>& label_image, int target_width, int target_height);
-
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
+sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth)
 {
     sample sample;
     sample.image_filenames = image_filenames;
 
     try {
-        dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
         dlib::load_image(sample.input_image, image_filenames.image_filename);
         sample.original_width = sample.input_image.nc();
         sample.original_height = sample.input_image.nr();
-        dlib::resize_image(1.0 / downscaling_factor, sample.input_image);
 
-        if (!image_filenames.label_filename.empty()) {
-            dlib::load_image(rgba_label_image, image_filenames.label_filename);
-
-            if (rgba_label_image.nr() != sample.original_height || rgba_label_image.nc() != sample.original_width) {
-                sample.error = "Label image size mismatch";
+        for (unsigned long i = 0, end = anno_classes.size(); i != end; ++i) {
+            const auto& anno_class = anno_classes[i];
+            if (anno_class.classlabel == image_filenames.classlabel) {
+                sample.classlabel = i;
+                break;
             }
-            else {
-                resize_label_image(rgba_label_image, sample.input_image.nc(), sample.input_image.nr());
-                assert(sample.input_image.nr() == rgba_label_image.nr() || sample.input_image.nc() == rgba_label_image.nc());
-                decode_rgba_label_image(rgba_label_image, sample, anno_classes);
-            }
-        }
-        else if (require_ground_truth) {
-            sample.error = "No ground truth available";
         }
     }
     catch (std::exception& e) {
         sample.error = e.what();
     }
 
+    if (sample.classlabel == std::numeric_limits<unsigned long>::max()) {
+        sample.error = "Unknown classlabel: " + image_filenames.classlabel;
+    }
+
     return sample;
 };
+
+void convert_for_processing(
+    const NetPimpl::input_type& full_input_image,
+    NetPimpl::input_type& converted,
+    int dim
+)
+{
+#if 0
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
+#endif
+
+    const auto max_input_dim = std::max(full_input_image.nr(), full_input_image.nc());
+    const auto input_dim = std::max(max_input_dim, static_cast<long>(dim)); // let's not enlarge anything
+
+    const dlib::point center_point(
+        full_input_image.nc() / 2,
+        full_input_image.nr() / 2
+    );
+
+    const auto rect = dlib::centered_rect(center_point, input_dim, input_dim);
+
+    const dlib::chip_details chip_details(rect, dlib::chip_dims(dim, dim));
+
+    extract_image_chip(full_input_image, chip_details, converted, dlib::interpolate_nearest_neighbor());
+
+    DLIB_CASSERT(converted.nr() == dim);
+    DLIB_CASSERT(converted.nc() == dim);
+
+#if 0
+    static std::mutex mtx2;
+    std::lock_guard<std::mutex> lock2(mtx2);
+    dlib::save_jpeg(full_input_image, "full_input_image.jpg");
+    dlib::save_jpeg(converted, "converted.jpg");
+#endif
+}
 
 void set_low_priority()
 {

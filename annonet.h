@@ -41,7 +41,7 @@ struct zero_and_ignored_pixels_are_background
 struct image_filenames
 {
     std::string image_filename;
-    std::string label_filename;
+    std::string classlabel;
 };
 
 typedef uint8_t input_pixel_type;
@@ -52,72 +52,22 @@ struct sample
     int original_height = 0;
     image_filenames image_filenames;
     NetPimpl::input_type input_image;
-    dlib::matrix<uint16_t> label_image;
-    std::unordered_map<uint16_t, std::deque<dlib::point>> labeled_points_by_class;
+    unsigned long classlabel = std::numeric_limits<unsigned long>::max();
     std::string error;
 };
-
-inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes);
-
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes);
 
 std::vector<image_filenames> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 );
 
-template <typename image_type>
-void resize_label_image(image_type& label_image, int target_width, int target_height);
+sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth);
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
-
-template <
-    typename image_type
->
-void outpaint(
-    dlib::image_view<image_type>& img,
-    dlib::rectangle inside
-)
-{
-    inside = inside.intersect(get_rect(img));
-    if (inside.is_empty())
-    {
-        return;
-    }
-
-    for (long r = 0; r < inside.top(); ++r) {
-        for (long c = 0; c < inside.left(); ++c) {
-            img[r][c] = img[inside.top()][inside.left()];
-        }
-        for (long c = inside.left(); c <= inside.right(); ++c) {
-            img[r][c] = img[inside.top()][c];
-        }
-        for (long c = inside.right() + 1; c < img.nc(); ++c) {
-            img[r][c] = img[inside.top()][inside.right()];
-        }
-    }
-    for (long r = inside.top(); r <= inside.bottom(); ++r) {
-        for (long c = 0; c < inside.left(); ++c) {
-            img[r][c] = img[r][inside.left()];
-        }
-        for (long c = inside.right() + 1; c < img.nc(); ++c) {
-            img[r][c] = img[r][inside.right()];
-        }
-    }
-    for (long r = inside.bottom() + 1; r < img.nr(); ++r) {
-        for (long c = 0; c < inside.left(); ++c) {
-            img[r][c] = img[inside.bottom()][inside.left()];
-        }
-        for (long c = inside.left(); c <= inside.right(); ++c) {
-            img[r][c] = img[inside.bottom()][c];
-        }
-        for (long c = inside.right() + 1; c < img.nc(); ++c) {
-            img[r][c] = img[inside.bottom()][inside.right()];
-        }
-    }
-
-    // TODO: even blur from outside
-}
+void convert_for_processing(
+    const NetPimpl::input_type& full_input_image,
+    NetPimpl::input_type& converted,
+    int dim
+);
 
 void set_low_priority();
 

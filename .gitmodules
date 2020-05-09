@@ -10,9 +10,6 @@
 [submodule "dlib-dnn-pimpl-wrapper"]
 	path = dlib-dnn-pimpl-wrapper
 	url = https://github.com/reunanen/dlib-dnn-pimpl-wrapper
-[submodule "tiling"]
-	path = tiling
-	url = https://github.com/reunanen/tiling
 [submodule "cxxopts"]
 	path = cxxopts
 	url = https://github.com/reunanen/cxxopts

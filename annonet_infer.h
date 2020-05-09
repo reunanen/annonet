@@ -20,24 +20,18 @@
 #define ANNONET_INFER_H
 
 #include "dlib-dnn-pimpl-wrapper/NetPimpl.h"
-#include "tiling/tiling.h"
 
 // Can be supplied to avoid unnecessary memory re-allocations
 struct annonet_infer_temp
 {
-    NetPimpl::input_type input_tile;
-    std::vector<dlib::point> detection_seeds;
-    dlib::matrix<unsigned int> connected_blobs;
-    dlib::resizable_tensor blended_output_tensor;
+    NetPimpl::input_type input_image;
 };
 
-void annonet_infer(
+unsigned long annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
-    dlib::matrix<uint16_t>& result_image,
+    int input_dimension,
     const std::vector<double>& gains = std::vector<double>(),
-    const std::vector<double>& detection_levels = std::vector<double>(),
-    const tiling::parameters& tiling_parameters = tiling::parameters(),
     annonet_infer_temp& temp = annonet_infer_temp()
 );
 

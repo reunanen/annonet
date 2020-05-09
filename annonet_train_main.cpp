@@ -45,13 +45,13 @@ namespace std {
     template <>
     struct hash<image_filenames> {
         std::size_t operator()(const image_filenames& image_filenames) const {
-            return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
+            return hash<string>()(image_filenames.image_filename + ", " + image_filenames.classlabel);
         }
     };
 
     bool operator ==(const image_filenames& a, const image_filenames& b) {
         return a.image_filename == b.image_filename
-            && a.label_filename == b.label_filename;
+            && a.classlabel     == b.classlabel;
     }
 }
 
@@ -60,7 +60,7 @@ namespace std {
 struct crop
 {
     NetPimpl::input_type input_image;
-    NetPimpl::training_label_type label_image;
+    NetPimpl::training_label_type classlabel;
 
     // prevent having to re-allocate memory constantly
     dlib::matrix<uint16_t> temporary_unweighted_label_image;
@@ -103,7 +103,6 @@ void add_random_noise(NetPimpl::input_type& image, double noise_level, dlib::ran
 
 struct randomly_crop_image_temp {
     NetPimpl::input_type input_image;
-    dlib::matrix<uint16_t> label_image;
 };
 
 void randomly_crop_image(
@@ -115,24 +114,20 @@ void randomly_crop_image(
     randomly_crop_image_temp& temp
 )
 {
-    DLIB_CASSERT(!full_sample.labeled_points_by_class.empty());
+    // TODO: maybe jitter the center a bit?? or the scale??
 
-    const size_t class_index = rnd.get_random_32bit_number() % full_sample.labeled_points_by_class.size();
+    convert_for_processing(full_sample.input_image, crop.input_image, dim);
 
-    auto i = full_sample.labeled_points_by_class.begin();
-
-    for (size_t j = 0; j < class_index; ++i, ++j) {
-        DLIB_CASSERT(i != full_sample.labeled_points_by_class.end());
-    }
-    DLIB_CASSERT(i != full_sample.labeled_points_by_class.end());
-    DLIB_CASSERT(!i->second.empty());
-
-    const size_t point_index = rnd.get_random_64bit_number() % i->second.size();
+#if 0
+    const dlib::point point(
+        full_sample.input_image.nr() / 2,
+        full_sample.input_image.nc() / 2
+    );
 
     const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
     const int dim_before_downscaling = std::round(dim * further_downscaling_factor);
 
-    const rectangle rect = random_rect_containing_point(rnd, i->second[point_index], dim_before_downscaling, dim_before_downscaling);
+    const rectangle rect = random_rect_containing_point(rnd, point, dim_before_downscaling, dim_before_downscaling);
 
     const chip_details chip_details(rect, chip_dims(dim_before_downscaling, dim_before_downscaling));
 
@@ -145,49 +140,30 @@ void randomly_crop_image(
         valid_rect_in_full_image.top() - rect.top() + valid_rect_in_full_image.height() - 1
     );
 
-    const auto set_to_unknown_outside = [](dlib::matrix<uint16_t>& label_image, const rectangle& inside) {
-        for (long r = 0, nr = label_image.nr(); r < nr; ++r) {
-            for (long c = 0, nc = label_image.nc(); c < nc; ++c) {
-                if (!inside.contains(c, r)) {
-                    label_image(r, c) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-                }
-            }
-        }
-    };
-
     if (further_downscaling_factor > 1.0) {
         extract_image_chip(full_sample.input_image, chip_details, temp.input_image, interpolate_bilinear());
-        extract_image_chip(full_sample.label_image, chip_details, temp.label_image, interpolate_nearest_neighbor());
 
         outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_image), valid_rect_in_crop_image);
-        set_to_unknown_outside(temp.label_image, valid_rect_in_crop_image);
 
         crop.input_image.set_size(dim, dim);
-        crop.temporary_unweighted_label_image.set_size(dim, dim);
 
         dlib::resize_image(temp.input_image, crop.input_image, interpolate_bilinear());
-        dlib::resize_image(temp.label_image, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
     }
     else {
         extract_image_chip(full_sample.input_image, chip_details, crop.input_image, interpolate_bilinear());
-        extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
 
         outpaint(dlib::image_view<NetPimpl::input_type>(crop.input_image), valid_rect_in_crop_image);
-        set_to_unknown_outside(crop.temporary_unweighted_label_image, valid_rect_in_crop_image);
     }
+#endif
 
-    set_weights(crop.temporary_unweighted_label_image, crop.label_image, options["class-weight"].as<double>(), options["image-weight"].as<double>());
-
-    // Randomly flip the input image and the labels.
+    // Randomly flip the input image.
     const bool allow_flip_left_right = options.count("allow-flip-left-right") > 0;
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
     if (allow_flip_left_right && rnd.get_random_double() > 0.5) {
         crop.input_image = fliplr(crop.input_image);
-        crop.label_image = fliplr(crop.label_image);
     }
     if (allow_flip_upside_down && rnd.get_random_double() > 0.5) {
         crop.input_image = flipud(crop.input_image);
-        crop.label_image = flipud(crop.label_image);
     }
 
     double noise_level_stddev = options["noise-level-stddev"].as<double>();
@@ -202,6 +178,8 @@ void randomly_crop_image(
         apply_random_color_offset(crop.input_image, rnd);
     }
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+
+    crop.classlabel = full_sample.classlabel;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -247,8 +225,6 @@ int main(int argc, char** argv) try
     default_data_loader_thread_count << std::thread::hardware_concurrency();
 
     options.add_options()
-        ("d,initial-downscaling-factor", "The initial downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
-        ("f,further-downscaling-factor", "The further downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("l,allow-flip-left-right", "Randomly flip input images horizontally")
@@ -263,7 +239,7 @@ int main(int argc, char** argv) try
         ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
-        ("input-dimension-multiplier", "Size of input patches, relative to minimum required", cxxopts::value<double>()->default_value("3.0"))
+        ("input-dimension-multiplier", "Size of input patches, relative to minimum required", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-scaler", "Scaler of net width", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-min-filter-count", "Minimum net width filter count", cxxopts::value<int>()->default_value("1"))
         ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
@@ -274,7 +250,6 @@ int main(int argc, char** argv) try
         ("max-total-steps", "Set the maximum total number of steps", cxxopts::value<size_t>())
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
-        ("no-empty-label-image-warning", "Do not warn about empty label images")
         ("primary-cuda-device", "Set the primary CUDA device to use", cxxopts::value<int>())
         ;
 
@@ -285,12 +260,6 @@ int main(int argc, char** argv) try
         cxxopts::check_required(options, { "input-directory" });
 
         std::cout << "Input directory = " << options["input-directory"].as<std::string>() << std::endl;
-        std::cout << "Initial downscaling factor = " << options["initial-downscaling-factor"].as<double>() << std::endl;
-        std::cout << "Further downscaling factor = " << options["further-downscaling-factor"].as<double>() << std::endl;
-
-        if (options["initial-downscaling-factor"].as<double>() <= 0.0 || options["further-downscaling-factor"].as<double>() <= 0.0) {
-            throw std::runtime_error("The downscaling factors have to be strictly positive.");
-        }
     }
     catch (std::exception& e) {
         cerr << e.what() << std::endl;
@@ -299,8 +268,6 @@ int main(int argc, char** argv) try
         return 2;
     }
 
-    const double initial_downscaling_factor = options["initial-downscaling-factor"].as<double>();
-    const double further_downscaling_factor = options["further-downscaling-factor"].as<double>();
     const double ignore_large_nonzero_regions_by_area = options.count("ignore-large-nonzero-regions-by-area") ? options["ignore-large-nonzero-regions-by-area"].as<double>() : std::numeric_limits<double>::infinity();
     const double ignore_large_nonzero_regions_by_width = options.count("ignore-large-nonzero-regions-by-width") ? options["ignore-large-nonzero-regions-by-width"].as<double>() : std::numeric_limits<double>::infinity();
     const double ignore_large_nonzero_regions_by_height = options.count("ignore-large-nonzero-regions-by-height") ? options["ignore-large-nonzero-regions-by-height"].as<double>() : std::numeric_limits<double>::infinity();
@@ -317,7 +284,6 @@ int main(int argc, char** argv) try
     const auto relative_training_length = std::max(0.01, options["relative-training-length"].as<double>());
     const auto cached_image_count = options["cached-image-count"].as<int>();
     const auto data_loader_thread_count = std::max(1U, options["data-loader-thread-count"].as<unsigned int>());
-    const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
 
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
     std::cout << "Minibatch size = " << minibatch_size << std::endl;
@@ -384,93 +350,10 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
-        for (const auto class_to_ignore : classes_to_ignore) {
-            const auto i = sample.labeled_points_by_class.find(class_to_ignore);
-            if (i != sample.labeled_points_by_class.end()) {
-                for (const dlib::point& point : i->second) {
-                    sample.label_image(point.y(), point.x()) = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-                }
-                sample.labeled_points_by_class.erase(class_to_ignore);
-            }
-        }
-    };
-
-    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample& sample) {
-        if (sample.labeled_points_by_class.empty()) {
-            return; // no annotations
-        }
-        if (sample.labeled_points_by_class.size() == 1 && sample.labeled_points_by_class.begin()->first == 0) {
-            return; // background only
-        }
-        const auto receptive_field_side = NetPimpl::TrainingNet::GetRequiredInputDimension();
-        const double receptive_field_area = receptive_field_side * receptive_field_side;
-        const double max_blob_point_count_to_keep = ignore_large_nonzero_regions_by_area * receptive_field_area;
-        const double max_blob_width_to_keep = ignore_large_nonzero_regions_by_width * receptive_field_side;
-        const double max_blob_height_to_keep = ignore_large_nonzero_regions_by_height * receptive_field_side;
-        if (max_blob_point_count_to_keep >= sample.label_image.nr() * sample.label_image.nc() && max_blob_width_to_keep >= sample.label_image.nc() && max_blob_height_to_keep >= sample.label_image.nr()) {
-            return; // would keep everything in any case
-        }
-        dlib::matrix<unsigned long> blobs;
-        const unsigned long blob_count = dlib::label_connected_blobs(sample.label_image, zero_and_ignored_pixels_are_background(), neighbors_8(), connected_if_equal(), blobs);
-        std::vector<std::deque<dlib::point>> blob_points(blob_count);
-        std::vector<std::pair<long, long>> blob_minmax_x(blob_count, std::make_pair(std::numeric_limits<long>::max(), std::numeric_limits<long>::min()));
-        std::vector<std::pair<long, long>> blob_minmax_y(blob_count, std::make_pair(std::numeric_limits<long>::max(), std::numeric_limits<long>::min()));
-        for (const auto& labeled_points : sample.labeled_points_by_class) {
-            for (const dlib::point& point : labeled_points.second) {
-                const unsigned long blob_index = blobs(point.y(), point.x());
-                blob_points[blob_index].push_back(point);
-                blob_minmax_x[blob_index].first  = std::min(point.x(), blob_minmax_x[blob_index].first);
-                blob_minmax_x[blob_index].second = std::max(point.x(), blob_minmax_x[blob_index].second);
-                blob_minmax_y[blob_index].first  = std::min(point.y(), blob_minmax_y[blob_index].first);
-                blob_minmax_y[blob_index].second = std::max(point.y(), blob_minmax_y[blob_index].second);
-            }
-       }
-
-        decltype(sample.labeled_points_by_class) labeled_points_to_keep;
-        for (unsigned long blob_index = 0; blob_index < blob_count; ++blob_index) {
-            const auto& points = blob_points[blob_index];
-            if (points.empty()) {
-                continue; // nothing to do
-            }
-            const auto ignore_blob_by_size = [&]() {
-                if (points.size() > max_blob_point_count_to_keep) {
-                    return true;
-                }
-                const auto blob_width  = [&]() { return blob_minmax_x[blob_index].second - blob_minmax_x[blob_index].first + 1; };
-                const auto blob_height = [&]() { return blob_minmax_y[blob_index].second - blob_minmax_y[blob_index].first + 1; };
-                if (blob_width() > max_blob_width_to_keep || blob_height() > max_blob_height_to_keep) {
-                    return true;
-                }
-                return false;
-            };
-            if (blob_index == 0 || !ignore_blob_by_size()) {
-                // keep
-                const auto point = points.front();
-                const uint16_t label = sample.label_image(point.y(), point.x());
-#ifdef _DEBUG
-                for (size_t i = 1, end = points.size(); i < end; ++i) {
-                    assert(sample.label_image(point.y(), point.x()) == label);
-                }
-#endif // _DEBUG
-                std::move(points.begin(), points.end(), std::back_inserter(labeled_points_to_keep[label]));
-            }
-            else {
-                // ignore
-                for (const auto& point : points) {
-                    uint16_t& label = sample.label_image(point.y(), point.x());
-                    label = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-                }
-            }
-        }
-        std::swap(sample.labeled_points_by_class, labeled_points_to_keep);
-    };
-
     shared_lru_cache_using_std<image_filenames, std::shared_ptr<sample>, std::unordered_map> full_images_cache(
         [&](const image_filenames& image_filenames) {
             std::shared_ptr<sample> sample(new sample);
-            *sample = read_sample(image_filenames, anno_classes, true, initial_downscaling_factor);
-            ignore_classes_to_ignore(*sample);
+            *sample = read_sample(image_filenames, anno_classes, true);
             return sample;
         }, cached_image_count);
 
@@ -487,7 +370,6 @@ int main(int argc, char** argv) try
     {
         dlib::rand rnd(time(0)+seed);
         NetPimpl::input_type input_image;
-        matrix<uint16_t> index_label_image;
         crop crop;
         randomly_crop_image_temp temp;
         while (data.is_enabled())
@@ -501,9 +383,6 @@ int main(int argc, char** argv) try
 
             if (!ground_truth_sample->error.empty()) {
                 crop.error = ground_truth_sample->error;
-            }
-            else if (ground_truth_sample->labeled_points_by_class.empty()) {
-                crop.warning = "Warning: no labeled points in " + ground_truth_sample->image_filenames.label_filename;
             }
             else {
                 randomly_crop_image(actual_input_dimension, *ground_truth_sample, crop, rnd, options, temp);
@@ -526,7 +405,7 @@ int main(int argc, char** argv) try
         runtime_net.Serialize(serialized);
 
         cout << "saving network" << endl;
-        serialize("annonet.dnn") << anno_classes_json << (initial_downscaling_factor * further_downscaling_factor) << serialized.str();
+        serialize("annonet.dnn") << anno_classes_json << actual_input_dimension << serialized.str();
     };
 
     std::set<std::string> warnings_already_printed;
@@ -560,14 +439,14 @@ int main(int argc, char** argv) try
                     throw std::runtime_error(crop.error);
                 }
                 else if (!crop.warning.empty()) {
-                    if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                    if (warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
                         std::cout << crop.warning << std::endl;
                         warnings_already_printed.insert(crop.warning);
                     }
                 }
                 else {
                     samples.push_back(std::move(crop.input_image));
-                    labels.push_back(std::move(crop.label_image));
+                    labels.push_back(crop.classlabel);
                 }
             }
 
