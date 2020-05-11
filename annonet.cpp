@@ -111,7 +111,7 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
         sample.error = e.what();
     }
 
-    if (sample.classlabel == std::numeric_limits<unsigned long>::max()) {
+    if (sample.classlabel == std::numeric_limits<unsigned long>::max() && sample.error.empty()) {
         sample.error = "Unknown classlabel: " + image_filenames.classlabel;
     }
 
