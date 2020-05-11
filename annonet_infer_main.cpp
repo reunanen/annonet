@@ -323,8 +323,6 @@ int main(int argc, char** argv) try
         }));
     }
 
-    const int min_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
-
     // first index: ground truth, second index: predicted
     confusion_matrix_type confusion_matrix;
     init_confusion_matrix(confusion_matrix, anno_classes.size());
