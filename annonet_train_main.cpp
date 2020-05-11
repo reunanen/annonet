@@ -251,6 +251,7 @@ int main(int argc, char** argv) try
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("primary-cuda-device", "Set the primary CUDA device to use", cxxopts::value<int>())
+        ("print-net-description", "Print the network structure description")
         ;
 
     try {
@@ -452,9 +453,15 @@ int main(int argc, char** argv) try
 
             training_net.StartTraining(samples, labels);
 
-            if (minibatch++ % save_interval == 0) {
+            if (minibatch == 0 && options.count("print-net-description") > 0) {
+                std::cout << training_net.GetNetDescription() << std::endl;
+            }
+
+            if (minibatch % save_interval == 0) {
                 save_inference_net();
             }
+
+            ++minibatch;
         }
     }
     catch (std::exception& e) {
