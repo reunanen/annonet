@@ -226,20 +226,15 @@ int main(int argc, char** argv) try
 
     options.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
+        ("d,input-dimension", "Input image dimension", cxxopts::value<int>()->default_value("320"))
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("l,allow-flip-left-right", "Randomly flip input images horizontally")
         ("n,noise-level-stddev", "Set the standard deviation of the noise to add", cxxopts::value<double>()->default_value("0.0"))
 #ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("o,allow-random-color-offset", "Randomly apply color offsets")
 #endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
-        ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
-        ("ignore-large-nonzero-regions-by-area", "Ignore large non-zero regions by area", cxxopts::value<double>())
-        ("ignore-large-nonzero-regions-by-width", "Ignore large non-zero regions by width", cxxopts::value<double>())
-        ("ignore-large-nonzero-regions-by-height", "Ignore large non-zero regions by height", cxxopts::value<double>())
-        ("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
-        ("image-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced images", cxxopts::value<double>()->default_value("0.5"))
+        //("class-weight", "Try 0.0 for equally balanced pixels, and 1.0 for equally balanced classes", cxxopts::value<double>()->default_value("0.5"))
         ("b,minibatch-size", "Set minibatch size", cxxopts::value<size_t>()->default_value("100"))
-        ("input-dimension-multiplier", "Size of input patches, relative to minimum required", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-scaler", "Scaler of net width", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-min-filter-count", "Minimum net width filter count", cxxopts::value<int>()->default_value("1"))
         ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
@@ -269,13 +264,9 @@ int main(int argc, char** argv) try
         return 2;
     }
 
-    const double ignore_large_nonzero_regions_by_area = options.count("ignore-large-nonzero-regions-by-area") ? options["ignore-large-nonzero-regions-by-area"].as<double>() : std::numeric_limits<double>::infinity();
-    const double ignore_large_nonzero_regions_by_width = options.count("ignore-large-nonzero-regions-by-width") ? options["ignore-large-nonzero-regions-by-width"].as<double>() : std::numeric_limits<double>::infinity();
-    const double ignore_large_nonzero_regions_by_height = options.count("ignore-large-nonzero-regions-by-height") ? options["ignore-large-nonzero-regions-by-height"].as<double>() : std::numeric_limits<double>::infinity();
+    const auto actual_input_dimension = options["input-dimension"].as<int>();
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
-    const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
-    const auto input_dimension_multiplier = options["input-dimension-multiplier"].as<double>();
     const auto net_width_scaler = options["net-width-scaler"].as<double>();
     const auto net_width_min_filter_count = options["net-width-min-filter-count"].as<int>();
     const auto initial_learning_rate = options["initial-learning-rate"].as<double>();
@@ -296,23 +287,6 @@ int main(int argc, char** argv) try
     std::cout << "Relative training length = " << relative_training_length << std::endl;
     std::cout << "Cached image count = " << cached_image_count << std::endl;
     std::cout << "Data loader thread count = " << data_loader_thread_count << std::endl;
-
-    if (!classes_to_ignore.empty()) {
-        std::cout << "Classes to ignore =";
-        for (uint16_t class_to_ignore : classes_to_ignore) {
-            std::cout << " " << class_to_ignore;
-        }
-        std::cout << std::endl;
-    }
-
-    const int required_input_dimension = NetPimpl::TrainingNet::GetRequiredInputDimension();
-    std::cout << "Required input dimension = " << required_input_dimension << std::endl;
-
-    const int requested_input_dimension = static_cast<int>(std::round(input_dimension_multiplier * required_input_dimension));
-    std::cout << "Requested input dimension = " << requested_input_dimension << std::endl;
-
-    const int actual_input_dimension = NetPimpl::RuntimeNet::GetRecommendedInputDimension(requested_input_dimension);
-    std::cout << "Actual input dimension = " << actual_input_dimension << std::endl;
 
     const auto anno_classes_json = read_anno_classes_file(options["input-directory"].as<std::string>());
     const auto anno_classes = parse_anno_classes(anno_classes_json);
