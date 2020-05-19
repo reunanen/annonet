@@ -414,6 +414,8 @@ int main(int argc, char** argv) try
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("chip-dimension", "Cropper chip dimension in pixels", cxxopts::value<unsigned long>()->default_value("200"))
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
+        ("r,use-bounding-box-regression", "Use bounding-box regression (BBR)")
+        ("l,bbr-lambda", "Set BBR lambda", cxxopts::value<double>()->default_value("100"))
         ("min-relative-instance-size", "Min instance size relative to object size", cxxopts::value<double>()->default_value("1.1"))
         ("max-relative-instance-size", "Max instance size relative to object size", cxxopts::value<double>()->default_value("1.5"))
         ("segmentation-target-size", "Set segmentation target size in pixels", cxxopts::value<int>()->default_value(std::to_string(SegmentationNetPimpl::TrainingNet::GetRequiredInputDimension())))
@@ -711,6 +713,9 @@ int main(int argc, char** argv) try
         const auto min_target_size = options["min-target-size"].as<unsigned long>();
 
         dlib::mmod_options mmod_options(all_labels, target_size, min_target_size, min_detector_window_overlap_iou);
+
+        mmod_options.use_bounding_box_regression = options["use-bounding-box-regression"].count() > 0;
+        mmod_options.bbr_lambda = options["bbr-lambda"].as<double>();
 
         std::cout << "Detector windows:" << std::endl;
         for (const auto& detector_window : mmod_options.detector_windows) {
