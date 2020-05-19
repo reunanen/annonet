@@ -356,6 +356,8 @@ int main(int argc, char** argv) try
         ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
+        ("r,use-bounding-box-regression", "Use bounding-box regression (BBR)")
+        ("l,bbr-lambda", "Set BBR lambda", cxxopts::value<double>()->default_value("100"))
         ;
 
     try {
@@ -464,6 +466,9 @@ int main(int argc, char** argv) try
     const auto min_target_size = options["min-target-size"].as<unsigned long>();
 
     dlib::mmod_options mmod_options(all_labels, target_size, min_target_size, min_detector_window_overlap_iou);
+
+    mmod_options.use_bounding_box_regression = options["use-bounding-box-regression"].count() > 0;
+    mmod_options.bbr_lambda = options["bbr-lambda"].as<double>();
 
     std::cout << "Detector windows:" << std::endl;
     for (const auto& detector_window : mmod_options.detector_windows) {
