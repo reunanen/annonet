@@ -22,3 +22,6 @@
 [submodule "test/picotest"]
 	path = test/picotest
 	url = https://github.com/reunanen/picotest/
+[submodule "tuc"]
+	path = tuc
+	url = https://github.com/reunanen/tuc/
