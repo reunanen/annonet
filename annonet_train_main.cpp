@@ -22,12 +22,14 @@
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
 #include "lru-timday/shared_lru_cache_using_std.h"
+#include "tuc/include/tuc/functional.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
 
 #include <iostream>
 #include <iterator>
 #include <thread>
+#include <unordered_map>
 
 using namespace std;
 using namespace dlib;
@@ -400,6 +402,7 @@ int main(int argc, char** argv) try
         ("c,cached-image-count", "Cached image count", cxxopts::value<int>()->default_value("8"))
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("no-empty-label-image-warning", "Do not warn about empty label images")
+        ("a,allow-different-shapes-within-class", "Allow different shapes within class")
         ("max-label-iou", "Maximum IoU for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.5"))
         ("max-label-percent-covered", "Maximum percent covered for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.95"))
         ("min-label-size", "Minimum size for ground-truth labels not to be ignored", cxxopts::value<unsigned long>()->default_value("35"))
@@ -452,6 +455,7 @@ int main(int argc, char** argv) try
     const auto data_loader_thread_count = std::max(1U, options["data-loader-thread-count"].as<unsigned int>());
     const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
     const auto min_detector_window_overlap_iou = options["min-detector-window-overlap-iou"].as<double>();
+    const bool allow_different_shapes_within_class = options.count("allow-different-shapes-within-class") > 0;
 
 #if 0
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
@@ -519,6 +523,82 @@ int main(int argc, char** argv) try
                 objects_by_classlabel[label.label].push_back(std::make_pair(image_index, object_index++));
             }
         }
+    }
+
+    std::unordered_map<std::string, double> width_to_height_ratio_geometric_averages_by_class;
+
+    const auto force_box_shape_to_class_mean = [&](const dlib::mmod_rect& label) {
+        assert(!allow_different_shapes_within_class);
+
+        if (label.ignore) {
+            return label;
+        }
+
+        const auto i = width_to_height_ratio_geometric_averages_by_class.find(label.label);
+
+        if (i == width_to_height_ratio_geometric_averages_by_class.end()) {
+            throw std::runtime_error("No width to height ratio available for class: " + label.label);
+        };
+
+        const double desired_width_to_height_ratio = i->second;
+        const double dim = sqrt(label.rect.width() * static_cast<double>(label.rect.height()));
+        const unsigned long new_width = static_cast<unsigned long>(std::round(dim * sqrt(desired_width_to_height_ratio)));
+        const unsigned long new_height = static_cast<unsigned long>(std::round(dim / sqrt(desired_width_to_height_ratio)));
+
+        auto result = label;
+        result.rect = centered_rect(center(label.rect), new_width, new_height);
+        const double new_width_to_height_ratio = result.rect.width() / static_cast<double>(result.rect.height());
+
+        // new_width_to_height_ratio ought to be "relatively close" to desired_width_to_height_ratio
+        assert(fabs(new_width_to_height_ratio - desired_width_to_height_ratio) < 0.1);
+
+        return result;
+    };
+
+    const auto force_box_shape_to_class_mean_if_required = [&](const dlib::mmod_rect& label) {
+        return allow_different_shapes_within_class
+            ? label
+            : force_box_shape_to_class_mean(label);
+    };
+
+    const auto force_box_shapes_to_class_mean = [&all_labels, &width_to_height_ratio_geometric_averages_by_class, &force_box_shape_to_class_mean]() {
+
+        // 1. first initialize
+        struct totals {
+            size_t counter = 0;
+            double width_to_height_ratio_product = 1.0;
+        };
+
+        std::unordered_map<std::string, totals> totals_by_class;
+
+        for (const auto& image_labels : all_labels) {
+            for (const auto& label : image_labels) {
+                if (!label.ignore) {
+                    totals& totals = totals_by_class[label.label];
+                    totals.counter += 1;
+
+                    const double width_to_height_ratio = label.rect.width() / static_cast<double>(label.rect.height());
+                    totals.width_to_height_ratio_product *= width_to_height_ratio;
+                }
+            }
+        }
+
+        for (const auto& item : totals_by_class) {
+            const double geometric_average = pow(item.second.width_to_height_ratio_product, 1.0 / item.second.counter);
+            width_to_height_ratio_geometric_averages_by_class[item.first] = geometric_average;
+        }
+
+        // 2. then actually set
+        for (auto& image_labels : all_labels) {
+            for (auto& label : image_labels) {
+                label = force_box_shape_to_class_mean(label);
+            }
+        }
+    };
+
+    if (!allow_different_shapes_within_class) {
+        // TODO: should this actually be done _after_ ignoring overlapping objects (see below)?
+        force_box_shapes_to_class_mean();
     }
 
     const auto overlaps_enough_to_be_ignored = test_box_overlap(
@@ -664,7 +744,7 @@ int main(int argc, char** argv) try
         // thread for this kind of data preparation helps us do that.  Each thread puts the
         // crops into the data queue.
         dlib::pipe<crop> data(2 * minibatch_size);
-        auto pull_crops = [&data, &full_images_cache, &image_files, &options](time_t seed)
+        auto pull_crops = [&data, &full_images_cache, &image_files, &options, &force_box_shape_to_class_mean_if_required](time_t seed)
         {
             const auto timed_seed = time(0) + seed;
 
@@ -694,7 +774,7 @@ int main(int argc, char** argv) try
                 const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
 
                 const std::vector<NetPimpl::input_type> images = { ground_truth_sample->input_image };
-                const std::vector<std::vector<dlib::mmod_rect>> labels = { ground_truth_sample->labels };
+                const std::vector<std::vector<dlib::mmod_rect>> labels = { tuc::map<std::vector<dlib::mmod_rect>>(ground_truth_sample->labels, force_box_shape_to_class_mean_if_required) };
 
                 if (!ground_truth_sample->error.empty()) {
                     crop.error = ground_truth_sample->error;

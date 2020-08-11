@@ -25,3 +25,6 @@
 [submodule "dlib-dnn-pimpl-wrapper-for-segmentation"]
 	path = dlib-dnn-pimpl-wrapper-for-segmentation
 	url = https://github.com/reunanen/dlib-dnn-pimpl-wrapper
+[submodule "tuc"]
+	path = tuc
+	url = https://github.com/reunanen/tuc
