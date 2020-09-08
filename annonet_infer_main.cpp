@@ -352,6 +352,10 @@ void write_labels(const std::string& filename, const std::vector<dlib::mmod_rect
         }
 
         writer.EndArray();
+
+        writer.String("detection_confidence");
+        writer.Double(label.detection_confidence);
+
         writer.EndObject();
     }
 
