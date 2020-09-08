@@ -18,9 +18,9 @@
 
 // ----------------------------------------------------------------------------------------
 
-bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
+bool is_very_close(const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b)
 {
-    return a.red == b.red && a.green == b.green && a.blue == b.blue && a.alpha == b.alpha;
+    return abs(a.red - b.red) <= 1 && abs(a.green - b.green) <= 1 && abs(a.blue - b.blue) <= 1 /* && a.alpha == b.alpha */;
 }
 
 // ----------------------------------------------------------------------------------------

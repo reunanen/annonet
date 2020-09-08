@@ -20,7 +20,7 @@
 
 // ----------------------------------------------------------------------------------------
 
-bool operator == (const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b);
+bool is_very_close(const dlib::rgb_alpha_pixel& a, const dlib::rgb_alpha_pixel& b);
 
 // ----------------------------------------------------------------------------------------
 
