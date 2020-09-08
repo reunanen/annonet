@@ -357,6 +357,10 @@ void write_labels(const std::string& filename, const std::string& segmentation_r
         }
 
         writer.EndArray();
+
+        writer.String("detection_confidence");
+        writer.Double(label.detection_confidence);
+
         writer.EndObject();
 
         if (result.segmentation_mask.size() > 0 && !segmentation_result_filename.empty()) {
