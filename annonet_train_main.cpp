@@ -23,8 +23,10 @@
 #include "cxxopts/include/cxxopts.hpp"
 #include "lru-timday/shared_lru_cache_using_std.h"
 #include "tuc/include/tuc/functional.hpp"
+#include "tuc/include/tuc/numeric.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
+#include <dlib/gui_widgets.h>
 
 #include <iostream>
 #include <iterator>
@@ -390,8 +392,8 @@ int main(int argc, char** argv) try
         ("ignore-class", "Ignore specific classes by index", cxxopts::value<std::vector<uint16_t>>())
 #endif
         ("max-rotation-degrees", "Set maximum rotation in degrees", cxxopts::value<double>()->default_value("10"))
-        ("b,minibatch-size", "Set object detection minibatch size", cxxopts::value<size_t>()->default_value("100"))
-        ("s,segmentation-minibatch-size", "Set segmentation minibatch size", cxxopts::value<size_t>()->default_value("1600"))
+        ("b,minibatch-size", "Set object detection minibatch size", cxxopts::value<size_t>()->default_value("200"))
+        ("s,segmentation-minibatch-size", "Set segmentation minibatch size", cxxopts::value<size_t>()->default_value("500"))
         ("net-width-scaler", "Scaler of net width", cxxopts::value<double>()->default_value("1.0"))
         ("net-width-min-filter-count", "Minimum net width filter count", cxxopts::value<int>()->default_value("1"))
         ("initial-learning-rate", "Set initial learning rate", cxxopts::value<double>()->default_value("0.1"))
@@ -412,6 +414,7 @@ int main(int argc, char** argv) try
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
         ("max-relative-instance-size", "Max instance size relative to object size", cxxopts::value<double>()->default_value("1.5"))
         ("segmentation-target-size", "Set segmentation target size in pixels", cxxopts::value<int>()->default_value(std::to_string(SegmentationNetPimpl::TrainingNet::GetRequiredInputDimension())))
+        ("visualization-interval", "Set the interval for when to visualize", cxxopts::value<int>()->default_value("50"))
         ;
 
     try {
@@ -541,7 +544,7 @@ int main(int argc, char** argv) try
         };
 
         const double desired_width_to_height_ratio = i->second;
-        const double dim = sqrt(label.rect.width() * static_cast<double>(label.rect.height()));
+        const double dim = std::max(label.rect.width(), label.rect.height());
         const unsigned long new_width = static_cast<unsigned long>(std::round(dim * sqrt(desired_width_to_height_ratio)));
         const unsigned long new_height = static_cast<unsigned long>(std::round(dim / sqrt(desired_width_to_height_ratio)));
 
@@ -685,7 +688,11 @@ int main(int argc, char** argv) try
         ser << max_relative_instance_size;
     };
 
-    {
+    std::unique_ptr<dlib::image_window> visualization_window;
+
+    const int visualization_interval = options["visualization-interval"].as<int>();
+
+    if (0) {
         // 1. train object detector
 
         NetPimpl::TrainingNet training_net;
@@ -708,9 +715,9 @@ int main(int argc, char** argv) try
                 val = std::max(
                     std::min(
                         1.0,
-                        val + 0.1 * alpha
+                        val + 0.15 * alpha
                     ),
-                    val + (1 - val) * 0.2 * alpha
+                    val + (1 - val) * 0.25 * alpha
                 );
             }
             return val;
@@ -1082,6 +1089,38 @@ int main(int argc, char** argv) try
                         if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
                             std::cout << crop.warning << std::endl;
                             warnings_already_printed.insert(crop.warning);
+                        }
+                    }
+
+                    if (samples.size() == 0 && visualization_interval > 0 && minibatch % visualization_interval == 0) {
+                        // visualize the first sample of the mini-batch
+                        
+                        const auto to_rgb = [](const dlib::matrix<float>& matrix) {
+                            dlib::matrix<dlib::rgb_pixel> image(matrix.nr(), matrix.nc());
+                            for (int y = 0; y < matrix.nr(); ++y) {
+                                for (int x = 0; x < matrix.nc(); ++x) {
+                                    const float source = tuc::clamp(matrix(y, x), -1.f, 1.f);
+                                    uint8_t value = 127.5f + source * 127.5f;
+                                    auto& destination = image(y, x);
+                                    destination.red   = value;
+                                    destination.green = value;
+                                    destination.blue  = value;
+                                }
+                            }
+                            return image;
+                        };
+
+                        SegmentationNetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
+
+                        const auto inference_result = runtime_net(crop.input_image /*, gains*/);
+
+                        const auto visualization = dlib::join_rows(crop.input_image, dlib::join_rows(to_rgb(crop.label_image), to_rgb(inference_result)));
+
+                        if (!visualization_window) {
+                            visualization_window = std::make_unique<dlib::image_window>(visualization, "visualization");
+                        }
+                        else {
+                            visualization_window->set_image(visualization);
                         }
                     }
 
