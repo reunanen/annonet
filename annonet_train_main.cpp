@@ -1102,12 +1102,17 @@ int main(int argc, char** argv) try
                     if (samples.size() == 0 && visualization_interval > 0 && minibatch % visualization_interval == 0) {
                         // visualize the first sample of the mini-batch
                         
-                        const auto to_rgb = [](const dlib::matrix<float>& matrix) {
+                        const auto to_uint8 = [](float value) {
+                            value = tuc::clamp(value, -1.f, 1.f);
+                            uint8_t result = 127.5f + value * 127.5f;
+                            return result;
+                        };
+
+                        const auto to_rgb = [to_uint8](const dlib::matrix<float>& matrix) {
                             dlib::matrix<dlib::rgb_pixel> image(matrix.nr(), matrix.nc());
                             for (int y = 0; y < matrix.nr(); ++y) {
                                 for (int x = 0; x < matrix.nc(); ++x) {
-                                    const float source = tuc::clamp(matrix(y, x), -1.f, 1.f);
-                                    uint8_t value = 127.5f + source * 127.5f;
+                                    const uint8_t value = to_uint8(matrix(y, x));
                                     auto& destination = image(y, x);
                                     destination.red   = value;
                                     destination.green = value;
@@ -1121,7 +1126,22 @@ int main(int argc, char** argv) try
 
                         const auto inference_result = runtime_net(crop.input_image /*, gains*/);
 
-                        const auto visualization = dlib::join_rows(crop.input_image, dlib::join_rows(to_rgb(crop.label_image), to_rgb(inference_result)));
+                        const auto inference_result_rgb = to_rgb(inference_result);
+
+                        dlib::matrix<dlib::rgb_pixel> together(inference_result.nr(), inference_result.nc());
+                        for (int y = 0; y < inference_result.nr(); ++y) {
+                            for (int x = 0; x < inference_result.nc(); ++x) {
+                                auto& destination = together(y, x);
+                                const auto ground_truth = crop.label_image(y, x);
+                                destination.red   = inference_result_rgb(y, x).red;
+                                destination.green = to_uint8(ground_truth);
+                                destination.blue  = to_uint8(ground_truth);
+                            }
+                        }
+
+                        const dlib::matrix<dlib::rgb_pixel> left_two = dlib::join_rows(crop.input_image, to_rgb(crop.label_image));
+                        const dlib::matrix<dlib::rgb_pixel> right_two = dlib::join_rows(inference_result_rgb, together);
+                        const dlib::matrix<dlib::rgb_pixel> visualization = dlib::join_rows(left_two, right_two);
 
                         if (!visualization_window) {
                             visualization_window = std::make_unique<dlib::image_window>(visualization, "visualization");
