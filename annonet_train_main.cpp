@@ -1129,6 +1129,8 @@ int main(int argc, char** argv) try
                         const auto inference_result_rgb = to_rgb(inference_result);
 
                         dlib::matrix<dlib::rgb_pixel> together(inference_result.nr(), inference_result.nc());
+                        dlib::matrix<dlib::rgb_pixel> all_together(inference_result.nr(), inference_result.nc());
+
                         for (int y = 0; y < inference_result.nr(); ++y) {
                             for (int x = 0; x < inference_result.nc(); ++x) {
                                 auto& destination = together(y, x);
@@ -1136,12 +1138,22 @@ int main(int argc, char** argv) try
                                 destination.red   = inference_result_rgb(y, x).red;
                                 destination.green = to_uint8(ground_truth);
                                 destination.blue  = to_uint8(ground_truth);
+
+                                const auto add = [](const dlib::rgb_pixel& a, const dlib::rgb_pixel& b) {
+                                    dlib::rgb_pixel output;
+                                    output.red   = a.red   / 2 + b.red   / 2;
+                                    output.green = a.green / 2 + b.green / 2;
+                                    output.blue  = a.blue  / 2 + b.blue  / 2;
+                                    return output;
+                                };
+                                all_together(y, x) = add(crop.input_image(y, x), destination);
                             }
                         }
 
-                        const dlib::matrix<dlib::rgb_pixel> left_two = dlib::join_rows(crop.input_image, to_rgb(crop.label_image));
-                        const dlib::matrix<dlib::rgb_pixel> right_two = dlib::join_rows(inference_result_rgb, together);
-                        const dlib::matrix<dlib::rgb_pixel> visualization = dlib::join_rows(left_two, right_two);
+                        dlib::matrix<dlib::rgb_pixel> visualization = dlib::join_rows(crop.input_image, to_rgb(crop.label_image));
+                        visualization = dlib::join_rows(visualization, inference_result_rgb);
+                        visualization = dlib::join_rows(visualization, together);
+                        visualization = dlib::join_rows(visualization, all_together);
 
                         if (!visualization_window) {
                             visualization_window = std::make_unique<dlib::image_window>(visualization, "visualization");
