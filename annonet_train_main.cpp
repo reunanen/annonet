@@ -415,6 +415,7 @@ int main(int argc, char** argv) try
         ("max-relative-instance-size", "Max instance size relative to object size", cxxopts::value<double>()->default_value("1.5"))
         ("segmentation-target-size", "Set segmentation target size in pixels", cxxopts::value<int>()->default_value(std::to_string(SegmentationNetPimpl::TrainingNet::GetRequiredInputDimension())))
         ("visualization-interval", "Set the interval for when to visualize", cxxopts::value<int>()->default_value("50"))
+        ("skip-object-detector-training", "Skip object detector training")
         ;
 
     try {
@@ -693,7 +694,9 @@ int main(int argc, char** argv) try
 
     const int visualization_interval = options["visualization-interval"].as<int>();
 
-    if (0) {
+    const bool skip_object_detector_training = options.count("skip-object-detector-training") > 0;
+
+    if (!skip_object_detector_training) {
         // 1. train object detector
 
         NetPimpl::TrainingNet training_net;
