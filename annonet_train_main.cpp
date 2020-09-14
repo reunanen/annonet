@@ -989,13 +989,6 @@ int main(int argc, char** argv) try
                     }
 
                     const dlib::mmod_rect label = all_labels[image_index][object_index];
-
-                    if (label.ignore) {
-                        // The label should be ignored... so let's act accordingly
-                        indexes.erase(indexes.begin() + index);
-                        continue;
-                    }
-
                     truth_rect = label.rect;
 
                     // Note - this is very important:
