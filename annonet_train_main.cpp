@@ -512,19 +512,27 @@ int main(int argc, char** argv) try
     std::vector<std::vector<dlib::mmod_rect>> all_labels;
     all_labels.reserve(image_files.size());
 
-
     std::map<std::string, std::deque<std::pair<size_t, size_t>>> objects_by_classlabel;
 
     for (const auto& image_filenames : image_files) {
         const std::string json = read_file_as_string(image_filenames.label_filename);
         all_labels.push_back(downscale_labels(parse_labels(json, anno_classes), downscaling_factor));
+    }
 
-        const size_t image_index = all_labels.size() - 1;
+    const auto overlaps_enough_to_be_ignored = test_box_overlap(
+        options["max-label-iou"].as<double>(),
+        options["max-label-percent-covered"].as<double>()
+    );
+    const auto min_label_size = options["min-label-size"].as<unsigned long>();
+    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
+
+    for (size_t image_index = 0; image_index < all_labels.size(); ++image_index) {
         size_t object_index = 0;
-        for (const auto label : all_labels.back()) {
+        for (const auto label : all_labels[image_index]) {
             if (!label.ignore) {
-                objects_by_classlabel[label.label].push_back(std::make_pair(image_index, object_index++));
+                objects_by_classlabel[label.label].push_back(std::make_pair(image_index, object_index));
             }
+            ++object_index;
         }
     }
 
@@ -603,13 +611,6 @@ int main(int argc, char** argv) try
         // TODO: should this actually be done _after_ ignoring overlapping objects (see below)?
         force_box_shapes_to_class_mean();
     }
-
-    const auto overlaps_enough_to_be_ignored = test_box_overlap(
-        options["max-label-iou"].as<double>(),
-        options["max-label-percent-covered"].as<double>()
-    );
-    const auto min_label_size = options["min-label-size"].as<unsigned long>();
-    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
 
     std::string serialized_object_detector_net;
     std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
@@ -989,6 +990,8 @@ int main(int argc, char** argv) try
                     }
 
                     const dlib::mmod_rect label = all_labels[image_index][object_index];
+                    assert(!label.ignore);
+
                     truth_rect = label.rect;
 
                     // Note - this is very important:
