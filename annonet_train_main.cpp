@@ -412,6 +412,7 @@ int main(int argc, char** argv) try
         ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
+        ("min-relative-instance-size", "Min instance size relative to object size", cxxopts::value<double>()->default_value("1.1"))
         ("max-relative-instance-size", "Max instance size relative to object size", cxxopts::value<double>()->default_value("1.5"))
         ("segmentation-target-size", "Set segmentation target size in pixels", cxxopts::value<int>()->default_value(std::to_string(SegmentationNetPimpl::TrainingNet::GetRequiredInputDimension())))
         ("visualization-interval", "Set the interval for when to visualize", cxxopts::value<int>()->default_value("50"))
@@ -616,6 +617,7 @@ int main(int argc, char** argv) try
     std::string serialized_object_detector_net;
     std::map<std::string, std::string> serialized_segmentation_nets_by_classlabel;
 
+    const auto min_relative_instance_size = options["min-relative-instance-size"].as<double>();
     const auto max_relative_instance_size = options["max-relative-instance-size"].as<double>();
 
     // init the _serialized_ segmentation nets from disk, if possible
@@ -638,8 +640,8 @@ int main(int argc, char** argv) try
         }
 
         try {
-            double max_relative_instance_size_dummy_value = std::numeric_limits<double>::quiet_NaN();
-            deser >> max_relative_instance_size_dummy_value;
+            double relative_instance_size_dummy_value = std::numeric_limits<double>::quiet_NaN();
+            deser >> relative_instance_size_dummy_value;
         }
         catch (std::exception& e) {
             ; // old version...
@@ -687,7 +689,9 @@ int main(int argc, char** argv) try
             ser << i.first << i.second;
         }
 
-        ser << max_relative_instance_size;
+        const auto relative_instance_size = (min_relative_instance_size + max_relative_instance_size) / 2.0;
+
+        ser << relative_instance_size;
     };
 
     std::unique_ptr<dlib::image_window> visualization_window;
@@ -952,7 +956,7 @@ int main(int argc, char** argv) try
         bool training_ok = true;
 
         dlib::pipe<segmentation_crop> data(2 * segmentation_minibatch_size);
-        auto pull_crops = [&data, &full_images_cache, &image_files, &indexes, &indexes_mutex, &all_labels, &anno_class, &training_ok, &options, &max_relative_instance_size](time_t seed)
+        auto pull_crops = [&data, &full_images_cache, &image_files, &indexes, &indexes_mutex, &all_labels, &anno_class, &training_ok, &options, &min_relative_instance_size, &max_relative_instance_size](time_t seed)
         {
             const auto timed_seed = time(0) + seed;
             dlib::rand rnd(timed_seed);
@@ -1013,7 +1017,9 @@ int main(int argc, char** argv) try
                     }
                 }
 
-                const auto cropping_rect = get_cropping_rect(truth_rect, max_relative_instance_size);
+                const auto relative_instance_size = rnd.get_double_in_range(min_relative_instance_size, max_relative_instance_size);
+
+                const auto cropping_rect = get_cropping_rect(truth_rect, relative_instance_size);
 
                 // Pick a random crop around the instance.
                 const auto max_x_translate_amount = static_cast<long>(truth_rect.width() / 10.0);

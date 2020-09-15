@@ -482,7 +482,7 @@ int main(int argc, char** argv) try
 
     // TODO: these could be made class-specific
     int segmentation_target_size = -1;
-    double max_relative_instance_size = std::numeric_limits<double>::quiet_NaN();
+    double relative_instance_size = std::numeric_limits<double>::quiet_NaN();
 
     std::string serialized_runtime_net;
     std::string anno_classes_json;
@@ -517,7 +517,7 @@ int main(int argc, char** argv) try
         std::cout << " - done!" << std::endl;
     }
 
-    deser >> max_relative_instance_size;
+    deser >> relative_instance_size;
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
@@ -649,7 +649,7 @@ int main(int argc, char** argv) try
         result_image.original_height = sample.original_height;
 
         annonet_infer(
-            net, segmentation_nets_by_classlabel, segmentation_target_size, max_relative_instance_size,
+            net, segmentation_nets_by_classlabel, segmentation_target_size, relative_instance_size,
             sample.input_image, result_image.results, gains_by_detector_window,
             tiling_parameters, temp
         );

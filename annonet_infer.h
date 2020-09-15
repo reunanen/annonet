@@ -39,7 +39,7 @@ void annonet_infer(
     NetPimpl::RuntimeNet& net,
     std::unordered_map<std::string, SegmentationNetPimpl::RuntimeNet>& segmentation_nets_by_classlabel,
     int segmentation_target_size,
-    double max_relative_instance_size,
+    double relative_instance_size,
     const NetPimpl::input_type& input_image,
     std::vector<instance_segmentation_result>& results,
     const std::vector<double>& gains = std::vector<double>(),
