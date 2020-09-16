@@ -234,6 +234,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="annonet.cpp" />
+    <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet_parse_anno_classes.cpp" />
     <ClCompile Include="annonet_train_main.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetDimensions.cpp" />
