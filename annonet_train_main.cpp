@@ -412,6 +412,7 @@ int main(int argc, char** argv) try
         ("min-detector-window-overlap-iou", "Minimum detector window overlap IoU", cxxopts::value<double>()->default_value("0.75"))
         ("target-size", "Detector window target size", cxxopts::value<unsigned long>()->default_value("40"))
         ("min-target-size", "Detector window minimum target size", cxxopts::value<unsigned long>()->default_value("40"))
+        ("chip-dimension", "Cropper chip dimension in pixels", cxxopts::value<unsigned long>()->default_value("200"))
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
         ("min-relative-instance-size", "Min instance size relative to object size", cxxopts::value<double>()->default_value("1.1"))
         ("max-relative-instance-size", "Max instance size relative to object size", cxxopts::value<double>()->default_value("1.5"))
@@ -771,9 +772,11 @@ int main(int argc, char** argv) try
         {
             const auto timed_seed = time(0) + seed;
 
+            const auto chip_dim = options["chip-dimension"].as<unsigned long>();
+
             dlib::random_cropper cropper;
             cropper.set_seed(timed_seed);
-            cropper.set_chip_dims(200, 200);
+            cropper.set_chip_dims(chip_dim, chip_dim);
             cropper.set_min_object_size(40, 40);
             cropper.set_max_rotation_degrees(options["max-rotation-degrees"].as<double>());
 
