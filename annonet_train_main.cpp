@@ -543,7 +543,7 @@ int main(int argc, char** argv) try
         options["max-label-percent-covered"].as<double>()
     );
     const auto min_label_size = options["min-label-size"].as<unsigned long>();
-    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
+    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, static_cast<unsigned long>(std::round(min_label_size * downscaling_factor)));
 
     const auto target_size = options["target-size"].as<unsigned long>();
     const auto min_target_size = options["min-target-size"].as<unsigned long>();
