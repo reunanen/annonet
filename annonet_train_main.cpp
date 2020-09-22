@@ -530,7 +530,7 @@ int main(int argc, char** argv) try
         options["max-label-percent-covered"].as<double>()
     );
     const auto min_label_size = options["min-label-size"].as<unsigned long>();
-    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, min_label_size);
+    maybe_ignore_some_labels(all_labels, overlaps_enough_to_be_ignored, static_cast<unsigned long>(std::round(min_label_size * downscaling_factor)));
 
     for (size_t image_index = 0; image_index < all_labels.size(); ++image_index) {
         size_t object_index = 0;
