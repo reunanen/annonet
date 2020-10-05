@@ -23,6 +23,7 @@
 #include "cxxopts/include/cxxopts.hpp"
 #include "lru-timday/shared_lru_cache_using_std.h"
 #include "tuc/include/tuc/functional.hpp"
+#include "tuc/include/tuc/numeric.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
 
@@ -356,6 +357,7 @@ int main(int argc, char** argv) try
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("no-empty-label-image-warning", "Do not warn about empty label images")
         ("a,allow-different-shapes-within-class", "Allow different shapes within class")
+        ("p,dims-p", "The exponent p (of the power mean) in calculating the appropriate mean dimension", cxxopts::value<double>()->default_value("0"))
         ("max-label-iou", "Maximum IoU for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.5"))
         ("max-label-percent-covered", "Maximum percent covered for ground-truth labels not to be ignored", cxxopts::value<double>()->default_value("0.95"))
         ("min-label-size", "Minimum size for ground-truth labels not to be ignored", cxxopts::value<unsigned long>()->default_value("35"))
@@ -407,6 +409,7 @@ int main(int argc, char** argv) try
     const bool warn_about_empty_label_images = options.count("no-empty-label-image-warning") == 0;
     const auto min_detector_window_overlap_iou = options["min-detector-window-overlap-iou"].as<double>();
     const bool allow_different_shapes_within_class = options.count("allow-different-shapes-within-class") > 0;
+    const auto dims_p = options["dims-p"].as<double>();
 
 #if 0
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
@@ -479,7 +482,11 @@ int main(int argc, char** argv) try
         };
 
         const double desired_width_to_height_ratio = i->second;
-        const double dim = sqrt(label.rect.width() * static_cast<double>(label.rect.height()));
+        const std::vector<double> dims{
+            static_cast<double>(label.rect.width()),
+            static_cast<double>(label.rect.height())
+        };
+        const double dim = tuc::power_mean(dims.begin(), dims.end(), dims_p);
         const unsigned long new_width = static_cast<unsigned long>(std::round(dim * sqrt(desired_width_to_height_ratio)));
         const unsigned long new_height = static_cast<unsigned long>(std::round(dim / sqrt(desired_width_to_height_ratio)));
 
