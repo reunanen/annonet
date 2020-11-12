@@ -274,7 +274,23 @@ sample read_sample(const image_filenames& image_filenames, const std::vector<Ann
 
     try {
         dlib::matrix<dlib::rgb_alpha_pixel> rgba_label_image;
-        dlib::load_image(sample.input_image, image_filenames.image_filename);
+
+        dlib::matrix<dlib::rgb_alpha_pixel> rgba_input_image;
+        dlib::load_image(rgba_input_image, image_filenames.image_filename);
+
+        sample.input_image.set_size(rgba_input_image.nr(), rgba_input_image.nc());
+
+        for (int r = 0, nr = rgba_input_image.nr(); r < nr; ++r) {
+            for (int c = 0, nc = rgba_input_image.nc(); c < nc; ++c) {
+                const dlib::rgb_alpha_pixel& source = rgba_input_image(r, c);
+                dlib::rgb_pixel& destination = sample.input_image(r, c);
+
+                destination.blue = source.alpha;
+                destination.green = source.green;
+                destination.red = (source.red + source.blue) / 2;
+            }
+        }
+
         sample.original_width = sample.input_image.nc();
         sample.original_height = sample.input_image.nr();
         dlib::resize_image(1.0 / downscaling_factor, sample.input_image);
