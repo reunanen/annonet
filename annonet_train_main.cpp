@@ -800,9 +800,6 @@ int main(int argc, char** argv) try
             NetPimpl::input_type input_image;
             crop crop;
 
-            std::vector<NetPimpl::input_type> cropped_input_image;
-            std::vector<NetPimpl::training_label_type> cropped_labels;
-
             while (data.is_enabled())
             {
                 crop.error.clear();
@@ -812,8 +809,7 @@ int main(int argc, char** argv) try
                 const image_filenames& image_filenames = image_files[index];
                 const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
 
-                const std::vector<NetPimpl::input_type> images = { ground_truth_sample->input_image };
-                const std::vector<std::vector<dlib::mmod_rect>> labels = { tuc::map<std::vector<dlib::mmod_rect>>(ground_truth_sample->labels, force_box_shape_to_class_mean_if_required) };
+                const std::vector<dlib::mmod_rect> labels = tuc::map<std::vector<dlib::mmod_rect>>(ground_truth_sample->labels, force_box_shape_to_class_mean_if_required);
 
                 if (!ground_truth_sample->error.empty()) {
                     crop.error = ground_truth_sample->error;
@@ -823,17 +819,10 @@ int main(int argc, char** argv) try
                         crop.warning = "Warning: no annotation paths in " + ground_truth_sample->image_filenames.label_filename;
                     }
 
-                    cropper(1, images, labels, cropped_input_image, cropped_labels);
-                    if (cropped_input_image.size() != 1 || cropped_labels.size() > 1) {
-                        crop.warning = "Warning: unexpected cropping result";
-                    }
-                    else {
-                        crop.input_image = cropped_input_image.front();
-                        crop.labels = cropped_labels.front();
+                    cropper(ground_truth_sample->input_image, labels, crop.input_image, crop.labels);
 
-                        if (allow_random_color_offset) {
-                            apply_random_color_offset(crop.input_image, rnd);
-                        }
+                    if (allow_random_color_offset) {
+                        apply_random_color_offset(crop.input_image, rnd);
                     }
                 }
                 data.enqueue(crop);
