@@ -365,18 +365,16 @@ void write_labels(const std::string& filename, const std::string& segmentation_r
 
         if (result.segmentation_mask.size() > 0 && !segmentation_result_filename.empty()) {
             if (segmentation_result_image.size() == 0) {
-                segmentation_result_image.set_size(result.segmentation_mask.nr(), result.segmentation_mask.nc());
+                segmentation_result_image.set_size(original_height, original_width);
                 segmentation_result_image = rgb_alpha_pixel(0, 255, 0, 64);
 
                 DLIB_CASSERT(segmentation_result_output_intensity.size() == 0);
-                segmentation_result_output_intensity.set_size(result.segmentation_mask.nr(), result.segmentation_mask.nc());
+                segmentation_result_output_intensity.set_size(original_height, original_width);
                 segmentation_result_output_intensity = 0.f;
             }
 
-            DLIB_CASSERT(segmentation_result_image.nr() == result.segmentation_mask.nr());
-            DLIB_CASSERT(segmentation_result_image.nc() == result.segmentation_mask.nc());
-            DLIB_CASSERT(segmentation_result_output_intensity.nr() == result.segmentation_mask.nr());
-            DLIB_CASSERT(segmentation_result_output_intensity.nc() == result.segmentation_mask.nc());
+            DLIB_CASSERT(segmentation_result_image.nr() == segmentation_result_output_intensity.nr());
+            DLIB_CASSERT(segmentation_result_image.nc() == segmentation_result_output_intensity.nc());
 
             if (rnd.get() == nullptr) {
                 rnd = std::make_unique<dlib::rand>();
@@ -388,15 +386,22 @@ void write_labels(const std::string& filename, const std::string& segmentation_r
                 rnd->get_random_8bit_number(),
                 255
             );
+            
+            for (long r = 0; r < result.segmentation_mask.nr(); ++r) {
+                for (long c = 0; c < result.segmentation_mask.nc(); ++c) {
 
-            for (int y = 0; y < segmentation_result_image.nr(); ++y) {
-                for (int x = 0; x < segmentation_result_image.nc(); ++x) {
-                    const auto intensity = result.segmentation_mask(y, x);
+                    const auto intensity = result.segmentation_mask(r, c);
+
                     if (intensity > 0.f) {
-                        auto& previous_intensity = segmentation_result_output_intensity(y, x);
-                        if (intensity > previous_intensity) {
-                            segmentation_result_image(y, x) = random_color;
-                            previous_intensity = intensity;
+                        const auto y = r + result.segmentation_mask_offset.y();
+                        const auto x = c + result.segmentation_mask_offset.x();
+
+                        if (y >= 0 && y < segmentation_result_image.nr() && x >= 0 && x < segmentation_result_image.nc()) {
+                            auto& previous_intensity = segmentation_result_output_intensity(y, x);
+                            if (intensity > previous_intensity) {
+                                segmentation_result_image(y, x) = random_color;
+                                previous_intensity = intensity;
+                            }
                         }
                     }
                 }

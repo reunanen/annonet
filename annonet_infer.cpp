@@ -126,7 +126,6 @@ void annonet_infer(
         const long valid_top_in_tile = actual_tile.non_overlapping_rect.top() - actual_tile.full_rect.top();
 
         NetPimpl::input_type instance_segmentation_input;
-        dlib::matrix<float> resized_instance_segmentation_output;
 
         for (const auto& tile_label : tile_labels) {
             auto image_label = tile_label;
@@ -149,34 +148,16 @@ void annonet_infer(
                 extract_image_chip(input_image, chip_details, instance_segmentation_input, dlib::interpolate_bilinear());
                 const auto instance_segmentation_output = i->second(instance_segmentation_input/*, gains*/);
                 
-                resized_instance_segmentation_output.set_size(
+                result.segmentation_mask.set_size(
                     static_cast<int>(chip_details.rect.height()),
                     static_cast<int>(chip_details.rect.width())
                 );
-                dlib::resize_image(instance_segmentation_output, resized_instance_segmentation_output);
+                dlib::resize_image(instance_segmentation_output, result.segmentation_mask);
 
-                result.segmentation_mask.set_size(input_image.nr(), input_image.nc());
-                result.segmentation_mask = 0;
-
-                for (int r = 0; r < resized_instance_segmentation_output.nr(); ++r)
-                {
-                    for (int c = 0; c < resized_instance_segmentation_output.nc(); ++c)
-                    {
-                        const auto output = resized_instance_segmentation_output(r, c);
-                        if (output > 0)
-                        {
-                            const auto y = chip_details.rect.top() + r;
-                            const auto x = chip_details.rect.left() + c;
-                            if (y >= 0 && y < result.segmentation_mask.nr() && x >= 0 && x < result.segmentation_mask.nc())
-                            {
-                                result.segmentation_mask(y, x) = output;
-                            }
-                        }
-                    }
-                }
+                result.segmentation_mask_offset = chip_details.rect.tl_corner();
             }
 
-            results.push_back(result);
+            results.push_back(std::move(result));
         }
     }
 }
