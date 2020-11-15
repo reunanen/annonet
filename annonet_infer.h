@@ -33,6 +33,7 @@ struct instance_segmentation_result
 {
     dlib::mmod_rect mmod_rect;
     dlib::matrix<float> segmentation_mask;
+    dlib::point segmentation_mask_offset;
 };
 
 void annonet_infer(
