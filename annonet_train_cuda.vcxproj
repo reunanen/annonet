@@ -234,9 +234,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="annonet.cpp" />
+    <ClCompile Include="annonet_infer.cpp" />
     <ClCompile Include="annonet_parse_anno_classes.cpp" />
     <ClCompile Include="annonet_train_main.cpp" />
     <ClCompile Include="dlib-dnn-pimpl-wrapper\NetDimensions.cpp" />
+    <ClCompile Include="dlib\dlib\base64\base64_kernel_1.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_extensions.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_1.cpp" />
     <ClCompile Include="dlib\dlib\dir_nav\dir_nav_kernel_2.cpp" />
@@ -535,6 +537,14 @@
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">CompileAsC</CompileAs>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_core\gui_core_kernel_1.cpp" />
+    <ClCompile Include="dlib\dlib\gui_core\gui_core_kernel_2.cpp" />
+    <ClCompile Include="dlib\dlib\gui_widgets\base_widgets.cpp" />
+    <ClCompile Include="dlib\dlib\gui_widgets\canvas_drawing.cpp" />
+    <ClCompile Include="dlib\dlib\gui_widgets\drawable.cpp" />
+    <ClCompile Include="dlib\dlib\gui_widgets\fonts.cpp" />
+    <ClCompile Include="dlib\dlib\gui_widgets\style.cpp" />
+    <ClCompile Include="dlib\dlib\gui_widgets\widgets.cpp" />
     <ClCompile Include="dlib\dlib\image_loader\jpeg_loader.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)dlib\dlib\external\libjpeg;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'">$(ProjectDir)dlib\dlib\external\libjpeg;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
@@ -559,6 +569,11 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)dlib\dlib\external\libpng;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">$(ProjectDir)dlib\dlib\external\libpng;%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\logger\extra_logger_headers.cpp" />
+    <ClCompile Include="dlib\dlib\logger\logger_config_file.cpp" />
+    <ClCompile Include="dlib\dlib\logger\logger_kernel_1.cpp" />
+    <ClCompile Include="dlib\dlib\misc_api\misc_api_kernel_1.cpp" />
+    <ClCompile Include="dlib\dlib\misc_api\misc_api_kernel_2.cpp" />
     <ClCompile Include="dlib\dlib\test_for_odr_violations.cpp" />
     <ClCompile Include="dlib\dlib\threads\async.cpp" />
     <ClCompile Include="dlib\dlib\threads\multithreaded_object_extension.cpp" />
@@ -574,6 +589,10 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='ReleaseGrayscaleInput|x64'">DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=4;DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='DebugGrayscaleInput|x64'">DLIB_DNN_PIMPL_WRAPPER_LEVEL_COUNT=4;DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT;DLIB_JPEG_SUPPORT;DLIB_USE_CUDA;DLIB_PNG_SUPPORT;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\timer\timer.cpp" />
+    <ClCompile Include="dlib\dlib\tokenizer\tokenizer_kernel_1.cpp" />
+    <ClCompile Include="dlib\dlib\unicode\unicode.cpp" />
+    <ClCompile Include="tiling\tiling.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="annonet.h" />
@@ -582,6 +601,8 @@
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetDimensions.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetPimpl.h" />
     <ClInclude Include="dlib-dnn-pimpl-wrapper\NetStructure.h" />
+    <ClInclude Include="tiling\dlib-wrapper.h" />
+    <ClInclude Include="tiling\tiling.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

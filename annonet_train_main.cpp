@@ -18,6 +18,7 @@
 
 #include "annonet.h"
 #include "annonet_train.h"
+#include "annonet_infer.h"
 
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
@@ -26,6 +27,7 @@
 #include "tuc/include/tuc/numeric.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
+#include <dlib/gui_widgets.h>
 
 #include <iostream>
 #include <iterator>
@@ -368,6 +370,7 @@ int main(int argc, char** argv) try
         ("truth-match-iou-threshold", "IoU threshold for accepting truth match", cxxopts::value<double>()->default_value("0.5"))
         ("r,use-bounding-box-regression", "Use bounding-box regression (BBR)")
         ("l,bbr-lambda", "Set BBR lambda", cxxopts::value<double>()->default_value("100"))
+        ("visualization-interval", "Set the interval for when to visualize", cxxopts::value<int>()->default_value("50"))
         ;
 
     try {
@@ -720,6 +723,9 @@ int main(int argc, char** argv) try
         return true;
     };
 
+    std::unique_ptr<dlib::image_window> visualization_window;
+    const int visualization_interval = options["visualization-interval"].as<int>();
+
     int return_value = 0;
 
     try {
@@ -743,6 +749,40 @@ int main(int argc, char** argv) try
                         if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
                             std::cout << crop.warning << std::endl;
                             warnings_already_printed.insert(crop.warning);
+                        }
+                    }
+
+                    if (samples.size() == 0 && visualization_interval > 0 && minibatch % visualization_interval == 0) {
+                        // visualize the first sample of the mini-batch
+                        auto ground_truth = crop.input_image;
+                        auto inference_result = crop.input_image;
+
+                        NetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
+
+                        std::vector<dlib::mmod_rect> results;
+
+                        annonet_infer(runtime_net, crop.input_image, results);
+
+                        const auto draw_labels = [](dlib::matrix<dlib::rgb_pixel>& image, const std::vector<dlib::mmod_rect>& labels) {
+                            for (const auto& label : labels) {
+                                // outline
+                                draw_rectangle(image, label.rect, dlib::rgb_pixel(255, 255, 255), 3);
+
+                                const auto color = label.ignore ? dlib::rgb_pixel(127, 127, 127) : dlib::rgb_pixel(255, 0, 0);
+                                draw_rectangle(image, label.rect, color, 1);
+                            }
+                        };
+
+                        draw_labels(ground_truth, crop.labels);
+                        draw_labels(inference_result, results);
+
+                        const auto visualization = dlib::join_rows(ground_truth, inference_result);
+
+                        if (!visualization_window) {
+                            visualization_window = std::make_unique<dlib::image_window>(visualization, "visualization");
+                        }
+                        else {
+                            visualization_window->set_image(visualization);
                         }
                     }
 
