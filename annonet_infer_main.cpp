@@ -411,6 +411,7 @@ int main(int argc, char** argv) try
         ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
         ("w,tile-max-width", "Set max tile width", cxxopts::value<int>()->default_value(default_max_tile_width))
         ("h,tile-max-height", "Set max tile height", cxxopts::value<int>()->default_value(default_max_tile_height))
+        ("limit-to-size", "Limit tiles to image size")
         ("full-image-reader-thread-count", "Set the number of full-image reader threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ;
@@ -528,6 +529,7 @@ int main(int argc, char** argv) try
     tiling_parameters.max_tile_height = options["tile-max-height"].as<int>();
     tiling_parameters.overlap_x = min_input_dimension;
     tiling_parameters.overlap_y = min_input_dimension;
+    tiling_parameters.limit_to_size = options.count("limit-to-size") > 0;
 
     DLIB_CASSERT(tiling_parameters.max_tile_width >= min_input_dimension);
     DLIB_CASSERT(tiling_parameters.max_tile_height >= min_input_dimension);
