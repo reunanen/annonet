@@ -109,10 +109,13 @@ void annonet_infer(
         const dlib::chip_details chip_details(actual_tile_rect, dlib::chip_dims(actual_tile_height, actual_tile_width));
         dlib::extract_image_chip(input_image, chip_details, temp.input_tile, dlib::interpolate_bilinear());
 
+        // TODO: add outpaint to training as well - and then enable this again
+#if 0
         if (!dlib::rectangle(input_image.nc(), input_image.nr()).contains(chip_details.rect)) {
             const dlib::rectangle inside(-chip_details.rect.tl_corner(), get_rect(input_image).br_corner() - chip_details.rect.tl_corner());
             outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_tile), inside);
         }
+#endif
 
         const auto tile_labels = net(temp.input_tile, gains);
 
