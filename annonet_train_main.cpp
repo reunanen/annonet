@@ -19,6 +19,7 @@
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
 #include "lru-timday/shared_lru_cache_using_std.h"
+#include "tuc/include/tuc/numeric.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
 
@@ -190,6 +191,30 @@ void randomly_crop_image(
         crop.label_image = flipud(crop.label_image);
     }
 
+    const double multiplicative_brightness_change_probability = options["multiplicative-brightness-change-probability"].as<double>();
+
+    if (multiplicative_brightness_change_probability > 0.0 && rnd.get_double_in_range(0, 1) < multiplicative_brightness_change_probability) {
+        const double multiplicative_brightness_change_sigma = options["multiplicative-brightness-change-sigma"].as<double>();
+        const double multiplicative_brightness_change = exp(rnd.get_random_gaussian() * multiplicative_brightness_change_sigma);
+        const long nr = crop.input_image.nr();
+        const long nc = crop.input_image.nc();
+        const auto apply = [multiplicative_brightness_change](unsigned char value) {
+            return tuc::round<unsigned char>(tuc::clamp(value * multiplicative_brightness_change, 0.0, 255.0));
+        };
+        for (long r = 0; r < nr; ++r) {
+            for (long c = 0; c < nc; ++c) {
+                auto& pixel = crop.input_image(r, c);
+#ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+                pixel.red   = apply(pixel.red);
+                pixel.green = apply(pixel.green);
+                pixel.blue  = apply(pixel.blue);
+#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+                pixel       = apply(pixel);
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+            }
+        }
+    }
+
     double noise_level_stddev = options["noise-level-stddev"].as<double>();
     if (noise_level_stddev > 0.0) {
         double noise_level = fabs(rnd.get_random_gaussian() * noise_level_stddev);
@@ -252,6 +277,8 @@ int main(int argc, char** argv) try
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("l,allow-flip-left-right", "Randomly flip input images horizontally")
+        ("multiplicative-brightness-change-probability", "Probability of random multiplicative brightness change", cxxopts::value<double>()->default_value("0.0"))
+        ("multiplicative-brightness-change-sigma", "Sigma of random multiplicative brightness change (in the event that it occurs in the first place)", cxxopts::value<double>()->default_value("0.1"))
         ("n,noise-level-stddev", "Set the standard deviation of the noise to add", cxxopts::value<double>()->default_value("0.0"))
 #ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("o,allow-random-color-offset", "Randomly apply color offsets")
