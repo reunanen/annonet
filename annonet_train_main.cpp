@@ -44,13 +44,13 @@ rectangle make_cropping_rect_around_defect(
 
 namespace std {
     template <>
-    struct hash<image_filenames> {
-        std::size_t operator()(const image_filenames& image_filenames) const {
+    struct hash<image_filenames_type> {
+        std::size_t operator()(const image_filenames_type& image_filenames) const {
             return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
         }
     };
 
-    bool operator ==(const image_filenames& a, const image_filenames& b) {
+    bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
         return a.image_filename == b.image_filename
             && a.label_filename == b.label_filename;
     }
@@ -109,7 +109,7 @@ struct randomly_crop_image_temp {
 
 void randomly_crop_image(
     int dim,
-    const sample& full_sample,
+    const sample_type& full_sample,
     crop& crop,
     dlib::rand& rnd,
     const cxxopts::Options& options,
@@ -160,7 +160,8 @@ void randomly_crop_image(
         extract_image_chip(full_sample.input_image, chip_details, temp.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, temp.label_image, interpolate_nearest_neighbor());
 
-        outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_image), valid_rect_in_crop_image);
+        dlib::image_view<NetPimpl::input_type> view(temp.input_image);
+        outpaint(view, valid_rect_in_crop_image);
         set_to_unknown_outside(temp.label_image, valid_rect_in_crop_image);
 
         crop.input_image.set_size(dim, dim);
@@ -173,7 +174,8 @@ void randomly_crop_image(
         extract_image_chip(full_sample.input_image, chip_details, crop.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
 
-        outpaint(dlib::image_view<NetPimpl::input_type>(crop.input_image), valid_rect_in_crop_image);
+        dlib::image_view<NetPimpl::input_type> view(crop.input_image);
+        outpaint(view, valid_rect_in_crop_image);
         set_to_unknown_outside(crop.temporary_unweighted_label_image, valid_rect_in_crop_image);
     }
 
@@ -411,7 +413,7 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
+    const auto ignore_classes_to_ignore = [&classes_to_ignore](sample_type& sample) {
         for (const auto class_to_ignore : classes_to_ignore) {
             const auto i = sample.labeled_points_by_class.find(class_to_ignore);
             if (i != sample.labeled_points_by_class.end()) {
@@ -423,7 +425,7 @@ int main(int argc, char** argv) try
         }
     };
 
-    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample& sample) {
+    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample_type& sample) {
         if (sample.labeled_points_by_class.empty()) {
             return; // no annotations
         }
@@ -493,9 +495,9 @@ int main(int argc, char** argv) try
         std::swap(sample.labeled_points_by_class, labeled_points_to_keep);
     };
 
-    shared_lru_cache_using_std<image_filenames, std::shared_ptr<sample>, std::unordered_map> full_images_cache(
-        [&](const image_filenames& image_filenames) {
-            std::shared_ptr<sample> sample(new sample);
+    shared_lru_cache_using_std<image_filenames_type, std::shared_ptr<sample_type>, std::unordered_map> full_images_cache(
+        [&](const image_filenames_type& image_filenames) {
+            auto sample = std::make_shared<sample_type>();
             *sample = read_sample(image_filenames, anno_classes, true, initial_downscaling_factor);
             ignore_classes_to_ignore(*sample);
             return sample;
@@ -523,8 +525,8 @@ int main(int argc, char** argv) try
             crop.warning.clear();
 
             const size_t index = rnd.get_random_32bit_number() % image_files.size();
-            const image_filenames& image_filenames = image_files[index];
-            const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
+            const auto& image_filenames = image_files[index];
+            const std::shared_ptr<sample_type> ground_truth_sample = full_images_cache(image_filenames);
 
             if (!ground_truth_sample->error.empty()) {
                 crop.error = ground_truth_sample->error;

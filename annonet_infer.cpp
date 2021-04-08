@@ -33,10 +33,10 @@ void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint16_t>& result_image,
+    annonet_infer_temp& temp,
     const std::vector<double>& gains,
     const std::vector<double>& detection_levels,
-    const tiling::parameters& tiling_parameters,
-    annonet_infer_temp& temp
+    const tiling::parameters& tiling_parameters
 )
 {
     const std::vector<tiling::dlib_tile> tiles = tiling::get_tiles(input_image.nc(), input_image.nr(), tiling_parameters);
@@ -70,7 +70,8 @@ void annonet_infer(
 
         if (!dlib::rectangle(input_image.nc(), input_image.nr()).contains(chip_details.rect)) {
             const dlib::rectangle inside(-chip_details.rect.tl_corner(), get_rect(input_image).br_corner() - chip_details.rect.tl_corner());
-            outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_tile), inside);
+	    auto view = dlib::image_view<NetPimpl::input_type>(temp.input_tile);
+            outpaint(view, inside);
         }
 
         const auto& output_tensor = net.Forward(temp.input_tile);

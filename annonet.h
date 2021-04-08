@@ -38,7 +38,7 @@ struct zero_and_ignored_pixels_are_background
 
 // ----------------------------------------------------------------------------------------
 
-struct image_filenames
+struct image_filenames_type
 {
     std::string image_filename;
     std::string label_filename;
@@ -46,11 +46,11 @@ struct image_filenames
 
 typedef uint8_t input_pixel_type;
 
-struct sample
+struct sample_type
 {
     int original_width = 0;
     int original_height = 0;
-    image_filenames image_filenames;
+    image_filenames_type image_filenames;
     NetPimpl::input_type input_image;
     dlib::matrix<uint16_t> label_image;
     std::unordered_map<uint16_t, std::deque<dlib::point>> labeled_points_by_class;
@@ -59,9 +59,9 @@ struct sample
 
 inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes);
 
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes);
+void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample_type& ground_truth_sample, const std::vector<AnnoClass>& anno_classes);
 
-std::vector<image_filenames> find_image_files(
+std::vector<image_filenames_type> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 );
@@ -69,7 +69,7 @@ std::vector<image_filenames> find_image_files(
 template <typename image_type>
 void resize_label_image(image_type& label_image, int target_width, int target_height);
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
+sample_type read_sample(const image_filenames_type& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 
 template <
     typename image_type

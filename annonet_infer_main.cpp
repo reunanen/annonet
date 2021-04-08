@@ -193,7 +193,7 @@ void print_confusion_matrix(const confusion_matrix_type& confusion_matrix, const
     std::cout << total_correct * 100.0 / total << " %" << std::endl;
 }
 
-struct update_confusion_matrix_per_region_temp
+struct update_confusion_matrix_per_region_temp_type
 {
     dlib::matrix<int> ground_truth_blobs;
     dlib::matrix<int> result_blobs;
@@ -204,7 +204,7 @@ void update_confusion_matrix_per_region(
     const std::unordered_map<uint16_t, std::deque<dlib::point>>& labeled_points_by_class,
     const dlib::matrix<uint16_t>& ground_truth_label_image,
     const dlib::matrix<uint16_t>& result_label_image,
-    update_confusion_matrix_per_region_temp& temp = update_confusion_matrix_per_region_temp()
+    update_confusion_matrix_per_region_temp_type& temp
 )
 {
     if (labeled_points_by_class.empty()) {
@@ -341,7 +341,10 @@ int main(int argc, char** argv) try
     std::cout << "Deserializing annonet, downscaling factor = " << downscaling_factor << std::endl;
 
     NetPimpl::RuntimeNet net;
-    net.Deserialize(std::istringstream(serialized_runtime_net));
+    {
+        std::istringstream iss(serialized_runtime_net);
+        net.Deserialize(iss);
+    }
 
     const std::vector<AnnoClass> anno_classes = parse_anno_classes(anno_classes_json);
 
@@ -372,21 +375,21 @@ int main(int argc, char** argv) try
 
     auto files = find_image_files(options["input-directory"].as<std::string>(), false);
 
-    dlib::pipe<image_filenames> full_image_read_requests(files.size());
-    for (const image_filenames& file : files) {
-        full_image_read_requests.enqueue(image_filenames(file));
+    dlib::pipe<image_filenames_type> full_image_read_requests(files.size());
+    for (const auto& file : files) {
+        full_image_read_requests.enqueue(image_filenames_type(file));
     }
 
     const int full_image_reader_count = std::max(1, options["full-image-reader-thread-count"].as<int>());
     const int result_image_writer_count = std::max(1, options["result-image-writer-thread-count"].as<int>());
 
-    dlib::pipe<sample> full_image_read_results(full_image_reader_count);
+    dlib::pipe<sample_type> full_image_read_results(full_image_reader_count);
 
     std::vector<std::thread> full_image_readers;
 
     for (unsigned int i = 0; i < full_image_reader_count; ++i) {
         full_image_readers.push_back(std::thread([&]() {
-            image_filenames image_filenames;
+            image_filenames_type image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
                 full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false, downscaling_factor));
             }
@@ -430,7 +433,7 @@ int main(int argc, char** argv) try
 
     const auto t0 = std::chrono::steady_clock::now();
 
-    update_confusion_matrix_per_region_temp update_confusion_matrix_per_region_temp;
+    update_confusion_matrix_per_region_temp_type update_confusion_matrix_per_region_temp;
 
     std::chrono::microseconds total_time_spent_in_actual_inference(0);
     std::chrono::microseconds total_time_spent_in_actual_inference_excluding_first_image(0);
@@ -440,7 +443,7 @@ int main(int argc, char** argv) try
     {
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
 
-        sample sample;
+        sample_type sample;
         result_image_type result_image;
 
         full_image_read_results.dequeue(sample);
@@ -458,7 +461,7 @@ int main(int argc, char** argv) try
 
         const auto t0 = std::chrono::steady_clock::now();
 
-        annonet_infer(net, sample.input_image, result_image.label_image, gains, detection_levels, tiling_parameters, temp);
+        annonet_infer(net, sample.input_image, result_image.label_image, temp, gains, detection_levels, tiling_parameters);
 
         const auto t1 = std::chrono::steady_clock::now();
 
