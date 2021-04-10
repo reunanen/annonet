@@ -623,10 +623,10 @@ int main(int argc, char** argv) try
                             };
 
                             if (label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-                                return dlib::rgb_pixel(0, 0, 0);
+                                return dlib::rgb_pixel(127, 127, 127);
                             }
                             else if (label >= anno_classes.size()) { // this shouldn't really happen
-                                return dlib::rgb_pixel(127, 127, 127);
+                                return dlib::rgb_pixel(192, 192, 192);
                             }
                             else {
                                 return rgba_to_rgb(anno_classes[label].rgba_label);
