@@ -79,6 +79,8 @@ void outpaint(
     dlib::rectangle inside
 )
 {
+    return; // outpainting completely disabled for the time being
+
     inside = inside.intersect(get_rect(img));
     if (inside.is_empty())
     {
