@@ -349,6 +349,61 @@
     <ClCompile Include="dlib\dlib\external\libjpeg\wrtarga.c">
       <Filter>dlib\external\libjpeg</Filter>
     </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_widgets\base_widgets.cpp">
+      <Filter>dlib\gui_widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\base64\base64_kernel_1.cpp">
+      <Filter>dlib\base64</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_widgets\canvas_drawing.cpp">
+      <Filter>dlib\gui_widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_widgets\drawable.cpp">
+      <Filter>dlib\gui_widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\logger\logger_config_file.cpp">
+      <Filter>dlib\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\logger\logger_kernel_1.cpp">
+      <Filter>dlib\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\logger\extra_logger_headers.cpp">
+      <Filter>dlib\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_core\gui_core_kernel_1.cpp">
+      <Filter>dlib\gui_core</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_core\gui_core_kernel_2.cpp">
+      <Filter>dlib\gui_core</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\misc_api\misc_api_kernel_1.cpp">
+      <Filter>dlib\misc_api</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\misc_api\misc_api_kernel_2.cpp">
+      <Filter>dlib\misc_api</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_widgets\fonts.cpp">
+      <Filter>dlib\gui_widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_widgets\style.cpp">
+      <Filter>dlib\gui_widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="tiling\tiling.cpp">
+      <Filter>tiling</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\tokenizer\tokenizer_kernel_1.cpp">
+      <Filter>dlib\tokenizer</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\unicode\unicode.cpp">
+      <Filter>dlib\unicode</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\gui_widgets\widgets.cpp">
+      <Filter>dlib\gui_widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="dlib\dlib\timer\timer.cpp">
+      <Filter>dlib\timer</Filter>
+    </ClCompile>
+    <ClCompile Include="annonet_infer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="dlib">
@@ -390,6 +445,33 @@
     <Filter Include="dlib\external\libjpeg">
       <UniqueIdentifier>{2f6b3efb-73ed-4a4c-9cf4-30134435a7c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dlib\gui_widgets">
+      <UniqueIdentifier>{aad9e8e2-70b3-4f80-be8f-0a7ca7e118e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\base64">
+      <UniqueIdentifier>{8b8e2fcf-54d5-4a4c-bcd7-65726af4c03a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\logger">
+      <UniqueIdentifier>{5ed266de-4ac4-46ba-aa70-1cba831a813d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\gui_core">
+      <UniqueIdentifier>{755ded65-ba23-4a11-9511-fa12b197ba7f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\misc_api">
+      <UniqueIdentifier>{2ecf4a79-de6c-4ed3-b3cd-3d123990d815}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tiling">
+      <UniqueIdentifier>{ee591dd1-9fd1-48c5-9712-f7f07b7627a1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\tokenizer">
+      <UniqueIdentifier>{9c450382-3527-43d6-8d6c-932cfbf52aa2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\unicode">
+      <UniqueIdentifier>{46379866-2521-4eb1-acd2-7b6b80b7fa5b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dlib\timer">
+      <UniqueIdentifier>{5b0bab35-117b-423b-9b17-5e191c5e7224}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="dlib\dlib\cuda\cuda_dlib.cu">
@@ -414,5 +496,11 @@
       <Filter>dlib-dnn-pimpl-wrapper</Filter>
     </ClInclude>
     <ClInclude Include="annonet_parse_anno_classes.h" />
+    <ClInclude Include="tiling\dlib-wrapper.h">
+      <Filter>tiling</Filter>
+    </ClInclude>
+    <ClInclude Include="tiling\tiling.h">
+      <Filter>tiling</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

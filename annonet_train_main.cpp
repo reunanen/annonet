@@ -15,6 +15,7 @@
 
 #include "annonet.h"
 #include "annonet_train.h"
+#include "annonet_infer.h"
 
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
@@ -22,6 +23,7 @@
 #include "tuc/include/tuc/numeric.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
+#include <dlib/gui_widgets.h>
 
 #include <iostream>
 #include <iterator>
@@ -305,6 +307,7 @@ int main(int argc, char** argv) try
         ("data-loader-thread-count", "Number of data loader threads", cxxopts::value<unsigned int>()->default_value(default_data_loader_thread_count.str()))
         ("no-empty-label-image-warning", "Do not warn about empty label images")
         ("primary-cuda-device", "Set the primary CUDA device to use", cxxopts::value<int>())
+        ("visualization-interval", "Set the interval for when to visualize", cxxopts::value<int>()->default_value("50"))
         ;
 
     try {
@@ -570,6 +573,9 @@ int main(int argc, char** argv) try
         return true;
     };
 
+    std::unique_ptr<dlib::image_window> visualization_window;
+    const int visualization_interval = options["visualization-interval"].as<int>();
+
     int return_value = 0;
 
     try {
@@ -588,13 +594,65 @@ int main(int argc, char** argv) try
                 if (!crop.error.empty()) {
                     throw std::runtime_error(crop.error);
                 }
-                else if (!crop.warning.empty()) {
-                    if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
-                        std::cout << crop.warning << std::endl;
-                        warnings_already_printed.insert(crop.warning);
-                    }
-                }
                 else {
+                    if (!crop.warning.empty()) {
+                        if (warn_about_empty_label_images && warnings_already_printed.find(crop.warning) == warnings_already_printed.end()) {
+                            std::cout << crop.warning << std::endl;
+                            warnings_already_printed.insert(crop.warning);
+                        }
+                    }
+
+                    if (samples.size() == 0 && visualization_interval > 0 && minibatch % visualization_interval == 0) {
+                        // visualize the first sample of the mini-batch
+                        NetPimpl::RuntimeNet runtime_net = training_net.GetRuntimeNet();
+
+                        dlib::matrix<uint16_t> inference_result;
+                        annonet_infer_temp temp;
+
+                        annonet_infer(runtime_net, crop.input_image, inference_result, temp);
+
+                        const auto nr = crop.input_image.nr();
+                        const auto nc = crop.input_image.nc();
+
+                        NetPimpl::input_type label_image_rgb(nr, nc);
+                        NetPimpl::input_type inference_result_rgb(nr, nc);
+
+                        const auto label_to_rgb = [&anno_classes](uint16_t label) {
+                            const auto rgba_to_rgb = [](const dlib::rgb_alpha_pixel& rgba) {
+                                return dlib::rgb_pixel(rgba.red, rgba.green, rgba.blue);
+                            };
+
+                            if (label == dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
+                                return dlib::rgb_pixel(0, 0, 0);
+                            }
+                            else if (label >= anno_classes.size()) { // this shouldn't really happen
+                                return dlib::rgb_pixel(127, 127, 127);
+                            }
+                            else {
+                                return rgba_to_rgb(anno_classes[label].rgba_label);
+                            }
+                        };
+
+                        for (long r = 0; r < nr; ++r) {
+                            for (long c = 0; c < nc; ++c) {
+                                const uint16_t ground_truth_label = crop.label_image(r, c).label;
+                                label_image_rgb(r, c) = label_to_rgb(ground_truth_label);
+
+                                const uint16_t inference_result_label = inference_result(r, c);
+                                inference_result_rgb(r, c) = label_to_rgb(inference_result_label);
+                            }
+                        }
+
+                        const auto visualization = dlib::join_rows(crop.input_image, dlib::join_rows(label_image_rgb, inference_result_rgb));
+
+                        if (!visualization_window) {
+                            visualization_window = std::make_unique<dlib::image_window>(visualization, "visualization");
+                        }
+                        else {
+                            visualization_window->set_image(visualization);
+                        }
+                    }
+
                     samples.push_back(std::move(crop.input_image));
                     labels.push_back(std::move(crop.label_image));
                 }
