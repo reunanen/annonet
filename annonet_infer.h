@@ -35,10 +35,10 @@ void annonet_infer(
     NetPimpl::RuntimeNet& net,
     const NetPimpl::input_type& input_image,
     dlib::matrix<uint16_t>& result_image,
+    annonet_infer_temp& temp,
     const std::vector<double>& gains = std::vector<double>(),
     const std::vector<double>& detection_levels = std::vector<double>(),
-    const tiling::parameters& tiling_parameters = tiling::parameters(),
-    annonet_infer_temp& temp = annonet_infer_temp()
+    const tiling::parameters& tiling_parameters = tiling::parameters()
 );
 
 #endif // ANNONET_INFER_H

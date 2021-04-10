@@ -19,6 +19,7 @@
 #include "cpp-read-file-in-memory/read-file-in-memory.h"
 #include "cxxopts/include/cxxopts.hpp"
 #include "lru-timday/shared_lru_cache_using_std.h"
+#include "tuc/include/tuc/numeric.hpp"
 #include <dlib/image_transforms.h>
 #include <dlib/dir_nav.h>
 
@@ -43,13 +44,13 @@ rectangle make_cropping_rect_around_defect(
 
 namespace std {
     template <>
-    struct hash<image_filenames> {
-        std::size_t operator()(const image_filenames& image_filenames) const {
+    struct hash<image_filenames_type> {
+        std::size_t operator()(const image_filenames_type& image_filenames) const {
             return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
         }
     };
 
-    bool operator ==(const image_filenames& a, const image_filenames& b) {
+    bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
         return a.image_filename == b.image_filename
             && a.label_filename == b.label_filename;
     }
@@ -108,7 +109,7 @@ struct randomly_crop_image_temp {
 
 void randomly_crop_image(
     int dim,
-    const sample& full_sample,
+    const sample_type& full_sample,
     crop& crop,
     dlib::rand& rnd,
     const cxxopts::Options& options,
@@ -159,7 +160,8 @@ void randomly_crop_image(
         extract_image_chip(full_sample.input_image, chip_details, temp.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, temp.label_image, interpolate_nearest_neighbor());
 
-        outpaint(dlib::image_view<NetPimpl::input_type>(temp.input_image), valid_rect_in_crop_image);
+        dlib::image_view<NetPimpl::input_type> view(temp.input_image);
+        outpaint(view, valid_rect_in_crop_image);
         set_to_unknown_outside(temp.label_image, valid_rect_in_crop_image);
 
         crop.input_image.set_size(dim, dim);
@@ -172,7 +174,8 @@ void randomly_crop_image(
         extract_image_chip(full_sample.input_image, chip_details, crop.input_image, interpolate_bilinear());
         extract_image_chip(full_sample.label_image, chip_details, crop.temporary_unweighted_label_image, interpolate_nearest_neighbor());
 
-        outpaint(dlib::image_view<NetPimpl::input_type>(crop.input_image), valid_rect_in_crop_image);
+        dlib::image_view<NetPimpl::input_type> view(crop.input_image);
+        outpaint(view, valid_rect_in_crop_image);
         set_to_unknown_outside(crop.temporary_unweighted_label_image, valid_rect_in_crop_image);
     }
 
@@ -188,6 +191,30 @@ void randomly_crop_image(
     if (allow_flip_upside_down && rnd.get_random_double() > 0.5) {
         crop.input_image = flipud(crop.input_image);
         crop.label_image = flipud(crop.label_image);
+    }
+
+    const double multiplicative_brightness_change_probability = options["multiplicative-brightness-change-probability"].as<double>();
+
+    if (multiplicative_brightness_change_probability > 0.0 && rnd.get_double_in_range(0, 1) < multiplicative_brightness_change_probability) {
+        const double multiplicative_brightness_change_sigma = options["multiplicative-brightness-change-sigma"].as<double>();
+        const double multiplicative_brightness_change = exp(rnd.get_random_gaussian() * multiplicative_brightness_change_sigma);
+        const long nr = crop.input_image.nr();
+        const long nc = crop.input_image.nc();
+        const auto apply = [multiplicative_brightness_change](unsigned char value) {
+            return tuc::round<unsigned char>(tuc::clamp(value * multiplicative_brightness_change, 0.0, 255.0));
+        };
+        for (long r = 0; r < nr; ++r) {
+            for (long c = 0; c < nc; ++c) {
+                auto& pixel = crop.input_image(r, c);
+#ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+                pixel.red   = apply(pixel.red);
+                pixel.green = apply(pixel.green);
+                pixel.blue  = apply(pixel.blue);
+#else // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+                pixel       = apply(pixel);
+#endif // DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
+            }
+        }
     }
 
     double noise_level_stddev = options["noise-level-stddev"].as<double>();
@@ -252,6 +279,8 @@ int main(int argc, char** argv) try
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("u,allow-flip-upside-down", "Randomly flip input images upside down")
         ("l,allow-flip-left-right", "Randomly flip input images horizontally")
+        ("multiplicative-brightness-change-probability", "Probability of random multiplicative brightness change", cxxopts::value<double>()->default_value("0.0"))
+        ("multiplicative-brightness-change-sigma", "Sigma of random multiplicative brightness change (in the event that it occurs in the first place)", cxxopts::value<double>()->default_value("0.1"))
         ("n,noise-level-stddev", "Set the standard deviation of the noise to add", cxxopts::value<double>()->default_value("0.0"))
 #ifndef DLIB_DNN_PIMPL_WRAPPER_GRAYSCALE_INPUT
         ("o,allow-random-color-offset", "Randomly apply color offsets")
@@ -384,7 +413,7 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    const auto ignore_classes_to_ignore = [&classes_to_ignore](sample& sample) {
+    const auto ignore_classes_to_ignore = [&classes_to_ignore](sample_type& sample) {
         for (const auto class_to_ignore : classes_to_ignore) {
             const auto i = sample.labeled_points_by_class.find(class_to_ignore);
             if (i != sample.labeled_points_by_class.end()) {
@@ -396,7 +425,7 @@ int main(int argc, char** argv) try
         }
     };
 
-    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample& sample) {
+    const auto ignore_large_nonzero_regions = [ignore_large_nonzero_regions_by_area, ignore_large_nonzero_regions_by_width, ignore_large_nonzero_regions_by_height](sample_type& sample) {
         if (sample.labeled_points_by_class.empty()) {
             return; // no annotations
         }
@@ -466,9 +495,9 @@ int main(int argc, char** argv) try
         std::swap(sample.labeled_points_by_class, labeled_points_to_keep);
     };
 
-    shared_lru_cache_using_std<image_filenames, std::shared_ptr<sample>, std::unordered_map> full_images_cache(
-        [&](const image_filenames& image_filenames) {
-            std::shared_ptr<sample> sample(new sample);
+    shared_lru_cache_using_std<image_filenames_type, std::shared_ptr<sample_type>, std::unordered_map> full_images_cache(
+        [&](const image_filenames_type& image_filenames) {
+            auto sample = std::make_shared<sample_type>();
             *sample = read_sample(image_filenames, anno_classes, true, initial_downscaling_factor);
             ignore_classes_to_ignore(*sample);
             return sample;
@@ -496,8 +525,8 @@ int main(int argc, char** argv) try
             crop.warning.clear();
 
             const size_t index = rnd.get_random_32bit_number() % image_files.size();
-            const image_filenames& image_filenames = image_files[index];
-            const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
+            const auto& image_filenames = image_files[index];
+            const std::shared_ptr<sample_type> ground_truth_sample = full_images_cache(image_filenames);
 
             if (!ground_truth_sample->error.empty()) {
                 crop.error = ground_truth_sample->error;
@@ -581,6 +610,7 @@ int main(int argc, char** argv) try
     catch (std::exception& e) {
         cout << e.what() << endl;
         return_value = 2;
+        exit(return_value);
     }
 
     // Training done: tell threads to stop.

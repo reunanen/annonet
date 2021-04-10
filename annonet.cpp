@@ -38,7 +38,7 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
     throw std::runtime_error(error.str());
 }
 
-void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample& ground_truth_sample, const std::vector<AnnoClass>& anno_classes)
+void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_label_image, sample_type& ground_truth_sample, const std::vector<AnnoClass>& anno_classes)
 {
     const long nr = rgba_label_image.nr();
     const long nc = rgba_label_image.nc();
@@ -57,7 +57,7 @@ void decode_rgba_label_image(const dlib::matrix<dlib::rgb_alpha_pixel>& rgba_lab
     }
 }
 
-std::vector<image_filenames> find_image_files(
+std::vector<image_filenames_type> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 )
@@ -81,7 +81,7 @@ std::vector<image_filenames> find_image_files(
 
     std::cout << " found " << files.size() << " candidates" << std::endl;
 
-    std::vector<image_filenames> results;
+    std::vector<image_filenames_type> results;
 
     const auto file_exists = [](const std::string& filename) {
         std::ifstream label_file(filename, std::ios::binary);
@@ -95,7 +95,7 @@ std::vector<image_filenames> find_image_files(
     for (size_t i = 0, total = files.size(); i < total; ++i) {
         const dlib::file& name = files[i];
 
-        image_filenames image_filenames;
+        image_filenames_type image_filenames;
         image_filenames.image_filename = name;
 
         const std::string label_filename = name.full_name() + "_mask.png";
@@ -140,9 +140,9 @@ void resize_label_image(image_type& label_image, int target_width, int target_he
 // explicit instantiation for dlib::matrix<uint16_t>
 template void resize_label_image<dlib::matrix<uint16_t>>(dlib::matrix<uint16_t>& label_image, int target_width, int target_height);
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
+sample_type read_sample(const image_filenames_type& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
-    sample sample;
+    sample_type sample;
     sample.image_filenames = image_filenames;
 
     try {
