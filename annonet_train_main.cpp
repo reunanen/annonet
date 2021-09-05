@@ -361,6 +361,7 @@ int main(int argc, char** argv) try
     std::cout << "Relative training length = " << relative_training_length << std::endl;
     std::cout << "Cached image count = " << cached_image_count << std::endl;
     std::cout << "Data loader thread count = " << data_loader_thread_count << std::endl;
+    std::cout << "Pimpl wrapper level count = " << NetPimpl::GetLevelCount() << std::endl;
 
     if (!classes_to_ignore.empty()) {
         std::cout << "Classes to ignore =";
