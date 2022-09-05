@@ -34,6 +34,11 @@
 #include <thread>
 #include <unordered_map>
 
+#ifdef DLIB_USE_CUDA
+#include <cuda.h>
+#include <cudnn.h>
+#endif // DLIB_USE_CUDA
+
 using namespace std;
 using namespace dlib;
 
@@ -468,6 +473,22 @@ int main(int argc, char** argv) try
     const auto min_detector_window_overlap_iou = options["min-detector-window-overlap-iou"].as<double>();
     const bool allow_different_shapes_within_class = options.count("allow-different-shapes-within-class") > 0;
     const auto dims_p = options["dims-p"].as<double>();
+
+#ifdef DLIB_USE_CUDA
+    std::cout << "CUDA_VERSION            : " << CUDA_VERSION << std::endl;
+
+    int cudaRuntimeVersion = -1;
+    cudaRuntimeGetVersion(&cudaRuntimeVersion);
+    std::cout << "cudaRuntimeVersion()    : " << cudaRuntimeVersion << std::endl;
+
+    int cudaDriverVersion = -1;
+    cudaDriverGetVersion(&cudaDriverVersion);
+    std::cout << "cudaDriverGetVersion()  : " << cudaDriverVersion << std::endl;
+
+    std::cout << "CUDNN_VERSION           : " << CUDNN_VERSION << std::endl;
+    std::cout << "cudnnGetVersion()       : " << cudnnGetVersion() << std::endl;
+    std::cout << "cudnnGetCudartVersion() : " << cudnnGetCudartVersion() << std::endl;
+#endif
 
 #if 0
     std::cout << "Allow flipping input images upside down = " << (allow_flip_upside_down ? "yes" : "no") << std::endl;
