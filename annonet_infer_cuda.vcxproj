@@ -113,7 +113,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cuda.lib;cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -150,7 +150,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cuda.lib;cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -186,7 +186,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cuda.lib;cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -222,7 +222,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
+      <AdditionalDependencies>cuda.lib;cudart_static.lib;cublas.lib;cudnn.lib;curand.lib;cusolver.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
