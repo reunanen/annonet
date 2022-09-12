@@ -1075,7 +1075,13 @@ int main(int argc, char** argv) try
                     if (blob_index == 0)
                     {
                         // TODO: do something smarter here -- e.g., find the nearest blob.
-                        // TODO: also check that the class matches!
+                        indexes.erase(indexes.begin() + index);
+                        continue;
+                    }
+
+                    // TODO: check that the class matches, not only that it's non-zero
+                    const auto class_index = ground_truth_sample->segmentation_labels(center.y(), center.x());
+                    if (class_index == 0) {
                         indexes.erase(indexes.begin() + index);
                         continue;
                     }
