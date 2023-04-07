@@ -118,7 +118,7 @@
       </Version>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_50,sm_50</CodeGeneration>
     </CudaCompile>
     <ProjectReference />
   </ItemDefinitionGroup>
@@ -154,7 +154,7 @@
       </Version>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_50,sm_50</CodeGeneration>
     </CudaCompile>
     <ProjectReference />
   </ItemDefinitionGroup>
@@ -191,7 +191,7 @@
       </Version>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_50,sm_50</CodeGeneration>
     </CudaCompile>
     <ProjectReference />
   </ItemDefinitionGroup>
@@ -228,7 +228,7 @@
       </Version>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_50,sm_50</CodeGeneration>
     </CudaCompile>
     <ProjectReference />
   </ItemDefinitionGroup>
