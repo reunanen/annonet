@@ -24,9 +24,6 @@
 
 inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_label, const std::vector<AnnoClass>& anno_classes)
 {
-    if (is_very_close(rgba_label, rgba_ignore_label)) {
-        return dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
-    }
     for (const AnnoClass& anno_class : anno_classes) {
         if (is_very_close(anno_class.rgba_label, rgba_label)) {
             return anno_class.index;
