@@ -752,15 +752,10 @@ int main(int argc, char** argv) try
         std::cout << std::endl;
 
         const auto advance_toward_1 = [&options](double val) {
-            const double max_rotation_degrees = std::min(45.0, options["max-rotation-degrees"].as<double>());
-            const double alpha = sin(max_rotation_degrees);
-            val = std::max(
-                std::min(
-                    1.0,
-                    val + 0.1 * alpha
-                ),
-                val + (1 - val) * 0.2 * alpha
-            );
+            if (val < 1) {
+                const double alpha = 1.5;
+                val += (1 - val) * sin(alpha * options["max-rotation-degrees"].as<double>() * M_PI / 180);
+            }
             return val;
         };
 
