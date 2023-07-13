@@ -13,9 +13,6 @@
        ./annonet_infer /path/to/anno/data
 */
 
-#define _USE_MATH_DEFINES // we want M_PI
-#include <cmath>
-
 #include "annonet.h"
 #include "annonet_train.h"
 #include "annonet_infer.h"
@@ -750,19 +747,6 @@ int main(int argc, char** argv) try
             std::cout << " - " << detector_window.label << ": " << detector_window.width << " x " << detector_window.height << std::endl;
         }
         std::cout << std::endl;
-
-        const auto advance_toward_1 = [&options](double val) {
-            if (val < 1) {
-                const double alpha = 1.5;
-                val += (1 - val) * sin(alpha * options["max-rotation-degrees"].as<double>() * M_PI / 180);
-            }
-            return val;
-        };
-
-        mmod_options.overlaps_nms = dlib::test_box_overlap(
-            advance_toward_1(mmod_options.overlaps_nms.get_iou_thresh()),
-            advance_toward_1(mmod_options.overlaps_nms.get_percent_covered_thresh())
-        );
 
         std::cout << "Overlap NMS IOU threshold:             " << mmod_options.overlaps_nms.get_iou_thresh() << std::endl;
         std::cout << "Overlap NMS percent covered threshold: " << mmod_options.overlaps_nms.get_percent_covered_thresh() << std::endl;
