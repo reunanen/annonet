@@ -233,7 +233,7 @@ void update_confusion_matrix_per_region(
             return max_vote->first;
         };
 
-        for (const auto i : labeled_points_by_class) {
+        for (const auto& i : labeled_points_by_class) {
             const auto ground_truth = i.first;
             for (const dlib::point& point : i.second) {
                 const auto x = point.x();
