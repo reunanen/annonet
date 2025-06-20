@@ -109,8 +109,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
+      <AdditionalDependencies>mkl_core_dll.lib;mkl_intel_lp64_dll.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -143,8 +142,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
+      <AdditionalDependencies>mkl_core_dll.lib;mkl_intel_lp64_dll.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -178,8 +176,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
+      <AdditionalDependencies>mkl_core_dll.lib;mkl_intel_lp64_dll.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
@@ -213,8 +210,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
+      <AdditionalDependencies>mkl_core_dll.lib;mkl_intel_lp64_dll.lib</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
