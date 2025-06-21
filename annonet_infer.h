@@ -28,7 +28,7 @@ struct annonet_infer_temp
     NetPimpl::input_type input_tile;
     std::vector<dlib::point> detection_seeds;
     dlib::matrix<unsigned int> connected_blobs;
-    dlib::resizable_tensor blended_output_tensor;
+    std::vector<dlib::matrix<float>> blended_output;
 };
 
 void annonet_infer(

@@ -76,19 +76,25 @@ void annonet_infer(
 
         const auto& output_tensor = net.Forward(temp.input_tile);
 
+        assert(temp.blended_output.empty() == first_tile);
+
         if (first_tile) {
-            temp.blended_output_tensor.set_size(1, output_tensor.k(), input_image.nr(), input_image.nc());
-            std::fill(temp.blended_output_tensor.begin(), temp.blended_output_tensor.end(), 0.f);
+            temp.blended_output.resize(output_tensor.k());
+
+            for (int k = 0, end = output_tensor.k(); k < end; ++k) {
+                temp.blended_output[k].set_size(input_image.nr(), input_image.nc());
+                std::fill(temp.blended_output[k].begin(), temp.blended_output[k].end(), 0.f);
+            }
+
             first_tile = false;
         }
         else {
-            DLIB_CASSERT(output_tensor.k() == temp.blended_output_tensor.k());
+            DLIB_CASSERT(output_tensor.k() == temp.blended_output.size());
         }
 
         const long long class_count = output_tensor.k();
 
         const float* in = output_tensor.host();
-        float* out = temp.blended_output_tensor.host();
 
         const auto get_t = [](long long coordinate, long long first_possible_value, long long first_in_value, long long last_in_value, long long last_possible_value) {
             assert(coordinate >= first_possible_value);
@@ -131,7 +137,8 @@ void annonet_infer(
                 for (long long k = 0; k < class_count; ++k) {
 
                     const auto& in_index = tensor_index(output_tensor, 0, k, y, x);
-                    const auto& out_index = tensor_index(temp.blended_output_tensor, 0, k, blended_y, blended_x);
+
+                    auto& out = temp.blended_output[k](blended_y, blended_x);
 
                     if (pixel_requires_blending) {
                         assert(tiles.size() > 1);
@@ -141,31 +148,30 @@ void annonet_infer(
                         const auto t = th * tv;
                         assert(fabs(tuc::lerp(0.0, th, tv) - t) < 1e-10);
                         assert(fabs(tuc::lerp(0.0, tv, th) - t) < 1e-10);
-                        out[out_index] += t * in[in_index];
+                        out += t * in[in_index];
                     }
                     else {
                         // TODO: it might possibly be a tad more efficient to use a series of memcpy operations (one for each row)
                         //       (especially when tiles.size() == 1, and no blending whatsoever is needed)
-                        assert(out[out_index] == 0.f);
-                        out[out_index] = in[in_index];
+                        assert(out == 0.f);
+                        out = in[in_index];
                     }
                 }
             }
         }
     }
 
-    result_image.set_size(temp.blended_output_tensor.nr(), temp.blended_output_tensor.nc());
+    result_image.set_size(input_image.nr(), input_image.nc());
 
     // The index of the largest output for each element is the label.
-    float* out = temp.blended_output_tensor.host();
     const auto find_label = [&](long r, long c)
     {
         uint16_t label = dlib::loss_multiclass_log_per_pixel_::label_to_ignore;
         float max_value = -std::numeric_limits<float>::infinity();
-        for (long k = 0; k < temp.blended_output_tensor.k(); ++k)
+        for (long k = 0; k < temp.blended_output.size(); ++k)
         {
             const double gain = gains.empty() ? 0.0 : gains[k];
-            const float value = out[tensor_index(temp.blended_output_tensor, 0, k, r, c)] + gain;
+            const float value = temp.blended_output[k](r, c) + gain;
             if (value > max_value)
             {
                 label = static_cast<uint16_t>(k);
@@ -185,17 +191,17 @@ void annonet_infer(
         temp.detection_seeds.clear();
     }
 
-    for (long r = 0, nr = temp.blended_output_tensor.nr(); r < nr; ++r)
+    for (long r = 0, nr = input_image.nr(); r < nr; ++r)
     {
-        for (long c = 0, nc = temp.blended_output_tensor.nc(); c < nc; ++c)
+        for (long c = 0, nc = input_image.nc(); c < nc; ++c)
         {
             // The index of the largest output for this element is the label.
             const auto label = find_label(r, c);
             result_image(r, c) = label;
 
             if (use_detection_level && label > 0) {
-                const float clean_output = out[tensor_index(temp.blended_output_tensor, 0, 0, r, c)];
-                const float label_output = out[tensor_index(temp.blended_output_tensor, 0, label, r, c)];
+                const float clean_output = temp.blended_output[0](r, c);
+                const float label_output = temp.blended_output[label](r, c);
 
                 if (label_output - clean_output > detection_levels[label] - detection_levels[0]) {
                     temp.detection_seeds.emplace_back(r, c);
