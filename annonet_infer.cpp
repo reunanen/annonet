@@ -70,7 +70,7 @@ void annonet_infer(
 
         if (!dlib::rectangle(input_image.nc(), input_image.nr()).contains(chip_details.rect)) {
             const dlib::rectangle inside(-chip_details.rect.tl_corner(), get_rect(input_image).br_corner() - chip_details.rect.tl_corner());
-	    auto view = dlib::image_view<NetPimpl::input_type>(temp.input_tile);
+            auto view = dlib::image_view<NetPimpl::input_type>(temp.input_tile);
             outpaint(view, inside);
         }
 
