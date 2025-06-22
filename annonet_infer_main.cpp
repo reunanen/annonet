@@ -217,9 +217,9 @@ void update_confusion_matrix_per_region(
     const unsigned long ground_truth_blob_count = dlib::label_connected_blobs(ground_truth_label_image, zero_pixels_are_background(), neighbors_8(), connected_if_equal(), temp.ground_truth_blobs);
     const unsigned long result_blob_count       = dlib::label_connected_blobs(result_label_image,       zero_pixels_are_background(), neighbors_8(), connected_if_equal(), temp.result_blobs);
 
-    const auto vote_blob_class = [&](int blob_number, const dlib::matrix<int>& blobs) {
-        std::unordered_map<uint16_t, size_t> votes_ground_truth;
-        std::unordered_map<uint16_t, size_t> votes_predicted;
+    const auto vote_blob_class = [&](unsigned long blob_count, const dlib::matrix<int>& blobs) {
+        std::vector<unordered_map<uint16_t, size_t>> votes_ground_truth(blob_count);
+        std::vector<unordered_map<uint16_t, size_t>> votes_predicted   (blob_count);
 
         const auto find_class_with_most_votes = [](const std::unordered_map<uint16_t, size_t>& votes) {
             if (votes.empty()) {
@@ -238,39 +238,37 @@ void update_confusion_matrix_per_region(
             for (const dlib::point& point : i.second) {
                 const auto x = point.x();
                 const auto y = point.y();
-                if (blobs(y, x) == blob_number) {
-                    assert(ground_truth_label_image(y, x) == ground_truth);
-                    ++votes_ground_truth[ground_truth];
-                    const auto predicted = result_label_image(y, x);
-                    ++votes_predicted[predicted];
-                }
+                const auto blob_number = blobs(y, x);
+                assert(blob_number < blob_count);
+                assert(ground_truth_label_image(y, x) == ground_truth);
+                ++votes_ground_truth[blob_number][ground_truth];
+                const auto predicted = result_label_image(y, x);
+                ++votes_predicted[blob_number][predicted];
             }
+        }
 
+        for (unsigned long blob_number = 0; blob_number < blob_count; ++blob_number) {
             // If ground-truth is predominantly non-background, consider predictions to be background only if there are not any other votes.
             // (Rationale: in our world, detections are important - we do not want to ignore any, even if they are small in terms of area.)
-            const bool ground_truth_predominantly_non_background = find_class_with_most_votes(votes_ground_truth) != 0;
-            const bool predicted_background_only = votes_predicted.size() == 1 && votes_predicted.find(0) != votes_predicted.end();
+            const auto& blob_ground_truth = votes_ground_truth[blob_number];
+            auto& blob_predicted = votes_predicted[blob_number];
+
+            const bool ground_truth_predominantly_non_background = find_class_with_most_votes(blob_ground_truth) != 0;
+            const bool predicted_background_only = blob_predicted.size() == 1 && blob_predicted.find(0) != blob_predicted.end();
             if (ground_truth_predominantly_non_background && !predicted_background_only) {
-                votes_predicted.erase(0);
+                blob_predicted.erase(0);
+            }
+
+            const auto winner_ground_truth = find_class_with_most_votes(blob_ground_truth);
+            if (winner_ground_truth != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
+                const auto winner_predicted = find_class_with_most_votes(blob_predicted);
+                ++confusion_matrix_per_region[winner_ground_truth][winner_predicted];
             }
         }
-
-        return std::make_pair(find_class_with_most_votes(votes_ground_truth), find_class_with_most_votes(votes_predicted));
     };
 
-    for (unsigned long blob = 0; blob < ground_truth_blob_count; ++blob) {
-        const auto v = vote_blob_class(blob, temp.ground_truth_blobs);
-        if (v.first != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-            ++confusion_matrix_per_region[v.first][v.second];
-        }
-    }
-
-    for (unsigned long blob = 0; blob < result_blob_count; ++blob) {
-        const auto v = vote_blob_class(blob, temp.result_blobs);
-        if (v.first != dlib::loss_multiclass_log_per_pixel_::label_to_ignore) {
-            ++confusion_matrix_per_region[v.first][v.second];
-        }
-    }
+    vote_blob_class(ground_truth_blob_count, temp.ground_truth_blobs);
+    vote_blob_class(result_blob_count,       temp.result_blobs);
 }
 
 // ----------------------------------------------------------------------------------------
