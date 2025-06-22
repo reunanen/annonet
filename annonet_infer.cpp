@@ -76,8 +76,6 @@ void annonet_infer(
 
         const auto& output_tensor = net.Forward(temp.input_tile);
 
-        assert(temp.blended_output.empty() == first_tile);
-
         if (first_tile) {
             temp.blended_output.resize(output_tensor.k());
 
@@ -90,6 +88,11 @@ void annonet_infer(
         }
         else {
             DLIB_CASSERT(output_tensor.k() == temp.blended_output.size());
+
+            for (int k = 0, end = output_tensor.k(); k < end; ++k) {
+                DLIB_CASSERT(temp.blended_output[k].nr() == input_image.nr());
+                DLIB_CASSERT(temp.blended_output[k].nc() == input_image.nc());
+            }
         }
 
         const long long class_count = output_tensor.k();
