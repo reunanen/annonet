@@ -292,7 +292,7 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    cxxopts::Options options("annonet_infer", "Do inference using trained semantic-segmentation networks");
+    cxxopts::Options opts("annonet_infer", "Do inference using trained semantic-segmentation networks");
 
     std::ostringstream hardware_concurrency;
     hardware_concurrency << std::thread::hardware_concurrency();
@@ -306,7 +306,7 @@ int main(int argc, char** argv) try
     const std::string default_max_tile_height = "4096";
 #endif
 
-    options.add_options()
+    opts.add_options()
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
         ("g,gain", "Supply a class-specific gain, for example: 1:-0.5", cxxopts::value<std::vector<std::string>>())
         ("d,detection", "Supply a class-specific detection level that _comes on top of gain_, for example: 1:1.5", cxxopts::value<std::vector<std::string>>())
@@ -316,18 +316,24 @@ int main(int argc, char** argv) try
         ("result-image-writer-thread-count", "Set the number of result-image writer threads", cxxopts::value<int>()->default_value(hardware_concurrency.str()))
         ;
 
-    try {
-        options.parse_positional("input-directory");
-        options.parse(argc, argv);
+    opts.parse_positional({"input-directory"});
+    opts.positional_help("<input-directory>");
 
-        cxxopts::check_required(options, { "input-directory" });
+    cxxopts::ParseResult options;
+
+    try {
+        options = opts.parse(argc, argv);
+
+        if (options.count("input-directory") == 0) {
+            throw cxxopts::exceptions::exception("Option 'input-directory' is required but not present");
+        }
 
         std::cout << "Input directory = " << options["input-directory"].as<std::string>() << std::endl;
     }
     catch (std::exception& e) {
         cerr << e.what() << std::endl;
         cerr << std::endl;
-        cerr << options.help() << std::endl;
+        cerr << opts.help() << std::endl;
         return 2;
     }
 
@@ -348,8 +354,8 @@ int main(int argc, char** argv) try
 
     DLIB_CASSERT(anno_classes.size() >= 2);
 
-    const std::vector<double> gains = parse_class_specific_values(options["gain"].as<std::vector<std::string>>(), anno_classes.size());
-    const std::vector<double> detection_levels = parse_class_specific_values(options["detection"].as<std::vector<std::string>>(), anno_classes.size());
+    const std::vector<double> gains = parse_class_specific_values(options.count("gain") ? options["gain"].as<std::vector<std::string>>() : std::vector<std::string>(), anno_classes.size());
+    const std::vector<double> detection_levels = parse_class_specific_values(options.count("detection") ? options["detection"].as<std::vector<std::string>>() : std::vector<std::string>(), anno_classes.size());
 
     assert(gains.size() == anno_classes.size());
     assert(detection_levels.size() == anno_classes.size());
