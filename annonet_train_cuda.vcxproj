@@ -116,6 +116,7 @@
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
+      <StackReserveSize>16777216</StackReserveSize>
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
@@ -152,6 +153,7 @@
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
+      <StackReserveSize>16777216</StackReserveSize>
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
@@ -189,6 +191,7 @@
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
+      <StackReserveSize>16777216</StackReserveSize>
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
@@ -226,6 +229,7 @@
       <SubSystem>Console</SubSystem>
       <Version>
       </Version>
+      <StackReserveSize>16777216</StackReserveSize>
     </Link>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
