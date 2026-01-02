@@ -49,11 +49,11 @@ namespace std {
             return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
         }
     };
+}
 
-    bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
-        return a.image_filename == b.image_filename
-            && a.label_filename == b.label_filename;
-    }
+bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
+    return a.image_filename == b.image_filename
+        && a.label_filename == b.label_filename;
 }
 
 // ----------------------------------------------------------------------------------------
