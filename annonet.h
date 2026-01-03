@@ -23,7 +23,7 @@
 
 // ----------------------------------------------------------------------------------------
 
-struct image_filenames
+struct image_filenames_type
 {
     std::string image_filename;
     std::string label_filename;
@@ -32,11 +32,11 @@ struct image_filenames
 
 typedef uint8_t input_pixel_type;
 
-struct sample
+struct sample_type
 {
     int original_width = 0;
     int original_height = 0;
-    image_filenames image_filenames;
+    image_filenames_type image_filenames;
     NetPimpl::input_type input_image;
     std::vector<dlib::mmod_rect> labels;
     std::string error;
@@ -46,12 +46,12 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
 
 std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::vector<AnnoClass>& anno_classes);
 
-std::vector<image_filenames> find_image_files(
+std::vector<image_filenames_type> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 );
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
+sample_type read_sample(const image_filenames_type& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor);
 
 void set_low_priority();
 

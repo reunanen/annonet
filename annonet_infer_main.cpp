@@ -471,21 +471,21 @@ int main(int argc, char** argv) try
 
     auto files = find_image_files(options["input-directory"].as<std::string>(), false);
 
-    dlib::pipe<image_filenames> full_image_read_requests(files.size());
-    for (const image_filenames& file : files) {
-        full_image_read_requests.enqueue(image_filenames(file));
+    dlib::pipe<image_filenames_type> full_image_read_requests(files.size());
+    for (const image_filenames_type& file : files) {
+        full_image_read_requests.enqueue(image_filenames_type(file));
     }
 
     const int full_image_reader_count = std::max(1, options["full-image-reader-thread-count"].as<int>());
     const int result_image_writer_count = std::max(1, options["result-image-writer-thread-count"].as<int>());
 
-    dlib::pipe<sample> full_image_read_results(full_image_reader_count);
+    dlib::pipe<sample_type> full_image_read_results(full_image_reader_count);
 
     std::vector<std::thread> full_image_readers;
 
     for (unsigned int i = 0; i < full_image_reader_count; ++i) {
         full_image_readers.push_back(std::thread([&]() {
-            image_filenames image_filenames;
+            image_filenames_type image_filenames;
             while (full_image_read_requests.dequeue(image_filenames)) {
                 full_image_read_results.enqueue(read_sample(image_filenames, anno_classes, false, downscaling_factor));
             }
@@ -554,7 +554,7 @@ int main(int argc, char** argv) try
     {
         std::cout << "\rProcessing image " << (i + 1) << " of " << end << "...";
 
-        sample sample;
+        sample_type sample;
         result_image_type result_image;
 
         full_image_read_results.dequeue(sample);

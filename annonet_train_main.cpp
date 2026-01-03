@@ -46,13 +46,13 @@ rectangle make_cropping_rect_around_defect(
 
 namespace std {
     template <>
-    struct hash<image_filenames> {
-        std::size_t operator()(const image_filenames& image_filenames) const {
+    struct hash<image_filenames_type> {
+        std::size_t operator()(const image_filenames_type& image_filenames) const {
             return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
         }
     };
 
-    bool operator ==(const image_filenames& a, const image_filenames& b) {
+    bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
         return a.image_filename == b.image_filename
             && a.label_filename == b.label_filename;
     }
@@ -595,9 +595,9 @@ int main(int argc, char** argv) try
     };
 #endif
 
-    shared_lru_cache_using_std<image_filenames, std::shared_ptr<sample>, std::unordered_map> full_images_cache(
-        [&](const image_filenames& image_filenames) {
-            std::shared_ptr<sample> sample(new sample);
+    shared_lru_cache_using_std<image_filenames_type, std::shared_ptr<sample_type>, std::unordered_map> full_images_cache(
+        [&](const image_filenames_type& image_filenames) {
+            std::shared_ptr<sample_type> sample(new sample_type);
             *sample = read_sample(image_filenames, anno_classes, true, downscaling_factor);
             maybe_ignore_some_labels(sample->labels, overlaps_enough_to_be_ignored, min_label_size);
 #if 0
@@ -642,8 +642,8 @@ int main(int argc, char** argv) try
             crop.warning.clear();
 
             const size_t index = rnd.get_random_32bit_number() % image_files.size();
-            const image_filenames& image_filenames = image_files[index];
-            const std::shared_ptr<sample> ground_truth_sample = full_images_cache(image_filenames);
+            const image_filenames_type& image_filenames = image_files[index];
+            const std::shared_ptr<sample_type> ground_truth_sample = full_images_cache(image_filenames);
 
             const std::vector<dlib::mmod_rect> labels = tuc::map<std::vector<dlib::mmod_rect>>(ground_truth_sample->labels, force_box_shape_to_class_mean_if_required);
 

@@ -38,7 +38,7 @@ inline uint16_t rgba_label_to_index_label(const dlib::rgb_alpha_pixel& rgba_labe
     throw std::runtime_error(error.str());
 }
 
-std::vector<image_filenames> find_image_files(
+std::vector<image_filenames_type> find_image_files(
     const std::string& anno_data_folder,
     bool require_ground_truth
 )
@@ -62,7 +62,7 @@ std::vector<image_filenames> find_image_files(
 
     std::cout << " found " << files.size() << " candidates" << std::endl;
 
-    std::vector<image_filenames> results;
+    std::vector<image_filenames_type> results;
 
     const auto file_exists = [](const std::string& filename) {
         std::ifstream label_file(filename, std::ios::binary);
@@ -76,7 +76,7 @@ std::vector<image_filenames> find_image_files(
     for (size_t i = 0, total = files.size(); i < total; ++i) {
         const dlib::file& name = files[i];
 
-        image_filenames image_filenames;
+        image_filenames_type image_filenames;
         image_filenames.image_filename = name;
 
         const std::string label_filename = name.full_name() + "_annotation_paths.json";
@@ -199,9 +199,9 @@ std::vector<dlib::mmod_rect> parse_labels(const std::string& json, const std::ve
     return mmod_rects;
 }
 
-sample read_sample(const image_filenames& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
+sample_type read_sample(const image_filenames_type& image_filenames, const std::vector<AnnoClass>& anno_classes, bool require_ground_truth, double downscaling_factor)
 {
-    sample sample;
+    sample_type sample;
     sample.image_filenames = image_filenames;
 
     try {
