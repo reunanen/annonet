@@ -49,11 +49,11 @@ namespace std {
             return hash<string>()(image_filenames.image_filename + ", " + image_filenames.label_filename);
         }
     };
+}
 
-    bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
-        return a.image_filename == b.image_filename
-            && a.label_filename == b.label_filename;
-    }
+bool operator ==(const image_filenames_type& a, const image_filenames_type& b) {
+    return a.image_filename == b.image_filename
+        && a.label_filename == b.label_filename;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -112,7 +112,7 @@ void randomly_crop_image(
     const sample_type& full_sample,
     crop& crop,
     dlib::rand& rnd,
-    const cxxopts::Options& options,
+    const cxxopts::ParseResult& options,
     randomly_crop_image_temp& temp
 )
 {
@@ -268,12 +268,12 @@ int main(int argc, char** argv) try
         return 1;
     }
 
-    cxxopts::Options options("annonet_train", "Train semantic-segmentation networks using data generated in anno");
+    cxxopts::Options opts("annonet_train", "Train semantic-segmentation networks using data generated in anno");
 
     std::ostringstream default_data_loader_thread_count;
     default_data_loader_thread_count << std::thread::hardware_concurrency();
 
-    options.add_options()
+    opts.add_options()
         ("d,initial-downscaling-factor", "The initial downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("f,further-downscaling-factor", "The further downscaling factor (>= 1.0)", cxxopts::value<double>()->default_value("1.0"))
         ("i,input-directory", "Input image directory", cxxopts::value<std::string>())
@@ -307,11 +307,17 @@ int main(int argc, char** argv) try
         ("primary-cuda-device", "Set the primary CUDA device to use", cxxopts::value<int>())
         ;
 
-    try {
-        options.parse_positional("input-directory");
-        options.parse(argc, argv);
+    opts.parse_positional({"input-directory"});
+    opts.positional_help("<input-directory>");
 
-        cxxopts::check_required(options, { "input-directory" });
+    cxxopts::ParseResult options;
+
+    try {
+        options = opts.parse(argc, argv);
+
+        if (options.count("input-directory") == 0) {
+            throw cxxopts::exceptions::exception("Option 'input-directory' is required but not present");
+        }
 
         std::cout << "Input directory = " << options["input-directory"].as<std::string>() << std::endl;
         std::cout << "Initial downscaling factor = " << options["initial-downscaling-factor"].as<double>() << std::endl;
@@ -324,7 +330,7 @@ int main(int argc, char** argv) try
     catch (std::exception& e) {
         cerr << e.what() << std::endl;
         cerr << std::endl;
-        cerr << options.help() << std::endl;
+        cerr << opts.help() << std::endl;
         return 2;
     }
 
@@ -334,7 +340,7 @@ int main(int argc, char** argv) try
     const double ignore_large_nonzero_regions_by_width = options.count("ignore-large-nonzero-regions-by-width") ? options["ignore-large-nonzero-regions-by-width"].as<double>() : std::numeric_limits<double>::infinity();
     const double ignore_large_nonzero_regions_by_height = options.count("ignore-large-nonzero-regions-by-height") ? options["ignore-large-nonzero-regions-by-height"].as<double>() : std::numeric_limits<double>::infinity();
     const bool allow_flip_upside_down = options.count("allow-flip-upside-down") > 0;
-    const std::vector<uint16_t> classes_to_ignore = options["ignore-class"].as<std::vector<uint16_t>>();
+    const std::vector<uint16_t> classes_to_ignore = options.count("ignore-class") ? options["ignore-class"].as<std::vector<uint16_t>>() : std::vector<uint16_t>();
     const auto minibatch_size = options["minibatch-size"].as<size_t>();
     const auto input_dimension_multiplier = options["input-dimension-multiplier"].as<double>();
     const auto net_width_scaler = options["net-width-scaler"].as<double>();
